@@ -1,0 +1,18 @@
+{
+  "document_type": "cancellation",
+  "reservations": [
+    {
+      "kind": "flight",
+      "status": "cancelled",
+      "confirmation_code": "RWV431",
+      "provider": "American Airlines",
+      "passengers": ["Jamie Sample"],
+      "segments": [
+        {"carrier_iata": "AA", "flight_number": "9630", "origin": "MSP", "destination": "ORD",
+         "departure_local": "2027-05-01T09:10", "arrival_local": "2027-05-01T10:35"},
+        {"carrier_iata": "AA", "flight_number": "9655", "origin": "ORD", "destination": "MSP",
+         "departure_local": "2027-05-02T18:25", "arrival_local": "2027-05-02T19:55"}
+      ]
+    }
+  ]
+}

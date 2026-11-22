@@ -1,0 +1,48 @@
+{# SPDX-License-Identifier: AGPL-3.0-only -#}
+{# Additional terms: see NOTICE -#}
+{% extends "base.html" %}
+{% block title %}Share · {{ trip.title }}{% endblock %}
+{% block body %}
+<header class="top">
+  <a class="back" href="{{ base }}/trips/{{ trip.id }}" aria-label="Back">‹</a>
+  <h1>Share</h1>
+</header>
+<main class="page share">
+  <div class="chips">
+    {% for kind, label in chips %}<button type="button" class="chip-btn {{ 'on' if kind == 'all' }}" data-kind="{{ kind }}">{{ label }}</button>{% endfor %}
+  </div>
+  <form id="share-form" data-text-url="{{ base }}/trips/{{ trip.id }}/text">
+    {% for d in days %}
+    <h2 class="day">{{ d.band }}</h2>
+    {% for it in d.lines %}
+    <label class="pick {{ 'cancelled' if it.cancelled }}">
+      <input type="checkbox" name="items" value="{{ it.id }}" data-kind="{{ it.kind }}"{% if not it.cancelled %} checked{% endif %}>
+      <span><span class="pick-icon">{{ it.icon }}</span> {{ it.primary }} <span class="muted">· {{ it.secondary }}{% if it.time %} · {{ it.time }} {{ it.tz }}{% endif %}</span></span>
+    </label>
+    {% endfor %}
+    {% endfor %}
+    <div class="toggles">
+      <label><input type="checkbox" name="conf" checked> Confirmation codes</label>
+      <label><input type="checkbox" name="names" checked> Names</label>
+      {% if trip.notes %}<label><input type="checkbox" name="notes" checked> Notes</label>{% endif %}
+    </div>
+  </form>
+  <h2 class="section">Preview</h2>
+  <pre id="preview" class="preview">{{ text }}</pre>
+  <section id="links" class="share-links" aria-labelledby="links-title">
+    <h2 class="section" id="links-title">Share a link</h2>
+    <form method="post" action="{{ base }}/trips/{{ trip.id }}/links" class="col">
+      <div class="toggles">
+        {% for f in link_fields %}<label><input type="checkbox" name="{{ f.name }}"{% if f.on %} checked{% endif %}> {{ f.label }}</label>{% endfor %}
+      </div>
+      <p class="muted small">Anyone with the link sees this trip as it is at that moment, without signing in. It works until 7 days after the trip ends, and at least 30 days.</p>
+      <div class="row"><button type="submit" class="btn primary">Make a link</button></div>
+    </form>
+    {% with from_page = "share" %}{% include "_links.html" %}{% endwith %}
+  </section>
+</main>
+<div class="actions">
+  <button type="button" id="copy" class="btn primary" data-copy-preview>Copy</button>
+  <button type="button" id="share" class="btn" hidden>Share…</button>
+</div>
+{% endblock %}

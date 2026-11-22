@@ -1,0 +1,22 @@
+# TRIPBOX_BASE_URL=https://flights.example.com/tripbox
+# Caddy in front of AirTrail and tripbox at one hostname: tripbox under /tripbox, AirTrail at the
+# root. AirTrail must be at the root (it is served under no path of its own), and its ORIGIN
+# setting is this hostname, https://flights.example.com. Caddy gets and renews the certificate by
+# itself. "web:8110" is tripbox's page and "airtrail:3000" is AirTrail when Caddy is a service in
+# the same compose project as both; for a Caddy on the host, write their published addresses.
+# tripbox's worker reaches AirTrail directly, not through this proxy:
+# TRIPBOX_AIRTRAIL_URL=http://airtrail:3000. The address people open AirTrail at,
+# TRIPBOX_AIRTRAIL_PUBLIC_URL, is the hostname: https://flights.example.com. AirTrail's Trips button
+# is built with /tripbox (integrations/airtrail/build.sh).
+# The path is handed on as it came (no handle_path, no strip_prefix): tripbox answers under it.
+# AirTrail answers everything else, in the last handle; a path such as /tripboxx is AirTrail's.
+flights.example.com {
+	@tripbox path /tripbox /tripbox/*
+	handle @tripbox {
+		reverse_proxy web:8110
+	}
+
+	handle {
+		reverse_proxy airtrail:3000
+	}
+}

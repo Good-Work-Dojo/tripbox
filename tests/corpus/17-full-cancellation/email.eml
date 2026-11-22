@@ -1,0 +1,55 @@
+Return-Path: <alex@example.com>
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@example.com;
+       spf=pass smtp.mailfrom=alex@example.com;
+       dmarc=pass header.from=example.com
+From: Alex Sample <alex@example.com>
+To: trips@example.com
+Subject: Fwd: Reservation SUT320 canceled
+Date: Tue, 20 Apr 2027 15:30:04 -0500
+Message-ID: <fwd.sut320.c5r1x@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+---------- Forwarded message ---------
+From: Example Riverside Hotel Chicago <reservations@exampleriversidehotel.example>
+Date: Tue, Apr 20, 2027 at 3:02 PM
+Subject: Reservation SUT320 canceled
+To: <alex@example.com>
+
+
+EXAMPLE RIVERSIDE HOTEL CHICAGO
+400 Example Drive, Chicago, IL 60601
+
+Dear Alex Sample,
+
+Your reservation has been canceled, as you asked. We are sorry we will
+not see you this time.
+
+  Confirmation number   SUT320
+  Status                Canceled
+  Guest                 Alex Sample
+  Arrival               Saturday, May 1, 2027
+  Departure             Sunday, May 2, 2027
+  Room                  Family Room, two queen beds
+  Cancellation charge   None
+
+The cancellation was made more than 48 hours before arrival, so no charge
+applies and nothing further will be taken from your card. If you paid for
+this stay through a travel company, any refund comes to you from them.
+
+This cancellation cannot be undone. If your plans change again, rooms can
+be booked afresh at https://www.example.com/, subject to availability and
+the rates of the day.
+
+Questions? The front desk is open at all hours on 312-555-0136.
+
+Kind regards,
+
+Reservations
+Example Riverside Hotel Chicago
+
+You are receiving this email because a reservation was made with this
+address. Example Riverside Hotel Chicago, 400 Example Drive, Chicago,
+IL 60601.

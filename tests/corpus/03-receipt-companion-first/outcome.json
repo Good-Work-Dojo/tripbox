@@ -1,0 +1,15 @@
+{
+  "status": "processed",
+  "read_by": "model",
+  "document_type": "booking",
+  "items": [
+    {"kind": "flight", "key": "DL|9412|2027-03-11|MSP", "result": "filed",
+     "people": {"me": 0, "guests": 1, "others": 0},
+     "booking": {"status": "confirmed", "travellers": ["Sam Sample"], "trip": "Boston",
+                 "checks": [], "sync": "off"}},
+    {"kind": "flight", "key": "DL|9435|2027-03-14|BOS", "result": "filed",
+     "people": {"me": 0, "guests": 1, "others": 0},
+     "booking": {"status": "confirmed", "travellers": ["Sam Sample"], "trip": "Boston",
+                 "checks": [], "sync": "off"}}
+  ]
+}

@@ -1,0 +1,13 @@
+Philadelphia · Thu Sep 16 – Tue Sep 21, 2027
+
+Thu Sep 16
+✈️ Sun Country 9304 · MSP 10:25 AM CDT → PHL 1:58 PM EDT
+   conf QTWZSV · Alex, Sam, Robin, Jamie · seats 8A, 8B, 8C, 8D
+🚗 Example Rent A Car · pick up 2:45 PM EDT
+   200 Example Avenue, Philadelphia PA 00000 US
+   conf 1234567890 · Alex
+
+Tue Sep 21
+🚗 Example Rent A Car · drop off 1:15 PM EDT
+✈️ Delta 9246 · PHL 4:45 PM EDT → MSP 6:50 PM CDT
+   conf Q9TW8Z · Alex, Sam, Robin, Jamie · seats 21A, 21B, 21C, 21D

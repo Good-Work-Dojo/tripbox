@@ -1,0 +1,22 @@
+{
+  "document_type": "booking",
+  "reservations": [
+    {
+      "kind": "flight",
+      "status": "confirmed",
+      "confirmation_code": "RTW753",
+      "provider": "Delta Air Lines",
+      "passengers": ["SAMPLE/ALEX QUINN", "SAMPLE/SAM", "SAMPLE/ROBIN", "SAMPLE/JAMIE"],
+      "price": 4861.20,
+      "currency": "USD",
+      "segments": [
+        {"carrier_iata": "DL", "flight_number": "9140", "origin": "MSP", "destination": "CDG",
+         "departure_local": "2027-07-02T16:45", "arrival_local": "2027-07-03T07:55",
+         "cabin": "Economy"},
+        {"carrier_iata": "DL", "flight_number": "9017", "origin": "LHR", "destination": "MSP",
+         "departure_local": "2027-07-15T12:10", "arrival_local": "2027-07-15T15:05",
+         "cabin": "Economy"}
+      ]
+    }
+  ]
+}

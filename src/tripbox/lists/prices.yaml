@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Additional terms: see NOTICE
+# What a model's call costs, in US dollars per million tokens, as each provider's own price page
+# said on the day `as_of` names. A model the table lacks has no known price: it is capped by a
+# number of calls a day instead of its monthly budget, unless TRIPBOX_LLM_PRICE_USD_PER_MTOK gives
+# its price. A `long_prompt` tier prices the whole call when the prompt is longer than its
+# `above_tokens`. A row also prices the model's dated names (its name, a dash, then anything).
+as_of: 2026-11-16
+models:
+  claude-haiku-5-5:
+    input: 0.10
+    output: 0.50
+    long_prompt:
+      above_tokens: 100000
+      input: 0.50
+      output: 2.50

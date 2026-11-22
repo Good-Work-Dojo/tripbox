@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Additional terms: see NOTICE
+# The secret scan's rules (tools/verify/ci.sh and the ci workflow run gitleaks over the tree):
+# gitleaks's own, and one allowance for each file that needs one, with its reason. Each allowance
+# names the one rule it answers: gitleaks skips a file outright when an allowance with no rule
+# named matches its path, whatever else it says. With the rule named, both the one path and one of
+# its values must match, so a real key added to the same file is still found.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Invented values the settings tests set to prove a secret is never printed: each begins S3CRET- so the test can look for it in what was printed, and opens nothing"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''(^|/)tests/test_cli_settings\.py$''']
+regexes = ['''^S3CRET-[A-Za-z0-9-]+$''']
+
+[[allowlists]]
+description = "An invented value the settings tests set to prove a secret is never printed or logged: it begins S3CRET- so the test can look for it, and opens nothing"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''(^|/)tests/test_config\.py$''']
+regexes = ['''^S3CRET-[A-Za-z0-9-]+$''']
+
+[[allowlists]]
+description = "An invented ntfy address part the notifier test sends to a fake server to prove the address is never logged: it begins S3CRET- and opens nothing"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''(^|/)tests/test_notifier\.py$''']
+regexes = ['''^S3CRET-[A-Za-z0-9-]+$''']
+
+[[allowlists]]
+description = "An invented API key of the token alphabet that the test-key tool's tests hash and insert into a fake database: it names no AirTrail and opens nothing"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''(^|/)tools/verify/test_airtrail_test_key\.py$''']
+regexes = ['''^Qx9-Vz8_Wy7Rt6Su5Ts4Ur3Vq2Wp1Xo0Yn$''']

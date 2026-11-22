@@ -1,0 +1,48 @@
+{
+  "wire_schema": 1,
+  "source": "hand-written",
+  "model": null,
+  "answer": {
+    "document_type": "cancellation",
+    "confidence": 0.9,
+    "reservations": [
+      {
+        "kind": "flight",
+        "status": "cancelled",
+        "code": "RWV431",
+        "provider": "American Airlines",
+        "passengers": [
+          "Jamie Sample"
+        ],
+        "legs": [
+          {
+            "carrier": "AA",
+            "number": "9630",
+            "origin": "MSP",
+            "destination": "ORD",
+            "departure": "2027-05-01T09:10",
+            "arrival": "2027-05-01T10:35",
+            "seats": [],
+            "cabin": null
+          },
+          {
+            "carrier": "AA",
+            "number": "9655",
+            "origin": "ORD",
+            "destination": "MSP",
+            "departure": "2027-05-02T18:25",
+            "arrival": "2027-05-02T19:55",
+            "seats": [],
+            "cabin": null
+          }
+        ],
+        "place": null,
+        "address": null,
+        "start": null,
+        "end": null,
+        "price": null,
+        "currency": null
+      }
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "wire_schema": 1,
+  "source": "hand-written",
+  "model": null,
+  "answer": {
+    "document_type": "booking",
+    "confidence": 0.9,
+    "reservations": [
+      {
+        "kind": "flight",
+        "status": "confirmed",
+        "code": "ZRU981",
+        "provider": "Air New Zealand",
+        "passengers": ["Alex Sample"],
+        "legs": [
+          {"carrier": "NZ", "number": "9007", "origin": "SFO", "destination": "AKL",
+           "departure": "2027-10-05T21:15", "arrival": "2027-10-07T05:30",
+           "seats": ["42C"], "cabin": "Economy"},
+          {"carrier": "NZ", "number": "9008", "origin": "AKL", "destination": "SFO",
+           "departure": "2027-10-15T19:45", "arrival": "2027-10-15T11:55",
+           "seats": ["40A"], "cabin": "Economy"}
+        ],
+        "place": null,
+        "address": null,
+        "start": null,
+        "end": null,
+        "price": 1433.3,
+        "currency": "USD"
+      }
+    ]
+  }
+}

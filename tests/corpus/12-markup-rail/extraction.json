@@ -1,0 +1,18 @@
+{
+  "document_type": "booking",
+  "reservations": [
+    {
+      "kind": "train",
+      "status": "confirmed",
+      "confirmation_code": "UVQ531",
+      "provider": "Rail Exemple",
+      "passengers": ["Alex Sample", "Sam Sample", "Robin Sample", "Jamie Sample"],
+      "segments": [
+        {"train_number": "9907", "operator": "Rail Exemple",
+         "origin": "Paris Est", "destination": "München Hbf",
+         "departure_local": "2027-07-07T09:55", "arrival_local": "2027-07-07T15:36",
+         "departure_offset": "+02:00", "arrival_offset": "+02:00"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "document_type": "booking",
+  "reservations": [
+    {
+      "kind": "lodging",
+      "status": "confirmed",
+      "confirmation_code": "XTZ732",
+      "provider": "Example Desert Inn",
+      "passengers": ["Alex Sample"],
+      "property_name": "Example Desert Inn",
+      "address": "600 Example Trail, Phoenix, AZ 85004",
+      "check_in": "2027-11-04",
+      "check_out": "2027-11-08",
+      "price": 808.36,
+      "currency": "USD"
+    }
+  ]
+}

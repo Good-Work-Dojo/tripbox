@@ -1,0 +1,92 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Additional terms: see NOTICE
+# Photographs the trips page of any ledger. Run it from a directory that holds this file,
+# shoot.py, checks.py, a ledger directory demo/ (data/ledger.db and config/) and an empty out/. The page is
+# served from demo/ behind its own password sign-in at http://web:8110${SCREENS_BASE}, and a
+# brand-new install's at http://fresh:8110${SCREENS_BASE} (the same image over an empty data
+# directory on its tmpfs, behind the same password); a browser on the same compose network signs
+# in, takes the screenshots and writes them to out/. The stack
+# publishes no port, and nothing is read from outside these directories. It reads five
+# variables: SCREENS_TRIPBOX_IMAGE, an image of the app; SCREENS_BROWSER_IMAGE, the image built
+# from the Dockerfile beside this file; SCREENS_USER, the uid:gid that owns demo/ and out/
+# (default 1000:1000); SCREENS_BASE, the base path the page is served under (default none, such
+# as /tripbox); and SCREENS_PASSWORD, the page's password, which every service takes (default
+# harness-only-password). The three services' memory limits add up to 5g, under the 8g the
+# compose guard lets one stack take.
+name: tripbox-screens
+
+services:
+  web:
+    image: ${SCREENS_TRIPBOX_IMAGE:?}
+    user: "${SCREENS_USER:-1000:1000}"
+    read_only: true
+    tmpfs:
+      - /tmp
+    command: ["python", "-m", "tripbox", "web", "--host", "0.0.0.0", "--port", "8110"]
+    environment:
+      TZ: "${SCREENS_TZ:-America/Chicago}"
+      TRIPBOX_HOME_AIRPORTS: "${SCREENS_HOME_AIRPORTS:-MSP}"
+      TRIPBOX_AUTH: password
+      TRIPBOX_PASSWORD: "${SCREENS_PASSWORD:-harness-only-password}"
+      TRIPBOX_BASE_URL: "http://web:8110${SCREENS_BASE:-}"
+      TRIPBOX_DATA_DIR: /demo/data
+      TRIPBOX_CONFIG_DIR: /demo/config
+      TRIPBOX_LOGS_DIR: /tmp/logs
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - ./demo:/demo
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD", "python", "/app/scripts/healthcheck.py", "web"]
+      interval: 2s
+      retries: 30
+
+  # A brand-new install: nothing set but the sign-in, no ledger until the page makes one on its
+  # tmpfs, no travellers file, no worker. shoot.py photographs its list as first-run.
+  fresh:
+    image: ${SCREENS_TRIPBOX_IMAGE:?}
+    user: "${SCREENS_USER:-1000:1000}"
+    read_only: true
+    tmpfs:
+      - /tmp
+    command: ["python", "-m", "tripbox", "web", "--host", "0.0.0.0", "--port", "8110"]
+    environment:
+      TZ: "${SCREENS_TZ:-America/Chicago}"
+      TRIPBOX_AUTH: password
+      TRIPBOX_PASSWORD: "${SCREENS_PASSWORD:-harness-only-password}"
+      TRIPBOX_BASE_URL: "http://fresh:8110${SCREENS_BASE:-}"
+      TRIPBOX_DATA_DIR: /tmp/data
+      TRIPBOX_CONFIG_DIR: /tmp/config
+      TRIPBOX_LOGS_DIR: /tmp/logs
+      PYTHONDONTWRITEBYTECODE: "1"
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD", "python", "/app/scripts/healthcheck.py", "web"]
+      interval: 2s
+      retries: 30
+
+  # Idle until a run execs shoot.py in it.
+  browser:
+    image: ${SCREENS_BROWSER_IMAGE:?}
+    user: "${SCREENS_USER:-1000:1000}"
+    working_dir: /harness
+    command: ["sleep", "infinity"]
+    environment:
+      HOME: /tmp
+      PYTHONDONTWRITEBYTECODE: "1"
+      SCREENS_PASSWORD: "${SCREENS_PASSWORD:-harness-only-password}"
+      SCREENS_FRESH_URL: "http://fresh:8110${SCREENS_BASE:-}"
+      # Playwright routes a service worker's own requests in Chromium only when told to, so the
+      # offline check's cut network reaches them (the check proves it does before it judges)
+      PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS: "1"
+    volumes:
+      - ./shoot.py:/harness/shoot.py:ro
+      - ./checks.py:/harness/checks.py:ro
+      - ./out:/out
+    # Chromium and the pages it holds open
+    mem_limit: 3g
+    depends_on:
+      web:
+        condition: service_healthy
+      fresh:
+        condition: service_healthy

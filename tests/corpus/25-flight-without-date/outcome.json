@@ -1,0 +1,11 @@
+{
+  "status": "processed",
+  "read_by": "model",
+  "document_type": "booking",
+  "items": [
+    {"kind": "flight", "key": "draft|653a54262cc25209|0", "result": "filed",
+     "people": {"me": 1, "guests": 0, "others": 0},
+     "booking": {"status": "confirmed", "travellers": ["Alex Sample"], "trip": null,
+                 "checks": ["departure"], "sync": "off"}}
+  ]
+}

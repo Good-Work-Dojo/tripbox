@@ -1,0 +1,17 @@
+{
+  "flights": [
+    {"flight": "DL9412", "date": "2027-03-11", "from": "MSP", "to": "BOS", "people": ["me", "Sam Sample"], "cancelled": false},
+    {"flight": "DL9435", "date": "2027-03-14", "from": "BOS", "to": "MSP", "people": ["me", "Sam Sample"], "cancelled": false},
+    {"flight": "DL9287", "date": "2027-04-08", "from": "MSP", "to": "DEN", "people": ["me"], "cancelled": false},
+    {"flight": "DL9296", "date": "2027-04-11", "from": "DEN", "to": "MSP", "people": ["me"], "cancelled": false},
+    {"flight": "AS9203", "date": "2027-06-14", "from": "MSP", "to": "SEA", "people": ["me", "Jamie Sample", "Robin Sample", "Sam Sample"], "cancelled": false},
+    {"flight": "AS9228", "date": "2027-06-20", "from": "SEA", "to": "MSP", "people": ["me", "Jamie Sample", "Robin Sample", "Sam Sample"], "cancelled": false},
+    {"flight": "DL9140", "date": "2027-07-02", "from": "MSP", "to": "CDG", "people": ["me", "Jamie Sample", "Robin Sample", "Sam Sample"], "cancelled": false},
+    {"flight": "BA9951", "date": "2027-07-11", "from": "MUC", "to": "LHR", "people": ["me", "Jamie Sample", "Robin Sample", "Sam Sample"], "cancelled": false},
+    {"flight": "DL9017", "date": "2027-07-15", "from": "LHR", "to": "MSP", "people": ["me", "Jamie Sample", "Robin Sample", "Sam Sample"], "cancelled": false},
+    {"flight": "NZ9007", "date": "2027-10-05", "from": "SFO", "to": "AKL", "people": ["me"], "cancelled": false},
+    {"flight": "NZ9008", "date": "2027-10-15", "from": "AKL", "to": "SFO", "people": ["me"], "cancelled": false},
+    {"flight": "AA9720", "date": "2027-11-04", "from": "MSP", "to": "PHX", "people": ["me", "Sam Sample"], "cancelled": false},
+    {"flight": "AA9741", "date": "2027-11-08", "from": "PHX", "to": "MSP", "people": ["me", "Sam Sample"], "cancelled": false}
+  ]
+}

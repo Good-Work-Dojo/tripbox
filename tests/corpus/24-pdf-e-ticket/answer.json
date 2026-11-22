@@ -1,0 +1,32 @@
+{
+  "wire_schema": 1,
+  "source": "hand-written",
+  "model": null,
+  "answer": {
+    "document_type": "booking",
+    "confidence": 0.9,
+    "reservations": [
+      {
+        "kind": "flight",
+        "status": "confirmed",
+        "code": "QTX762",
+        "provider": "Southwest Airlines",
+        "passengers": ["Sam Sample"],
+        "legs": [
+          {"carrier": "WN", "number": "9471", "origin": "MSP", "destination": "MCI",
+           "departure": "2027-09-10T07:05", "arrival": "2027-09-10T08:25",
+           "seats": [], "cabin": null},
+          {"carrier": "WN", "number": "9488", "origin": "MCI", "destination": "MSP",
+           "departure": "2027-09-12T18:40", "arrival": "2027-09-12T20:00",
+           "seats": [], "cabin": null}
+        ],
+        "place": null,
+        "address": null,
+        "start": null,
+        "end": null,
+        "price": 269.58,
+        "currency": "USD"
+      }
+    ]
+  }
+}

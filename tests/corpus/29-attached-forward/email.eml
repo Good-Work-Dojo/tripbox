@@ -1,0 +1,64 @@
+Return-Path: <alex@example.com>
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@example.com;
+       spf=pass smtp.mailfrom=alex@example.com;
+       dmarc=pass header.from=example.com
+From: Alex Sample <alex@example.com>
+To: trips@example.com
+Subject: Fwd: Reservation confirmed at Example Desert Inn
+Date: Wed, 28 Jul 2027 08:00:41 -0500
+Message-ID: <fwd.xtz732.d5n8q@example.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="fwd-att-c4d9"
+
+--fwd-att-c4d9
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+Hotel confirmation attached.
+
+--fwd-att-c4d9
+Content-Type: message/rfc822
+Content-Disposition: attachment; filename="Reservation confirmed at Example Desert Inn.eml"
+
+From: Example Desert Inn <reservations@exampledesertinn.example>
+To: alex@example.com
+Subject: Reservation confirmed at Example Desert Inn
+Date: Tue, 27 Jul 2027 19:22:05 -0700
+Message-ID: <xtz732.h3w6p@exampledesertinn.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+Example Desert Inn
+Reservation confirmed
+
+Dear Alex Sample,
+
+Thank you for choosing Example Desert Inn. Your reservation is
+confirmed, and we look forward to having you with us.
+
+Confirmation number: XTZ732
+Guest: Alex Sample
+Check-in: Thursday, November 4, 2027, from 3:00 PM
+Check-out: Monday, November 8, 2027, by 11:00 AM
+Nights: 4
+Room: courtyard king room, non-smoking, 2 adults
+
+Address: 600 Example Trail, Phoenix, AZ 85004
+Phone: 602-555-0178
+
+Nightly rate: 179.00 USD
+Taxes: 92.36 USD
+Total: 808.36 USD
+
+The pool is open from 7:00 AM to 10:00 PM. Parking is free for
+guests.
+
+Cancellation: free until 6:00 PM local time two days before arrival.
+Manage your reservation: https://www.example.com/
+
+See you in November,
+Example Desert Inn
+
+--fwd-att-c4d9--

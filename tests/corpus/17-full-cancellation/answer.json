@@ -1,0 +1,27 @@
+{
+  "wire_schema": 1,
+  "source": "hand-written",
+  "model": null,
+  "answer": {
+    "document_type": "cancellation",
+    "confidence": 0.9,
+    "reservations": [
+      {
+        "kind": "lodging",
+        "status": "cancelled",
+        "code": "SUT320",
+        "provider": null,
+        "passengers": [
+          "Alex Sample"
+        ],
+        "legs": [],
+        "place": "Example Riverside Hotel Chicago",
+        "address": "400 Example Drive, Chicago, IL 60601",
+        "start": "2027-05-01",
+        "end": "2027-05-02",
+        "price": null,
+        "currency": null
+      }
+    ]
+  }
+}

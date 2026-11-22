@@ -1,0 +1,15 @@
+{
+  "document_type": "cancellation",
+  "reservations": [
+    {
+      "kind": "lodging",
+      "status": "cancelled",
+      "confirmation_code": "SUT320",
+      "passengers": ["Alex Sample"],
+      "property_name": "Example Riverside Hotel Chicago",
+      "address": "400 Example Drive, Chicago, IL 60601",
+      "check_in": "2027-05-01",
+      "check_out": "2027-05-02"
+    }
+  ]
+}

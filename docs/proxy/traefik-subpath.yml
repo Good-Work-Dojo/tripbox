@@ -1,0 +1,21 @@
+# TRIPBOX_BASE_URL=https://example.com/tripbox
+# Traefik in front of tripbox under a path of a site it already serves: a dynamic configuration
+# for the file provider. Not run in tripbox's own checks. "web:8110" is tripbox's page when
+# Traefik is a service in the same compose project; for a Traefik on the host, write
+# 127.0.0.1:8110 instead. "websecure" and "letsencrypt" are the names of an entry point on port
+# 443 and a certificate resolver in Traefik's static configuration: use the names yours has.
+# The path is handed on as it came (no StripPrefix middleware): tripbox answers under it. The
+# rule takes /tripbox and what is under /tripbox/, never /tripboxes.
+http:
+  routers:
+    tripbox:
+      rule: "Host(`example.com`) && (Path(`/tripbox`) || PathPrefix(`/tripbox/`))"
+      entryPoints: ["websecure"]
+      service: tripbox
+      tls:
+        certResolver: letsencrypt
+  services:
+    tripbox:
+      loadBalancer:
+        servers:
+          - url: "http://web:8110"

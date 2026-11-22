@@ -1,0 +1,189 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Additional terms: see NOTICE
+# AirTrail and tripbox at one hostname, behind the Caddy recipe docs/proxy/caddy-airtrail.Caddyfile:
+# a throwaway AirTrail (the image given, with its own Postgres in a tmpfs and its demo users), a
+# fresh tripbox (its page under /tripbox behind its own password sign-in, and the worker that
+# files what the page is handed and sends the owner's flights to that AirTrail), Caddy in front
+# of both, a probe that walks the hostname through Caddy, and, in the profile `click`, a browser.
+# Run it from a directory that holds this file, probe.py, served.py, click.py,
+# quickstart_check.py, the recipe as proxy.conf (with `http://` before its site address and
+# AirTrail's service written as flightlog), a confirmation email as sample.eml, the travellers
+# file as config/travellers.yaml and an empty data/. The hostname, flights.example.com, is the
+# recipe's; the probe and the browser send every request to Caddy addressed to it.
+# Variables: ONEHOST_AIRTRAIL_IMAGE (AirTrail's image), ONEHOST_TRIPBOX_IMAGE (an image of the
+# app), ONEHOST_PROXY_IMAGE (Caddy's), ONEHOST_BROWSER_IMAGE (the screenshot stack's browser),
+# ONEHOST_PORT (the loopback port AirTrail is published on, so its first start can fetch its
+# airport table), ONEHOST_PASSWORD (the page's password), ONEHOST_AIRTRAIL_KEY and
+# TRIPBOX_AIRTRAIL_API_KEY (the key the run inserts for AirTrail's owner, the same value under
+# two names: the probe and the worker are each given theirs by name), ONEHOST_USER
+# (the uid:gid that owns data/, default 1000:1000) and ONEHOST_DEMO_MODE (AirTrail's DEMO_MODE,
+# default screenshots; `true` opens /demo for the browser). The services' memory limits add up
+# to 7g with the browser, under the 8g the compose wrapper lets one stack take.
+name: tripbox-onehost
+
+services:
+  flightlogdb:
+    image: postgres:16-alpine@sha256:f377d590e5474681d4d7838635031a2b50647923b7abfa803ce9b5ff35d5c663
+    environment:
+      POSTGRES_USER: flightlog
+      POSTGRES_DB: flightlog
+      POSTGRES_PASSWORD: onehost-only
+    tmpfs:
+      - /var/lib/postgresql/data
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "flightlog", "-d", "flightlog"]
+      interval: 2s
+      retries: 30
+
+  # AirTrail's own check, asked every few seconds instead of every five minutes: its first start
+  # (migrations, the airport table, the demo seed) takes a minute or more.
+  flightlog:
+    image: ${ONEHOST_AIRTRAIL_IMAGE:?}
+    environment:
+      DB_URL: postgres://flightlog:onehost-only@flightlogdb:5432/flightlog
+      ORIGIN: http://flights.example.com
+      DEMO_MODE: "${ONEHOST_DEMO_MODE:-screenshots}"
+    ports:
+      - "127.0.0.1:${ONEHOST_PORT:?}:3000"
+    mem_limit: 2g
+    healthcheck:
+      test: ["CMD", "airtrail-healthcheck"]
+      interval: 3s
+      timeout: 10s
+      retries: 100
+    depends_on:
+      flightlogdb:
+        condition: service_healthy
+
+  web:
+    image: ${ONEHOST_TRIPBOX_IMAGE:?}
+    user: "${ONEHOST_USER:-1000:1000}"
+    read_only: true
+    init: true
+    tmpfs:
+      - /tmp
+    command: ["python", "-m", "tripbox", "web", "--host", "0.0.0.0", "--port", "8110"]
+    environment:
+      TRIPBOX_AUTH: password
+      TRIPBOX_PASSWORD: "${ONEHOST_PASSWORD:?}"
+      TRIPBOX_BASE_URL: http://flights.example.com/tripbox
+      TRIPBOX_AIRTRAIL_PUBLIC_URL: http://flights.example.com
+      TRIPBOX_DATA_DIR: /data
+      TRIPBOX_LOGS_DIR: /tmp/logs
+      TRIPBOX_CONFIG_DIR: /config
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - ./data:/data
+      - ./config:/config:ro
+    mem_limit: 512m
+    depends_on:
+      worker:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "/app/scripts/healthcheck.py", "web"]
+      interval: 2s
+      retries: 30
+
+  # Files what the page is handed and sends the owner's flights to AirTrail, straight to its
+  # service and not through Caddy, as the recipe says.
+  worker:
+    image: ${ONEHOST_TRIPBOX_IMAGE:?}
+    user: "${ONEHOST_USER:-1000:1000}"
+    read_only: true
+    init: true
+    tmpfs:
+      - /tmp
+    command: ["python", "-m", "tripbox", "work"]
+    environment:
+      TRIPBOX_AIRTRAIL_URL: http://flightlog:3000
+      TRIPBOX_AIRTRAIL_API_KEY:
+      TRIPBOX_AIRTRAIL_DRY_RUN: "false"
+      TRIPBOX_DATA_DIR: /data
+      TRIPBOX_ARCHIVE_DIR: /tmp/archive
+      TRIPBOX_LOGS_DIR: /tmp/logs
+      TRIPBOX_CONFIG_DIR: /config
+      TRIPBOX_BACKUPS_DIR: /tmp/backups
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - ./data:/data
+      - ./config:/config:ro
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD", "python", "/app/scripts/healthcheck.py", "worker"]
+      interval: 2s
+      retries: 30
+
+  # Caddy's image declares /data and /config volumes: a tmpfs over each leaves no volume behind.
+  proxy:
+    image: ${ONEHOST_PROXY_IMAGE:?}
+    tmpfs:
+      - /data
+      - /config
+    volumes:
+      - type: bind
+        source: ./proxy.conf
+        target: /etc/caddy/Caddyfile
+        read_only: true
+    mem_limit: 256m
+    depends_on:
+      web:
+        condition: service_healthy
+      flightlog:
+        condition: service_healthy
+
+  # Idle until a run execs probe.py or served.py in it. The image's own health check asks for a
+  # live worker, which this container never runs: its own asks only that the probe is in place.
+  probe:
+    image: ${ONEHOST_TRIPBOX_IMAGE:?}
+    user: "${ONEHOST_USER:-1000:1000}"
+    read_only: true
+    init: true
+    tmpfs:
+      - /tmp
+    working_dir: /harness
+    command: ["sleep", "infinity"]
+    environment:
+      ONEHOST_PASSWORD: "${ONEHOST_PASSWORD:?}"
+      ONEHOST_AIRTRAIL_KEY:
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - type: bind
+        source: ./probe.py
+        target: /harness/probe.py
+        read_only: true
+      - type: bind
+        source: ./served.py
+        target: /harness/served.py
+        read_only: true
+      - type: bind
+        source: ./quickstart_check.py
+        target: /harness/quickstart_check.py
+        read_only: true
+      - type: bind
+        source: ./sample.eml
+        target: /harness/sample.eml
+        read_only: true
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD", "test", "-r", "/harness/probe.py"]
+      interval: 2s
+      retries: 30
+    depends_on:
+      - proxy
+
+  # Idle until a run execs click.py in it: Chromium opening the hostname through Caddy.
+  browser:
+    image: ${ONEHOST_BROWSER_IMAGE:?}
+    profiles: ["click"]
+    user: "${ONEHOST_USER:-1000:1000}"
+    working_dir: /harness
+    command: ["sleep", "infinity"]
+    environment:
+      HOME: /tmp
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - ./click.py:/harness/click.py:ro
+    mem_limit: 2g
+    depends_on:
+      - proxy

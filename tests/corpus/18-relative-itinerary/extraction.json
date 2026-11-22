@@ -1,0 +1,22 @@
+{
+  "document_type": "booking",
+  "reservations": [
+    {
+      "kind": "flight",
+      "status": "confirmed",
+      "confirmation_code": "TXW942",
+      "provider": "Alaska Airlines",
+      "passengers": ["Pat Example", "Lee Example"],
+      "segments": [
+        {"carrier_iata": "AS", "flight_number": "9320", "origin": "PDX", "destination": "MSP",
+         "departure_local": "2027-05-21T10:05", "arrival_local": "2027-05-21T15:32",
+         "cabin": "Economy"},
+        {"carrier_iata": "AS", "flight_number": "9347", "origin": "MSP", "destination": "PDX",
+         "departure_local": "2027-05-25T17:10", "arrival_local": "2027-05-25T19:02",
+         "cabin": "Economy"}
+      ],
+      "price": 561.04,
+      "currency": "USD"
+    }
+  ]
+}

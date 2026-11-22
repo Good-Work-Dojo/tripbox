@@ -1,0 +1,17 @@
+{
+  "status": "processed",
+  "read_by": "model",
+  "document_type": "booking",
+  "items": [
+    {"kind": "flight", "key": "AA|9720|2027-11-04|MSP", "result": "filed",
+     "people": {"me": 1, "guests": 1, "others": 0},
+     "booking": {"status": "confirmed", "travellers": ["Alex Sample", "Sam Sample"],
+                 "trip": "Phoenix",
+                 "checks": [], "sync": "off"}},
+    {"kind": "flight", "key": "AA|9741|2027-11-08|PHX", "result": "filed",
+     "people": {"me": 1, "guests": 1, "others": 0},
+     "booking": {"status": "confirmed", "travellers": ["Alex Sample", "Sam Sample"],
+                 "trip": "Phoenix",
+                 "checks": [], "sync": "off"}}
+  ]
+}

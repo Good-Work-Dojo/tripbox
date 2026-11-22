@@ -1,0 +1,56 @@
+Return-Path: <alex+caf_=trips=example.com@example.com>
+X-Forwarded-To: trips@example.com
+X-Forwarded-For: alex@example.com trips@example.com
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@aa.com;
+       spf=pass smtp.mailfrom="alex+caf_=trips=example.com@example.com";
+       dmarc=pass header.from=aa.com
+From: American Airlines <no-reply@aa.com>
+To: alex@example.com
+Subject: Ticket canceled - record locator RWV431
+Date: Mon, 12 Apr 2027 10:09:18 -0500
+Message-ID: <cxl.rwv431.j4.w8n2p@mta.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+AMERICAN AIRLINES
+
+Your ticket has been canceled
+
+We have canceled the ticket below, as you asked.
+
+Record locator     RWV431
+Canceled on        April 12, 2027
+
+Passenger          Jamie Sample
+Ticket number      0001234500044
+Ticket status      Canceled
+
+Flights on this ticket
+  Sat, May 1, 2027   AA 9630   MSP 9:10 AM  to  ORD 10:35 AM
+  Sun, May 2, 2027   AA 9655   ORD 6:25 PM  to  MSP 7:55 PM
+
+This passenger no longer holds a seat on either flight.
+
+The other tickets on this record locator are not affected and stay valid
+for travel as booked. You do not need to do anything for them.
+
+Value of the canceled ticket
+The unused value, USD 274.10, is kept as a travel credit in the
+passenger's name. It can be put toward a new ticket for the same
+passenger; the date by which it must be used is shown when you sign in.
+Taxes paid on the unused flights are included in the credit.
+When the credit is used, the new fare may be higher or lower than the
+value of the credit: any difference is paid at the time, and a lower fare
+leaves the rest as credit for a later trip.
+
+If you booked through a travel agency, the agency can see this change and
+can help you use the credit.
+
+View the reservation at https://www.example.com/ or call Reservations at
+817-555-0119.
+
+This mailbox is not monitored. Please do not reply to this email.
+
+American Airlines

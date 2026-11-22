@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Additional terms: see NOTICE
+# Once a week, checks that the Trips button's patch (integrations/airtrail/trips-dock.patch) still
+# applies to AirTrail's newest release, and opens an issue when it does not (one per release: an
+# open issue with the same title is not opened again). It fetches two of AirTrail's files and
+# builds nothing. It runs in the public repository alone, and only once it is public: in a fork
+# or while the repository is still private the job is skipped.
+# Each job's runner is a fixed literal, never an expression; tools/verify/check_workflows.py
+# enforces that and the full-SHA pin on every action.
+name: dock patch
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: dock-patch
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  applies:
+    if: github.repository == 'Good-Work-Dojo/tripbox' && github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Workflow rules
+        run: python3 tools/verify/check_workflows.py
+      - name: The patch applies to AirTrail's newest release
+        run: integrations/airtrail/patch-check.sh --open-issue
+        env:
+          GH_TOKEN: ${{ github.token }}

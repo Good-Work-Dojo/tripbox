@@ -1,0 +1,13 @@
+{
+  "status": "processed",
+  "read_by": "model",
+  "document_type": "change",
+  "items": [
+    {"kind": "flight", "key": "AS|9228|2027-06-20|SEA", "result": "updated",
+     "people": {"me": 1, "guests": 3, "others": 0},
+     "booking": {"status": "confirmed",
+                 "travellers": ["Alex Sample", "Jamie Sample", "Robin Sample", "Sam Sample"],
+                 "trip": "Seattle",
+                 "checks": [], "sync": "off"}}
+  ]
+}

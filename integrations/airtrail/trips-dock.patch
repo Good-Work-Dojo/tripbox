@@ -1,0 +1,59 @@
+SPDX-License-Identifier: GPL-3.0-only
+
+The Trips button of AirTrail's dock: one link more, beside Statistics, to the trips page of
+tripbox. This patch modifies AirTrail (copyright its authors, https://github.com/johanohly/AirTrail)
+and is offered under AirTrail's own licence, the GNU General Public License version 3. An image
+built with it is AirTrail, modified.
+
+Written for AirTrail v3.14.0. It only adds lines, to two files:
+- src/lib/components/NavigationDock.svelte: the Luggage icon, the Trips item and the item in the
+  dock, after Statistics and before More, for everyone signed in (it is a link);
+- src/lib/components/dock/DockTooltipItem.svelte: data-sveltekit-reload on a dock link, so the
+  browser, not AirTrail's own router, opens its address (at one hostname /tripbox is no page of
+  AirTrail's).
+The Trips item's address is a placeholder; integrations/airtrail/build.sh puts the trips page's
+address in its place.
+
+diff --git a/src/lib/components/NavigationDock.svelte b/src/lib/components/NavigationDock.svelte
+--- a/src/lib/components/NavigationDock.svelte
++++ b/src/lib/components/NavigationDock.svelte
+@@ -4,6 +4,7 @@
+     GitBranchPlus,
+     Grip,
+     LayoutList,
++    Luggage,
+     Map,
+     Settings,
+   } from '@o7/icon/lucide';
+@@ -47,6 +48,12 @@
+       openModalsState.statistics = true;
+     },
+   };
++  const tripsItem = {
++    label: 'Trips',
++    icon: Luggage,
++    testId: 'trips-button',
++    href: '__TRIPBOX_TRIPS_URL__',
++  };
+   const settingsItem = {
+     label: 'Settings',
+     icon: Settings,
+@@ -92,6 +99,7 @@
+         <DockTooltipItem item={listFlightsItem} />
+         <DockTooltipItem item={flightsStatisticsItem} />
+       {/if}
++      <DockTooltipItem item={tripsItem} />
+       {#if otherItems.length > 0}
+         <DockDropdownItem items={otherItems} label="More">
+           <Grip />
+diff --git a/src/lib/components/dock/DockTooltipItem.svelte b/src/lib/components/dock/DockTooltipItem.svelte
+--- a/src/lib/components/dock/DockTooltipItem.svelte
++++ b/src/lib/components/dock/DockTooltipItem.svelte
+@@ -22,6 +22,7 @@
+       target={item.href.startsWith('http') ? '_blank' : '_self'}
+       referrerpolicy="no-referrer"
+       aria-label={item.label}
++      data-sveltekit-reload
+     >
+       <Tooltip.Root delayDuration={0}>
+         <Tooltip.Trigger

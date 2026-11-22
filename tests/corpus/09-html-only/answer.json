@@ -1,0 +1,48 @@
+{
+  "wire_schema": 1,
+  "source": "hand-written",
+  "model": null,
+  "answer": {
+    "document_type": "booking",
+    "confidence": 0.9,
+    "reservations": [
+      {
+        "kind": "flight",
+        "status": "confirmed",
+        "code": "RTW753",
+        "provider": "Delta Air Lines",
+        "passengers": ["SAMPLE/ALEX QUINN", "SAMPLE/SAM", "SAMPLE/ROBIN", "SAMPLE/JAMIE"],
+        "legs": [
+          {
+            "carrier": "DL",
+            "number": "9140",
+            "origin": "MSP",
+            "destination": "CDG",
+            "departure": "2027-07-02T16:45",
+            "arrival": "2027-07-03T07:55",
+            "seats": ["SAMPLE/ALEX QUINN: 32A", "SAMPLE/SAM: 32B", "SAMPLE/ROBIN: 32C",
+                      "SAMPLE/JAMIE: 32D"],
+            "cabin": "Economy"
+          },
+          {
+            "carrier": "DL",
+            "number": "9017",
+            "origin": "LHR",
+            "destination": "MSP",
+            "departure": "2027-07-15T12:10",
+            "arrival": "2027-07-15T15:05",
+            "seats": ["SAMPLE/ALEX QUINN: 41A", "SAMPLE/SAM: 41B", "SAMPLE/ROBIN: 41C",
+                      "SAMPLE/JAMIE: 41D"],
+            "cabin": "Economy"
+          }
+        ],
+        "place": null,
+        "address": null,
+        "start": null,
+        "end": null,
+        "price": 4861.20,
+        "currency": "USD"
+      }
+    ]
+  }
+}

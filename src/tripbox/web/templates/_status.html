@@ -1,0 +1,10 @@
+{# SPDX-License-Identifier: AGPL-3.0-only -#}
+{# Additional terms: see NOTICE -#}
+{# The status card (`card.status_card`): each label once, then its sentences; one that needs a look carries a mark, its words say why #}
+<dl class="status-card">
+  {% for row in status_rows %}
+  {% if loop.first or row.label != loop.previtem.label %}<div class="status-row"><dt>{{ row.label }}</dt>{% endif %}
+    <dd class="{{ 'status-ok' if row.ok else 'status-look' }}">{{ row.text }}</dd>
+  {% if loop.last or row.label != loop.nextitem.label %}</div>{% endif %}
+  {% endfor %}
+</dl>

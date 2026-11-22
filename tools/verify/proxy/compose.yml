@@ -1,0 +1,120 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Additional terms: see NOTICE
+# The proxy recipes' stack: a fresh tripbox (its page, behind its own password sign-in, and the
+# worker that files what the page is handed, over one empty data directory), a reverse proxy in
+# front of the page with one recipe from docs/proxy/, and a probe that walks the page through the
+# proxy. Run it from a directory that holds this file, probe.py, quickstart_check.py, the recipe
+# as proxy.conf, a confirmation email as sample.eml and an empty data/. The stack publishes no
+# port: the probe reaches the proxy, and the proxy the page, over the stack's own network.
+# Variables: PROXY_TRIPBOX_IMAGE (an image of the app), PROXY_IMAGE (the proxy's image),
+# PROXY_CONF_TARGET (the file the proxy reads its configuration from), PROXY_BASE_URL (the
+# recipe's TRIPBOX_BASE_URL), PROXY_PASSWORD (the page's password, which the probe takes too) and
+# PROXY_USER (the uid:gid that owns data/, default 1000:1000). Then, from that directory:
+#   docker compose up -d --wait
+#   docker compose exec -T probe python3 /harness/probe.py --proxy http://proxy:80 \
+#     --base-url "$PROXY_BASE_URL" --sample /harness/sample.eml
+#   docker compose down -v --remove-orphans
+name: tripbox-proxy
+
+services:
+  web:
+    image: ${PROXY_TRIPBOX_IMAGE:?}
+    user: "${PROXY_USER:-1000:1000}"
+    read_only: true
+    init: true
+    tmpfs:
+      - /tmp
+    command: ["python", "-m", "tripbox", "web", "--host", "0.0.0.0", "--port", "8110"]
+    environment:
+      TRIPBOX_AUTH: password
+      TRIPBOX_PASSWORD: "${PROXY_PASSWORD:?}"
+      TRIPBOX_BASE_URL: "${PROXY_BASE_URL:?}"
+      TRIPBOX_DATA_DIR: /data
+      TRIPBOX_LOGS_DIR: /tmp/logs
+      TRIPBOX_CONFIG_DIR: /tmp/config
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - ./data:/data
+    mem_limit: 512m
+    depends_on:
+      worker:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "/app/scripts/healthcheck.py", "web"]
+      interval: 2s
+      retries: 30
+
+  # Files what the page is handed: the paste the probe makes becomes a trip.
+  worker:
+    image: ${PROXY_TRIPBOX_IMAGE:?}
+    user: "${PROXY_USER:-1000:1000}"
+    read_only: true
+    init: true
+    tmpfs:
+      - /tmp
+    command: ["python", "-m", "tripbox", "work"]
+    environment:
+      TRIPBOX_DATA_DIR: /data
+      TRIPBOX_ARCHIVE_DIR: /tmp/archive
+      TRIPBOX_LOGS_DIR: /tmp/logs
+      TRIPBOX_CONFIG_DIR: /tmp/config
+      TRIPBOX_BACKUPS_DIR: /tmp/backups
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - ./data:/data
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD", "python", "/app/scripts/healthcheck.py", "worker"]
+      interval: 2s
+      retries: 30
+
+  # Caddy's image declares /data and /config volumes: a tmpfs over each leaves no volume behind.
+  proxy:
+    image: ${PROXY_IMAGE:?}
+    tmpfs:
+      - /data
+      - /config
+    volumes:
+      - type: bind
+        source: ./proxy.conf
+        target: ${PROXY_CONF_TARGET:?}
+        read_only: true
+    mem_limit: 256m
+    depends_on:
+      web:
+        condition: service_healthy
+
+  # Idle until a run execs probe.py in it. The image's own health check asks for a live worker,
+  # which this container never runs: its own asks only that the probe is in place.
+  probe:
+    image: ${PROXY_TRIPBOX_IMAGE:?}
+    user: "${PROXY_USER:-1000:1000}"
+    read_only: true
+    init: true
+    tmpfs:
+      - /tmp
+    working_dir: /harness
+    command: ["sleep", "infinity"]
+    environment:
+      PROXY_PASSWORD: "${PROXY_PASSWORD:?}"
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - type: bind
+        source: ./probe.py
+        target: /harness/probe.py
+        read_only: true
+      - type: bind
+        source: ./quickstart_check.py
+        target: /harness/quickstart_check.py
+        read_only: true
+      - type: bind
+        source: ./sample.eml
+        target: /harness/sample.eml
+        read_only: true
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD", "test", "-r", "/harness/probe.py"]
+      interval: 2s
+      retries: 30
+    depends_on:
+      - proxy

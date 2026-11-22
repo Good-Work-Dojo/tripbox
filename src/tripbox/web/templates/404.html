@@ -1,0 +1,14 @@
+{# SPDX-License-Identifier: AGPL-3.0-only -#}
+{# Additional terms: see NOTICE -#}
+{% extends "base.html" %}
+{% block title %}Not found · Trips{% endblock %}
+{% block body %}
+<header class="top">
+  <a class="back" href="{{ base }}/" aria-label="Back to trips">‹</a>
+  <h1>Not found</h1>
+</header>
+<main class="page">
+  <p class="empty">That page is gone — the trip may have been merged into another one, emptied or deleted.</p>
+  <p class="row"><a class="btn primary" href="{{ base }}/">Back to trips</a> <a class="btn link" href="{{ base }}/deleted">Recently deleted</a></p>
+</main>
+{% endblock %}

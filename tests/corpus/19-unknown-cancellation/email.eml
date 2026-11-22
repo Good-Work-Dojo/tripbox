@@ -1,0 +1,57 @@
+Return-Path: <alex@example.com>
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@example.com;
+       spf=pass smtp.mailfrom=alex@example.com;
+       dmarc=pass header.from=example.com
+From: Alex Sample <alex@example.com>
+To: trips@example.com
+Subject: Fwd: Cancellation confirmed - Example Plaza Hotel Nashville
+Date: Mon, 03 May 2027 09:00:27 -0500
+Message-ID: <fwd.yuq621.n8b2s@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+---------- Forwarded message ---------
+From: Example Plaza Hotel Nashville <reservations@exampleplazahotel.example>
+Date: Sun, May 2, 2027 at 8:41 PM
+Subject: Cancellation confirmed - Example Plaza Hotel Nashville
+To: <alex@example.com>
+
+
+Example Plaza Hotel Nashville
+700 Example Boulevard, Nashville, TN 37203
+615-555-0172
+
+Hello Alex Sample,
+
+This email confirms that the reservation below has been canceled.
+
+Reservation number: YUQ621
+Guest name: Alex Sample
+Arrival date: Friday, September 17, 2027
+Departure date: Sunday, September 19, 2027
+Nights: 2
+Room type: Standard King, 1 adult
+Reservation status: CANCELED
+
+Cancellation fee: 0.00 USD
+
+Because you canceled more than 72 hours before the arrival date, there is
+no charge. No deposit was taken for this reservation, so no refund is due.
+Under our policy a reservation can be canceled free of charge until
+72 hours before arrival; a later cancellation, or not arriving, is charged
+the first night.
+
+Did not ask for this? If you did not cancel this reservation yourself,
+please call us right away at 615-555-0172 so we can look into it.
+
+Coming to Nashville after all? You are welcome to book with us again at
+https://www.example.com/. A new booking gets a new reservation number and
+the rate on the day you book.
+
+Thank you,
+Guest Services
+Example Plaza Hotel Nashville
+
+This is an automated message. Replies to this address are not read.

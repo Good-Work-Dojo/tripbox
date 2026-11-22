@@ -1,0 +1,10 @@
+{
+  "wire_schema": 1,
+  "source": "hand-written",
+  "model": null,
+  "answer": {
+    "document_type": "marketing",
+    "confidence": 0.9,
+    "reservations": []
+  }
+}

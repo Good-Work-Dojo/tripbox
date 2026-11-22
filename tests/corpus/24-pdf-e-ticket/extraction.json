@@ -1,0 +1,20 @@
+{
+  "document_type": "booking",
+  "reservations": [
+    {
+      "kind": "flight",
+      "status": "confirmed",
+      "confirmation_code": "QTX762",
+      "provider": "Southwest Airlines",
+      "passengers": ["Sam Sample"],
+      "segments": [
+        {"carrier_iata": "WN", "flight_number": "9471", "origin": "MSP", "destination": "MCI",
+         "departure_local": "2027-09-10T07:05", "arrival_local": "2027-09-10T08:25"},
+        {"carrier_iata": "WN", "flight_number": "9488", "origin": "MCI", "destination": "MSP",
+         "departure_local": "2027-09-12T18:40", "arrival_local": "2027-09-12T20:00"}
+      ],
+      "price": 269.58,
+      "currency": "USD"
+    }
+  ]
+}

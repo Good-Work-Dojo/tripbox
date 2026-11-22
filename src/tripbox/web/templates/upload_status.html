@@ -1,0 +1,40 @@
+{# SPDX-License-Identifier: AGPL-3.0-only -#}
+{# Additional terms: see NOTICE -#}
+{% extends "base.html" %}
+{% block title %}Your upload · Trips{% endblock %}
+{% block head %}{% if waiting %}<meta http-equiv="refresh" content="5">{% endif %}{% endblock %}
+{% block body %}
+<header class="top">
+  <a class="back" href="{{ base }}/" aria-label="Back to trips">‹</a>
+  <h1>Your upload</h1>
+</header>
+<main class="page">
+  <section class="upload-state">
+    {% if waiting %}
+    <p class="state-head">Received.</p>
+    {% if no_worker %}<p>The worker is not running; this waits until it is.</p>{% else %}<p>It is read within a few seconds.</p>{% endif %}
+    {% elif state == 'filed' %}
+    <p class="state-head">Filed</p>
+    {% if bookings %}
+    <ul class="choices">
+      {% for b in bookings %}<li><a class="choice" href="{{ base }}{{ b.href }}"><span>{{ b.text }}</span><span class="chev" aria-hidden="true">›</span></a></li>{% endfor %}
+    </ul>
+    {% endif %}
+    {% elif waits %}
+    <p class="state-head">Received.</p>
+    <p>{{ waits }}</p>
+    <p><a class="inline-link" href="{{ base }}/add">Add a booking</a></p>
+    {% elif state == 'nothing' %}
+    <p class="state-head">No booking found — fill it in by hand</p>
+    {% if no_model %}<p>No model is set up, so only confirmations that carry structured data are read.</p>{% endif %}
+    <p><a class="inline-link" href="{{ base }}/add">Add a booking</a></p>
+    {% else %}
+    <p class="state-head">This could not be read.</p>
+    {% if stopped %}<p>{{ stopped }}</p>{% endif %}
+    <p><a class="inline-link" href="{{ base }}/add">Add a booking</a></p>
+    {% endif %}
+    <p class="muted small upload-name">{{ label }} · {{ size }}</p>
+  </section>
+  <p><a class="btn link" href="{{ base }}/">Back to trips</a></p>
+</main>
+{% endblock %}

@@ -1,0 +1,387 @@
+{
+ "trips": [
+  {
+   "cancelled": false,
+   "from": -97,
+   "items": [
+    {
+     "at": "08:05",
+     "checks": [],
+     "from": -97,
+     "kind": "flight",
+     "status": "confirmed",
+     "to": -97,
+     "until": "11:52",
+     "what": "DL9412 MSP-BOS",
+     "who": [
+      "Alex Sample",
+      "Sam Sample"
+     ]
+    },
+    {
+     "at": null,
+     "checks": [],
+     "from": -97,
+     "kind": "lodging",
+     "status": "confirmed",
+     "to": -94,
+     "until": null,
+     "what": "Example Suites Boston Seaport",
+     "who": [
+      "Alex Sample"
+     ]
+    },
+    {
+     "at": "17:20",
+     "checks": [],
+     "from": -94,
+     "kind": "flight",
+     "status": "confirmed",
+     "to": -94,
+     "until": "19:38",
+     "what": "DL9435 BOS-MSP",
+     "who": [
+      "Alex Sample",
+      "Sam Sample"
+     ]
+    }
+   ],
+   "title": "Boston",
+   "to": -94
+  },
+  {
+   "cancelled": false,
+   "from": -69,
+   "items": [
+    {
+     "at": "07:40",
+     "checks": [],
+     "from": -69,
+     "kind": "flight",
+     "status": "confirmed",
+     "to": -69,
+     "until": "08:47",
+     "what": "DL9287 MSP-DEN",
+     "who": [
+      "Alex Sample"
+     ]
+    },
+    {
+     "at": "09:00",
+     "checks": [],
+     "from": -69,
+     "kind": "car",
+     "status": "confirmed",
+     "to": -66,
+     "until": "14:30",
+     "what": "Example Rent A Car",
+     "who": [
+      "Alex Sample"
+     ]
+    },
+    {
+     "at": "15:00",
+     "checks": [],
+     "from": -69,
+     "kind": "lodging",
+     "status": "confirmed",
+     "to": -66,
+     "until": "11:00",
+     "what": "The Sample House Inn",
+     "who": [
+      "Alex Sample"
+     ]
+    },
+    {
+     "at": "16:40",
+     "checks": [],
+     "from": -66,
+     "kind": "flight",
+     "status": "confirmed",
+     "to": -66,
+     "until": "19:35",
+     "what": "DL9296 DEN-MSP",
+     "who": [
+      "Alex Sample"
+     ]
+    }
+   ],
+   "title": "Denver",
+   "to": -66
+  },
+  {
+   "cancelled": false,
+   "from": -46,
+   "items": [
+    {
+     "at": "09:10",
+     "checks": [],
+     "from": -46,
+     "kind": "flight",
+     "status": "confirmed",
+     "to": -46,
+     "until": "10:35",
+     "what": "AA9630 MSP-ORD",
+     "who": [
+      "Alex Sample",
+      "Robin Sample",
+      "Sam Sample"
+     ]
+    },
+    {
+     "at": null,
+     "checks": [],
+     "from": -46,
+     "kind": "lodging",
+     "status": "cancelled",
+     "to": -45,
+     "until": null,
+     "what": "Example Riverside Hotel Chicago",
+     "who": [
+      "Alex Sample"
+     ]
+    },
+    {
+     "at": "18:25",
+     "checks": [],
+     "from": -45,
+     "kind": "flight",
+     "status": "confirmed",
+     "to": -45,
+     "until": "19:55",
+     "what": "AA9655 ORD-MSP",
+     "who": [
+      "Alex Sample",
+      "Robin Sample",
+      "Sam Sample"
+     ]
+    }
+   ],
+   "title": "Chicago",
+   "to": -45
+  },
+  {
+   "cancelled": false,
+   "from": -26,
+   "items": [
+    {
+     "at": "10:05",
+     "checks": [],
+     "from": -26,
+     "kind": "flight",
+     "status": "confirmed",
+     "to": -26,
+     "until": "15:32",
+     "what": "AS9320 PDX-MSP",
+     "who": [
+      "Lee Example",
+      "Pat Example"
+     ]
+    },
+    {
+     "at": "17:10",
+     "checks": [],
+     "from": -22,
+     "kind": "flight",
+     "status": "confirmed",
+     "to": -22,
+     "until": "19:02",
+     "what": "AS9347 MSP-PDX",
+     "who": [
+      "Lee Example",
+      "Pat Example"
+     ]
+    }
+   ],
+   "title": "Portland",
+   "to": -22
+  },
+  {
+   "cancelled": false,
+   "from": -2,
+   "items": [
+    {
+     "at": "09:30",
+     "checks": [],
+     "from": -2,
+     "kind": "flight",
+     "status": "confirmed",
+     "to": -2,
+     "until": "11:18",
+     "what": "AS9203 MSP-SEA",
+     "who": [
+      "Alex Sample",
+      "Jamie Sample",
+      "Robin Sample",
+      "Sam Sample"
+     ]
+    },
+    {
+     "at": "15:00",
+     "checks": [],
+     "from": -2,
+     "kind": "lodging",
+     "status": "confirmed",
+     "to": 4,
+     "until": "11:00",
+     "what": "Example Bay Hotel Seattle",
+     "who": [
+      "Alex Sample"
+     ]
+    },
+    {
+     "at": "15:10",
+     "checks": [],
+     "from": 4,
+     "kind": "flight",
+     "status": "confirmed",
+     "to": 4,
+     "until": "20:30",
+     "what": "AS9228 SEA-MSP",
+     "who": [
+      "Alex Sample",
+      "Jamie Sample",
+      "Robin Sample",
+      "Sam Sample"
+     ]
+    }
+   ],
+   "title": "Seattle",
+   "to": 4
+  },
+  {
+   "cancelled": false,
+   "from": 16,
+   "items": [
+    {
+     "at": "16:45",
+     "checks": [],
+     "from": 16,
+     "kind": "flight",
+     "status": "confirmed",
+     "to": 17,
+     "until": "07:55",
+     "what": "DL9140 MSP-CDG",
+     "who": [
+      "Alex Sample",
+      "Jamie Sample",
+      "Robin Sample",
+      "Sam Sample"
+     ]
+    },
+    {
+     "at": null,
+     "checks": [],
+     "from": 17,
+     "kind": "lodging",
+     "status": "confirmed",
+     "to": 21,
+     "until": null,
+     "what": "H\u00f4tel Exemple Rive Gauche",
+     "who": [
+      "Alex Sample"
+     ]
+    },
+    {
+     "at": "09:55",
+     "checks": [],
+     "from": 21,
+     "kind": "train",
+     "status": "confirmed",
+     "to": 21,
+     "until": "15:36",
+     "what": "9907 Paris Est - M\u00fcnchen Hbf",
+     "who": [
+      "Alex Sample",
+      "Jamie Sample",
+      "Robin Sample",
+      "Sam Sample"
+     ]
+    },
+    {
+     "at": null,
+     "checks": [],
+     "from": 21,
+     "kind": "lodging",
+     "status": "confirmed",
+     "to": 25,
+     "until": null,
+     "what": "Hotel Beispiel am Marienplatz",
+     "who": [
+      "Alex Sample"
+     ]
+    },
+    {
+     "at": "14:25",
+     "checks": [],
+     "from": 25,
+     "kind": "flight",
+     "status": "confirmed",
+     "to": 25,
+     "until": "15:30",
+     "what": "BA9951 MUC-LHR",
+     "who": [
+      "Alex Sample",
+      "Jamie Sample",
+      "Robin Sample",
+      "Sam Sample"
+     ]
+    },
+    {
+     "at": "12:10",
+     "checks": [],
+     "from": 29,
+     "kind": "flight",
+     "status": "confirmed",
+     "to": 29,
+     "until": "15:05",
+     "what": "DL9017 LHR-MSP",
+     "who": [
+      "Alex Sample",
+      "Jamie Sample",
+      "Robin Sample",
+      "Sam Sample"
+     ]
+    }
+   ],
+   "title": "Paris",
+   "to": 29
+  },
+  {
+   "cancelled": true,
+   "from": 93,
+   "items": [
+    {
+     "at": null,
+     "checks": [
+      "unknown_cancellation"
+     ],
+     "from": 93,
+     "kind": "lodging",
+     "status": "cancelled",
+     "to": 95,
+     "until": null,
+     "what": "Example Plaza Hotel Nashville",
+     "who": [
+      "Alex Sample"
+     ]
+    }
+   ],
+   "title": "Nashville",
+   "to": 95
+  }
+ ],
+ "unsorted": [
+  {
+   "checks": [
+    "departure"
+   ],
+   "kind": "flight",
+   "status": "confirmed",
+   "what": "DL9777 MSP-ATL",
+   "who": [
+    "Alex Sample"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,29 @@
+{
+  "wire_schema": 1,
+  "source": "hand-written",
+  "model": null,
+  "answer": {
+    "document_type": "booking",
+    "confidence": 0.9,
+    "reservations": [
+      {
+        "kind": "flight",
+        "status": "confirmed",
+        "code": "VZQ651",
+        "provider": "Delta Air Lines",
+        "passengers": ["Alex Sample"],
+        "legs": [
+          {"carrier": "DL", "number": "9777", "origin": "MSP", "destination": "ATL",
+           "departure": null, "arrival": null,
+           "seats": [], "cabin": "Economy"}
+        ],
+        "place": null,
+        "address": null,
+        "start": null,
+        "end": null,
+        "price": null,
+        "currency": null
+      }
+    ]
+  }
+}

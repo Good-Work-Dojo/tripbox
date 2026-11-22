@@ -1,0 +1,17 @@
+{
+  "document_type": "booking",
+  "reservations": [
+    {
+      "kind": "lodging",
+      "status": "confirmed",
+      "confirmation_code": "YSV870",
+      "passengers": ["Alex Sample"],
+      "property_name": "Hotel Ejemplo Playa",
+      "address": "Blvd. Ejemplo Km 9, Zona Hotelera, 77500 Cancún, Q.R., México",
+      "check_in": "2027-12-18",
+      "check_out": "2027-12-26",
+      "price": 3988.16,
+      "currency": "USD"
+    }
+  ]
+}

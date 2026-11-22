@@ -1,0 +1,75 @@
+Return-Path: <alex@example.com>
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@example.com;
+       spf=pass smtp.mailfrom=alex@example.com;
+       dmarc=pass header.from=example.com
+From: Alex Sample <alex@example.com>
+To: trips@example.com
+Subject: Fwd: =?UTF-8?Q?Confirmation_de_votre_r=C3=A9servation_SXZ642_?=
+ =?UTF-8?Q?=E2=80=93_H=C3=B4tel_Exemple_Rive_Gauche?=
+Date: Mon, 22 Feb 2027 11:26:09 -0600
+Message-ID: <fwd.sxz642.h7k3w@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+---------- Forwarded message ---------
+From: H=C3=B4tel Exemple Rive Gauche <reservation@hotelexemple-rivegauche.e=
+xample>
+Date: Mon, Feb 22, 2027 at 10:47 AM
+Subject: Confirmation de votre r=C3=A9servation SXZ642 =E2=80=93 H=C3=B4tel=
+ Exemple Rive Gauche
+To: <alex@example.com>
+
+
+H=C3=B4tel Exemple Rive Gauche
+12 Rue de l'Exemple, 75006 Paris, France
+T=C3=A9l. : 01 99 00 41 27
+reservation@hotelexemple-rivegauche.example
+
+CONFIRMATION DE R=C3=89SERVATION
+
+Bonjour Alex Sample,
+
+Nous vous remercions d'avoir choisi l'H=C3=B4tel Exemple Rive Gauche et avo=
+ns le
+plaisir de vous confirmer votre r=C3=A9servation.
+
+Num=C3=A9ro de confirmation : SXZ642
+
+Nom du client : Alex Sample
+Arriv=C3=A9e : samedi 3 juillet 2027, =C3=A0 partir de 15 h
+D=C3=A9part : mercredi 7 juillet 2027, avant 11 h
+Dur=C3=A9e du s=C3=A9jour : 4 nuits
+Chambre : Chambre familiale, 2 adultes et 2 enfants
+Petit-d=C3=A9jeuner : inclus
+
+Tarif : 238,00 =E2=82=AC par nuit
+H=C3=A9bergement (4 nuits) : 952,00 =E2=82=AC
+Taxe de s=C3=A9jour : 31,20 =E2=82=AC
+Montant total : 983,20 =E2=82=AC TTC
+
+Le r=C3=A8glement s'effectue =C3=A0 l'h=C3=B4tel, lors de votre d=C3=A9part=
+. La carte bancaire
+se terminant par 0000 sert uniquement de garantie.
+
+Conditions d'annulation : annulation sans frais jusqu'au
+jeudi 1er juillet 2027 =C3=A0 18 h (heure de Paris). Pass=C3=A9 ce d=C3=A9l=
+ai, ou en cas
+de non-pr=C3=A9sentation, la premi=C3=A8re nuit vous sera factur=C3=A9e.
+
+Informations pratiques
+- La r=C3=A9ception est ouverte 24 h/24.
+- Le Wi-Fi est gratuit dans tout l'=C3=A9tablissement.
+- Un lit b=C3=A9b=C3=A9 peut =C3=AAtre install=C3=A9 sur demande, sans supp=
+l=C3=A9ment.
+
+Pour modifier ou annuler votre r=C3=A9servation : https://www.example.com/
+ou par t=C3=A9l=C3=A9phone au 01 99 00 41 27.
+
+Dans l'attente de vous accueillir, nous vous prions d'agr=C3=A9er nos
+salutations distingu=C3=A9es.
+
+La R=C3=A9ception
+H=C3=B4tel Exemple Rive Gauche
+https://www.example.com/

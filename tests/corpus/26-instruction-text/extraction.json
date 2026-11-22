@@ -1,0 +1,18 @@
+{
+  "document_type": "booking",
+  "reservations": [
+    {
+      "kind": "lodging",
+      "status": "confirmed",
+      "confirmation_code": "WQS540",
+      "provider": "Example Lakeside Lodge",
+      "passengers": ["Alex Sample"],
+      "property_name": "Example Lakeside Lodge",
+      "address": "500 Example Road, Duluth, MN 55802",
+      "check_in": "2027-08-13",
+      "check_out": "2027-08-15",
+      "price": 475.08,
+      "currency": "USD"
+    }
+  ]
+}

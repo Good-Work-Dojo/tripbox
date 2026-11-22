@@ -1,0 +1,70 @@
+Return-Path: <alex+caf_=trips=example.com@example.com>
+X-Forwarded-To: trips@example.com
+X-Forwarded-For: alex@example.com trips@example.com
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@delta.com;
+       spf=pass smtp.mailfrom="alex+caf_=trips=example.com@example.com";
+       dmarc=pass header.from=delta.com
+From: Delta Air Lines <no-reply@delta.com>
+To: alex@example.com
+Subject: Your receipt and itinerary: RSV765
+Date: Mon, 08 Feb 2027 08:20:09 -0600
+Message-ID: <receipt.rsv765.w5c3n@mta.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+DELTA AIR LINES
+
+Your receipt and itinerary
+
+Hello Alex,
+
+Thank you for your purchase. Your flights are confirmed and your ticket
+has been issued. Please keep this receipt for your records.
+
+Confirmation number: RSV765
+Date of purchase: Monday, February 8, 2027
+Passenger: Alex Sample
+Ticket number: 0001234500003
+Frequent flyer number: 9000000001
+
+YOUR FLIGHTS
+
+Thursday, April 8, 2027
+Flight DL 9281 - Economy
+  From:  MINNEAPOLIS/ST PAUL    7:15 AM
+  To:    DENVER                 8:22 AM
+
+Sunday, April 11, 2027
+Flight DL 9296 - Economy
+  From:  DENVER                 4:40 PM
+  To:    MINNEAPOLIS/ST PAUL    7:35 PM
+
+Choose or change your seats at https://www.example.com/
+
+PAYMENT
+
+Base fare                  USD 312.56
+Taxes, fees and charges    USD  58.84
+Total charged              USD 371.40
+Paid with the card ending 0000
+
+CHECKED BAGGAGE
+
+Route       1st bag      2nd bag
+MSP-DEN     USD 33.15    USD 46.85
+DEN-MSP     USD 33.15    USD 46.85
+
+Bag fees are paid when you check in. One carry-on bag and one personal
+item travel free on every flight.
+
+CHANGES AND REFUNDS
+
+This ticket can be changed without a change fee; any difference in fare
+still applies. If you miss a flight without canceling it first, the rest
+of your trip may be canceled too.
+
+Questions about your trip? Visit https://www.example.com/
+
+This receipt was sent to alex@example.com.

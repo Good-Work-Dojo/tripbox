@@ -1,0 +1,223 @@
+Return-Path: <alex+caf_=trips=example.com@example.com>
+X-Forwarded-To: trips@example.com
+X-Forwarded-For: alex@example.com trips@example.com
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@alaskaair.com;
+       spf=pass smtp.mailfrom="alex+caf_=trips=example.com@example.com";
+       dmarc=pass header.from=alaskaair.com
+From: Alaska Airlines <no-reply@alaskaair.com>
+To: alex@example.com
+Subject: Your trip is confirmed: XZS975
+Date: Mon, 18 Jan 2027 10:02:17 -0600
+Message-ID: <confirm.xzs975.k7q2m@mta.example>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="alt-xzs975-k7q2m"
+
+--alt-xzs975-k7q2m
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+Alaska Airlines
+
+Your trip is confirmed
+Confirmation code: XZS975
+
+Thank you for flying with us. Your itinerary is below.
+
+Travelers
+Alex Sample
+Sam Sample
+Robin Sample
+Jamie Sample
+
+Monday, June 14, 2027
+Flight AS 9203
+Depart: Minneapolis (MSP) 9:30 AM
+Arrive: Seattle (SEA) 11:18 AM
+
+Sunday, June 20, 2027
+Flight AS 9228
+Depart: Seattle (SEA) 1:45 PM
+Arrive: Minneapolis (MSP) 7:05 PM
+
+Check in online up to 24 hours before departure.
+View or change your trip: https://www.example.com/
+
+This email was sent to alex@example.com.
+
+--alt-xzs975-k7q2m
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Your trip is confirmed</title>
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "FlightReservation",
+    "reservationNumber": "XZS975",
+    "reservationStatus": "https://schema.org/ReservationConfirmed",
+    "underName": {"@type": "Person", "name": "Alex Sample"},
+    "reservationFor": {
+      "@type": "Flight",
+      "flightNumber": "AS9203",
+      "airline": {"@type": "Airline", "name": "Alaska Airlines", "iataCode": "AS"},
+      "departureAirport": {"@type": "Airport", "iataCode": "MSP"},
+      "departureTime": "2027-06-14T09:30:00-05:00",
+      "arrivalAirport": {"@type": "Airport", "iataCode": "SEA"},
+      "arrivalTime": "2027-06-14T11:18:00-07:00"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FlightReservation",
+    "reservationNumber": "XZS975",
+    "reservationStatus": "https://schema.org/ReservationConfirmed",
+    "underName": {"@type": "Person", "name": "Sam Sample"},
+    "reservationFor": {
+      "@type": "Flight",
+      "flightNumber": "AS9203",
+      "airline": {"@type": "Airline", "name": "Alaska Airlines", "iataCode": "AS"},
+      "departureAirport": {"@type": "Airport", "iataCode": "MSP"},
+      "departureTime": "2027-06-14T09:30:00-05:00",
+      "arrivalAirport": {"@type": "Airport", "iataCode": "SEA"},
+      "arrivalTime": "2027-06-14T11:18:00-07:00"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FlightReservation",
+    "reservationNumber": "XZS975",
+    "reservationStatus": "https://schema.org/ReservationConfirmed",
+    "underName": {"@type": "Person", "name": "Robin Sample"},
+    "reservationFor": {
+      "@type": "Flight",
+      "flightNumber": "AS9203",
+      "airline": {"@type": "Airline", "name": "Alaska Airlines", "iataCode": "AS"},
+      "departureAirport": {"@type": "Airport", "iataCode": "MSP"},
+      "departureTime": "2027-06-14T09:30:00-05:00",
+      "arrivalAirport": {"@type": "Airport", "iataCode": "SEA"},
+      "arrivalTime": "2027-06-14T11:18:00-07:00"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FlightReservation",
+    "reservationNumber": "XZS975",
+    "reservationStatus": "https://schema.org/ReservationConfirmed",
+    "underName": {"@type": "Person", "name": "Jamie Sample"},
+    "reservationFor": {
+      "@type": "Flight",
+      "flightNumber": "AS9203",
+      "airline": {"@type": "Airline", "name": "Alaska Airlines", "iataCode": "AS"},
+      "departureAirport": {"@type": "Airport", "iataCode": "MSP"},
+      "departureTime": "2027-06-14T09:30:00-05:00",
+      "arrivalAirport": {"@type": "Airport", "iataCode": "SEA"},
+      "arrivalTime": "2027-06-14T11:18:00-07:00"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FlightReservation",
+    "reservationNumber": "XZS975",
+    "reservationStatus": "https://schema.org/ReservationConfirmed",
+    "underName": {"@type": "Person", "name": "Alex Sample"},
+    "reservationFor": {
+      "@type": "Flight",
+      "flightNumber": "AS9228",
+      "airline": {"@type": "Airline", "name": "Alaska Airlines", "iataCode": "AS"},
+      "departureAirport": {"@type": "Airport", "iataCode": "SEA"},
+      "departureTime": "2027-06-20T13:45:00-07:00",
+      "arrivalAirport": {"@type": "Airport", "iataCode": "MSP"},
+      "arrivalTime": "2027-06-20T19:05:00-05:00"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FlightReservation",
+    "reservationNumber": "XZS975",
+    "reservationStatus": "https://schema.org/ReservationConfirmed",
+    "underName": {"@type": "Person", "name": "Sam Sample"},
+    "reservationFor": {
+      "@type": "Flight",
+      "flightNumber": "AS9228",
+      "airline": {"@type": "Airline", "name": "Alaska Airlines", "iataCode": "AS"},
+      "departureAirport": {"@type": "Airport", "iataCode": "SEA"},
+      "departureTime": "2027-06-20T13:45:00-07:00",
+      "arrivalAirport": {"@type": "Airport", "iataCode": "MSP"},
+      "arrivalTime": "2027-06-20T19:05:00-05:00"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FlightReservation",
+    "reservationNumber": "XZS975",
+    "reservationStatus": "https://schema.org/ReservationConfirmed",
+    "underName": {"@type": "Person", "name": "Robin Sample"},
+    "reservationFor": {
+      "@type": "Flight",
+      "flightNumber": "AS9228",
+      "airline": {"@type": "Airline", "name": "Alaska Airlines", "iataCode": "AS"},
+      "departureAirport": {"@type": "Airport", "iataCode": "SEA"},
+      "departureTime": "2027-06-20T13:45:00-07:00",
+      "arrivalAirport": {"@type": "Airport", "iataCode": "MSP"},
+      "arrivalTime": "2027-06-20T19:05:00-05:00"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FlightReservation",
+    "reservationNumber": "XZS975",
+    "reservationStatus": "https://schema.org/ReservationConfirmed",
+    "underName": {"@type": "Person", "name": "Jamie Sample"},
+    "reservationFor": {
+      "@type": "Flight",
+      "flightNumber": "AS9228",
+      "airline": {"@type": "Airline", "name": "Alaska Airlines", "iataCode": "AS"},
+      "departureAirport": {"@type": "Airport", "iataCode": "SEA"},
+      "departureTime": "2027-06-20T13:45:00-07:00",
+      "arrivalAirport": {"@type": "Airport", "iataCode": "MSP"},
+      "arrivalTime": "2027-06-20T19:05:00-05:00"
+    }
+  }
+]
+</script>
+</head>
+<body>
+<h1>Alaska Airlines</h1>
+<h2>Your trip is confirmed</h2>
+<p>Confirmation code: <strong>XZS975</strong></p>
+<p>Thank you for flying with us. Your itinerary is below.</p>
+<h3>Travelers</h3>
+<ul>
+<li>Alex Sample</li>
+<li>Sam Sample</li>
+<li>Robin Sample</li>
+<li>Jamie Sample</li>
+</ul>
+<table>
+<tr><th>Date</th><th>Flight</th><th>Depart</th><th>Arrive</th></tr>
+<tr>
+<td>Monday, June 14, 2027</td>
+<td>AS 9203</td>
+<td>Minneapolis (MSP) 9:30 AM</td>
+<td>Seattle (SEA) 11:18 AM</td>
+</tr>
+<tr>
+<td>Sunday, June 20, 2027</td>
+<td>AS 9228</td>
+<td>Seattle (SEA) 1:45 PM</td>
+<td>Minneapolis (MSP) 7:05 PM</td>
+</tr>
+</table>
+<p>Check in online up to 24 hours before departure.</p>
+<p><a href="https://www.example.com/">View or change your trip</a></p>
+<p>This email was sent to alex@example.com.</p>
+</body>
+</html>
+
+--alt-xzs975-k7q2m--

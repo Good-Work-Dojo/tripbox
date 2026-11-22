@@ -1,0 +1,89 @@
+{# SPDX-License-Identifier: AGPL-3.0-only -#}
+{# Additional terms: see NOTICE -#}
+{% extends "base.html" %}
+{% block body_attrs %} data-refresh{% endblock %}
+{% block body %}
+<header class="top">
+  <h1>Trips</h1>
+  {% if flight_log_url %}<a class="top-link" href="{{ flight_log_url }}">Flight log</a>{% endif %}
+  <a class="icon-btn" href="{{ base }}/settings" aria-label="Settings">&#9881;&#xFE0E;</a>
+  <a class="icon-btn" href="{{ base }}/add" aria-label="Add a booking">+</a>
+</header>
+<main class="page">
+  {% if no_worker %}<p class="notice">The worker is not running, so nothing new is read.</p>{% endif %}
+  {% if first_run %}
+  <section class="first-run" aria-labelledby="first-run-title">
+    <h2 class="first-run-title" id="first-run-title">No trips yet</h2>
+    <p>Add a booking to start: paste a confirmation's text, upload the email or PDF, or type it in.</p>
+    <p><a class="btn primary" href="{{ base }}/add">Add a booking</a></p>
+  </section>
+  {% include "_status.html" %}
+  {% else %}
+  {% if unsorted %}
+  <section id="unsorted" class="unsorted" aria-labelledby="unsorted-title">
+    <h2 class="section" id="unsorted-title">Unsorted</h2>
+    <ul class="cards">
+      {% for it in unsorted %}
+      <li class="booking{{ ' cancelled' if it.cancelled }}" id="item-{{ it.id }}" data-kind="{{ it.kind }}">
+        <div class="primary">{{ it.icon }} {{ it.primary }}{% if it.cancelled %} <span class="chip chip-red">Cancelled</span>{% endif %}{% if it.checks %} <span class="chip chip-amber">To check</span>{% endif %}</div>
+        {% if it.secondary %}<div class="secondary">{{ it.secondary }}</div>{% endif %}
+        <div class="line">No date yet</div>
+        {% for ln in it.lines %}
+          {% if ln.url %}<a class="line addr" href="{{ ln.url }}" target="_blank" rel="noopener">{{ ln.text }}</a>{% else %}<div class="line">{{ ln.text }}</div>{% endif %}
+        {% endfor %}
+        {% if it.sync_line %}<div class="line sync">{{ it.sync_line }}</div>{% endif %}
+        {% if it.checks or it.can %}{% with listed = true %}{% include "_check.html" %}{% endwith %}{% endif %}
+        {% if it.conf or it.names or it.seats %}
+        <div class="line meta">
+          {% if it.conf %}<button type="button" class="conf" data-copy="{{ it.conf }}" title="Copy">conf {{ it.conf }}</button>{% endif %}
+          {% if it.names %}<span>{{ it.names }}</span>{% endif %}
+          {% if it.seats %}<span>seats {{ it.seats }}</span>{% endif %}
+        </div>
+        {% endif %}
+        <div class="booking-foot">
+          <a class="btn primary" href="{{ base }}/items/{{ it.id }}/edit">Add the date</a>
+          <details class="item-menu">
+            <summary aria-label="More for this item">⋯</summary>
+            <div class="sheet">
+              <button type="button" class="btn copy" data-copy="{{ it.text }}">Copy this item</button>
+              <form method="post" action="{{ base }}/items/{{ it.id }}/status">
+                <input type="hidden" name="status" value="{{ 'confirmed' if it.cancelled else 'cancelled' }}">
+                <button type="submit" class="btn link">{{ 'Mark confirmed' if it.cancelled else 'Mark cancelled' }}</button>
+              </form>
+              <form method="post" action="{{ base }}/items/{{ it.id }}/remove" data-confirm="{{ said.remove }}">
+                <button type="submit" class="btn link danger">Remove</button>
+              </form>
+            </div>
+          </details>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+  <h2 class="section">Upcoming</h2>
+  {% if upcoming %}
+  <ul class="cards">{% for c in upcoming %}{% include "_card.html" %}{% endfor %}</ul>
+  {% elif forward_to %}
+  <p class="empty">Nothing coming up. Forward a confirmation to {{ forward_to }} and it shows up here.</p>
+  {% else %}
+  <p class="empty">Nothing coming up.</p>
+  {% endif %}
+  {% if past %}
+  <h2 class="section">Past trips</h2>
+  <ul class="cards">
+    {% for c in past %}
+    {% if c.year_header %}<li><h3 class="year">{{ c.year_header }}</h3></li>{% endif %}
+    {% include "_card.html" %}
+    {% endfor %}
+  </ul>
+  {% if more_past %}<a class="more" href="{{ base }}/?past=all">Show all past trips</a>{% endif %}
+  {% endif %}
+  {% endif %}
+  {% if deleted_count %}
+  <footer class="foot">
+    <p class="foot-link"><a class="inline-link" href="{{ base }}/deleted">Recently deleted ({{ deleted_count }})</a></p>
+  </footer>
+  {% endif %}
+</main>
+{% endblock %}

@@ -1,0 +1,12 @@
+# An example: copy it to config/travellers.yaml and replace the invented Sample family with yours.
+# Who is who on a ticket. Matching: uppercase, titles stripped, LAST/FIRST MIDDLE re-ordered,
+# then first + last token must equal a name's first + last (middle optional).
+owner:
+  names: ["Alex Sample", "Alex Quinn Sample", "Alex Q Sample"]
+companions:   # how tripbox and AirTrail spell each one (name) and the names printed on tickets
+  - name: "Sam Sample"
+    names: ["Sam Sample"]
+  - name: "Robin Sample"
+    names: ["Robin Sample"]
+  - name: "Jamie Sample"
+    names: ["Jamie Sample"]

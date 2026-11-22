@@ -1,0 +1,46 @@
+{
+  "wire_schema": 1,
+  "source": "hand-written",
+  "model": null,
+  "answer": {
+    "document_type": "booking",
+    "confidence": 0.9,
+    "reservations": [
+      {
+        "kind": "flight",
+        "status": "confirmed",
+        "code": "RSV765",
+        "provider": "Delta Air Lines",
+        "passengers": ["Alex Sample"],
+        "legs": [
+          {
+            "carrier": "DL",
+            "number": "9281",
+            "origin": "MINNEAPOLIS/ST PAUL",
+            "destination": "DENVER",
+            "departure": "2027-04-08T07:15",
+            "arrival": "2027-04-08T08:22",
+            "seats": [],
+            "cabin": "Economy"
+          },
+          {
+            "carrier": "DL",
+            "number": "9296",
+            "origin": "DENVER",
+            "destination": "MINNEAPOLIS/ST PAUL",
+            "departure": "2027-04-11T16:40",
+            "arrival": "2027-04-11T19:35",
+            "seats": [],
+            "cabin": "Economy"
+          }
+        ],
+        "place": null,
+        "address": null,
+        "start": null,
+        "end": null,
+        "price": 371.4,
+        "currency": "USD"
+      }
+    ]
+  }
+}

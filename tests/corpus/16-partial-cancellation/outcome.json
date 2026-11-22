@@ -1,0 +1,19 @@
+{
+  "status": "processed",
+  "read_by": "model",
+  "document_type": "cancellation",
+  "items": [
+    {"kind": "flight", "key": "AA|9630|2027-05-01|MSP", "result": "updated",
+     "people": {"me": 0, "guests": 1, "others": 0},
+     "booking": {"status": "confirmed",
+                 "travellers": ["Alex Sample", "Robin Sample", "Sam Sample"],
+                 "trip": "Chicago",
+                 "checks": [], "sync": "off"}},
+    {"kind": "flight", "key": "AA|9655|2027-05-02|ORD", "result": "updated",
+     "people": {"me": 0, "guests": 1, "others": 0},
+     "booking": {"status": "confirmed",
+                 "travellers": ["Alex Sample", "Robin Sample", "Sam Sample"],
+                 "trip": "Chicago",
+                 "checks": [], "sync": "off"}}
+  ]
+}

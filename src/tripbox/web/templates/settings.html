@@ -1,0 +1,84 @@
+{# SPDX-License-Identifier: AGPL-3.0-only -#}
+{# Additional terms: see NOTICE -#}
+{% extends "base.html" %}
+{% block title %}Settings · Trips{% endblock %}
+{% block body %}
+<header class="top">
+  <a class="back" href="{{ base }}/" aria-label="All trips">‹</a>
+  <h1>Settings</h1>
+</header>
+<main class="page settings">
+  <section aria-labelledby="status-title">
+    <h2 class="section" id="status-title">Status</h2>
+    {% include "_status.html" %}
+  </section>
+  <section aria-labelledby="display-title">
+    <h2 class="section" id="display-title">Display</h2>
+    <p class="muted small">Notifications follow these when you choose the 24-hour clock or day-first dates.</p>
+    <form method="post" action="{{ base }}/settings/display" class="col">
+      {% for group in choices %}
+      <fieldset class="choice-group">
+        <legend>{{ group.legend }}</legend>
+        {% for option in group.options %}
+        <label class="radio"><input type="radio" name="{{ group.name }}" value="{{ option.value }}"{% if option.checked %} checked{% endif %}><span>{{ option.label }}</span></label>
+        {% endfor %}
+      </fieldset>
+      {% endfor %}
+      <div class="row"><button type="submit" class="btn primary">Save</button></div>
+    </form>
+  </section>
+  <section id="calendar" aria-labelledby="calendar-title">
+    <h2 class="section" id="calendar-title">Calendar</h2>
+    <p>Subscribe to this address in your calendar app to see every trip there. Anyone who has the address can read your trips.</p>
+    <div class="row"><input type="text" readonly value="{{ feed_url }}" aria-labelledby="calendar-title"><button type="button" class="btn" data-copy="{{ feed_url }}">Copy</button></div>
+    <form method="post" action="{{ base }}/settings/feed" data-confirm="Make a new address? Calendar apps that use the old one stop updating.">
+      <button type="submit" class="btn link">Make a new address</button>
+    </form>
+  </section>
+  <section id="links" aria-labelledby="links-title">
+    <h2 class="section" id="links-title">Shared links</h2>
+    {% for group in link_groups %}
+    <h3 class="link-trip">{{ group.title }}</h3>
+    {% with links = group.links, from_page = "settings" %}{% include "_links.html" %}{% endwith %}
+    {% else %}
+    <p class="muted">No shared links.</p>
+    {% endfor %}
+  </section>
+  <section aria-labelledby="saved-title">
+    <h2 class="section" id="saved-title">Saved copies</h2>
+    {% if offline %}
+    {% if login == "none" %}
+    <p>Trips you open are kept on this device, so they open without a connection. Browsers allow this only over https or on localhost. Copies are kept for up to 30 days, or until you remove them here.</p>
+    {% elif login == "proxy" %}
+    <p>Trips you open are kept on this device, so they open without a connection. Browsers allow this only over https or on localhost. Signing out at your login proxy does not remove them: remove them here. A device keeps its copies until it next connects signed out, and never more than 30 days.</p>
+    {% else %}
+    <p>Trips you open are kept on this device, so they open without a connection. Browsers allow this only over https or on localhost. Signing out on this device removes them. Another device keeps its copies until it next connects, and never more than 30 days.</p>
+    {% endif %}
+    <div class="row"><button type="button" class="btn" data-forget>Remove saved copies from this device</button></div>
+    {% else %}
+    <p>Saved copies are switched off (TRIPBOX_OFFLINE).</p>
+    {% endif %}
+  </section>
+  <section aria-labelledby="signin-title">
+    <h2 class="section" id="signin-title">Sign in</h2>
+    {% if login == "password" %}
+    <form method="post" action="{{ base }}/logout" data-signout><button type="submit" class="btn">Sign out</button></form>
+    <form method="post" action="{{ base }}/settings/sessions" data-confirm="Sign out on every device?" data-signout><button type="submit" class="btn danger">Sign out everywhere</button></form>
+    <p class="muted small">Signs out every device, this one too. Change the password as well if someone else knows it.</p>
+    {% elif login == "cloudflare" %}
+    <p><a class="btn" href="{{ logout_url }}" data-signout>Sign out</a></p>
+    {% elif login == "proxy" %}
+    <p>You sign in through your login proxy. Sign out there.</p>
+    {% else %}
+    <p>This page has no sign-in and answers only on this computer.</p>
+    {% endif %}
+    {% if login in ("proxy", "cloudflare") %}
+    <p class="muted small">Let these paths through your login proxy without a sign-in, so shared links and calendar apps work: {{ base }}/s/, {{ base }}/feed/, {{ base }}/static/.</p>
+    {% endif %}
+  </section>
+  <section aria-labelledby="about-title">
+    <h2 class="section" id="about-title">About</h2>
+    {% include "_about.html" %}
+  </section>
+</main>
+{% endblock %}

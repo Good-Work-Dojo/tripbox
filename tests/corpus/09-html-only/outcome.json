@@ -1,0 +1,19 @@
+{
+  "status": "processed",
+  "read_by": "model",
+  "document_type": "booking",
+  "items": [
+    {"kind": "flight", "key": "DL|9017|2027-07-15|LHR", "result": "filed",
+     "people": {"me": 1, "guests": 3, "others": 0},
+     "booking": {"status": "confirmed",
+                 "travellers": ["Alex Sample", "Jamie Sample", "Robin Sample", "Sam Sample"],
+                 "trip": "Paris",
+                 "checks": [], "sync": "off"}},
+    {"kind": "flight", "key": "DL|9140|2027-07-02|MSP", "result": "filed",
+     "people": {"me": 1, "guests": 3, "others": 0},
+     "booking": {"status": "confirmed",
+                 "travellers": ["Alex Sample", "Jamie Sample", "Robin Sample", "Sam Sample"],
+                 "trip": "Paris",
+                 "checks": [], "sync": "off"}}
+  ]
+}

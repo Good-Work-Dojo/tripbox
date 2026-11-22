@@ -1,0 +1,23 @@
+{
+  "status": "processed",
+  "read_by": "model",
+  "document_type": "booking",
+  "items": [
+    {"kind": "flight", "key": "AA|9630|2027-05-01|MSP", "result": "filed",
+     "people": {"me": 1, "guests": 3, "others": 0},
+     "booking": {"status": "confirmed",
+                 "travellers": ["Alex Sample", "Jamie Sample", "Robin Sample", "Sam Sample"],
+                 "trip": "Chicago",
+                 "checks": [], "sync": "off"}},
+    {"kind": "flight", "key": "AA|9655|2027-05-02|ORD", "result": "filed",
+     "people": {"me": 1, "guests": 3, "others": 0},
+     "booking": {"status": "confirmed",
+                 "travellers": ["Alex Sample", "Jamie Sample", "Robin Sample", "Sam Sample"],
+                 "trip": "Chicago",
+                 "checks": [], "sync": "off"}},
+    {"kind": "lodging", "key": "lodging|SUT320", "result": "filed",
+     "people": {"me": 1, "guests": 0, "others": 0},
+     "booking": {"status": "confirmed", "travellers": ["Alex Sample"], "trip": "Chicago",
+                 "checks": [], "sync": "off"}}
+  ]
+}

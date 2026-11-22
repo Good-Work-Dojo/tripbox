@@ -1,0 +1,67 @@
+Return-Path: <alex+caf_=trips=example.com@example.com>
+X-Forwarded-To: trips@example.com
+X-Forwarded-For: alex@example.com trips@example.com
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@example.net;
+       spf=pass smtp.mailfrom="alex+caf_=trips=example.com@example.com";
+       dmarc=pass header.from=example.net
+From: Pat Example <pat@example.net>
+To: alex@example.com
+Subject: FW: Your flight confirmation TXW942
+Date: Mon, 26 Apr 2027 20:14:33 -0500
+Message-ID: <fw.txw942.d3e6y@example.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+Our flights for the visit are below. See you soon!
+
+-----Original Message-----
+From: Alaska Airlines <itinerary@asflights.example>
+Sent: Monday, April 19, 2027 7:48 PM
+To: Pat Example <pat@example.net>
+Subject: Your flight confirmation TXW942
+
+Hello Pat,
+
+Thanks for flying with us. Your reservation is confirmed and your tickets
+are issued.
+
+Confirmation code: TXW942
+
+Travelers
+  Pat Example      Ticket 0001234500061
+  Lee Example      Ticket 0001234500062
+
+Outbound - Friday, May 21, 2027
+  AS 9320   Portland, OR (PDX)  10:05 AM  ->  Minneapolis, MN (MSP)  3:32 PM
+  Nonstop, Economy
+
+Return - Tuesday, May 25, 2027
+  AS 9347   Minneapolis, MN (MSP)  5:10 PM  ->  Portland, OR (PDX)  7:02 PM
+  Nonstop, Economy
+
+Times shown are local to each airport.
+
+Payment
+  Fares, 2 adults                  USD 489.20
+  Taxes and fees                   USD  71.84
+  Total charged                    USD 561.04
+  Card ending in 0000
+
+Before you go
+  - Check in from 24 hours before departure at https://www.example.com/
+    or at the airport.
+  - The first checked bag on each flight is USD 27.60 per person.
+  - Bring a government photo ID for each adult traveler.
+  - Seats are assigned free of charge at check-in. Traveling with a pet,
+    or need a wheelchair or other help at the airport? Tell us at least
+    48 hours before departure.
+
+Need to change something? Changes can be made at https://www.example.com/
+up to the time of departure; a difference in fare may apply. You can also
+call us at 206-555-0185.
+
+We look forward to having you on board.
+
+Alaska Airlines

@@ -1,0 +1,15 @@
+{
+  "status": "processed",
+  "read_by": "model",
+  "document_type": "booking",
+  "items": [
+    {"kind": "flight", "key": "DL|9281|2027-04-08|MSP", "result": "filed",
+     "people": {"me": 1, "guests": 0, "others": 0},
+     "booking": {"status": "confirmed", "travellers": ["Alex Sample"], "trip": "Denver",
+                 "checks": [], "sync": "off"}},
+    {"kind": "flight", "key": "DL|9296|2027-04-11|DEN", "result": "filed",
+     "people": {"me": 1, "guests": 0, "others": 0},
+     "booking": {"status": "confirmed", "travellers": ["Alex Sample"], "trip": "Denver",
+                 "checks": [], "sync": "off"}}
+  ]
+}

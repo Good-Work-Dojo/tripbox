@@ -1,0 +1,25 @@
+{
+  "wire_schema": 1,
+  "source": "hand-written",
+  "model": null,
+  "answer": {
+    "document_type": "booking",
+    "confidence": 0.9,
+    "reservations": [
+      {
+        "kind": "car",
+        "status": "confirmed",
+        "code": "SWU830",
+        "provider": "Example Rent A Car",
+        "passengers": ["Alex Sample"],
+        "legs": [],
+        "place": "1 Example Loop, Phoenix, AZ 85034",
+        "address": "1 Example Loop, Phoenix, AZ 85034",
+        "start": "2027-11-04T12:45",
+        "end": "2027-11-08T12:00",
+        "price": 263.4,
+        "currency": "USD"
+      }
+    ]
+  }
+}

@@ -1,0 +1,159 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Additional terms: see NOTICE
+# Airlines: IATA code, name, optional short name (trip text) and the words that name the
+# airline in an email. config/airlines.yaml adds entries and replaces those with the same code.
+- iata: DL
+  name: Delta Air Lines
+  short: Delta
+  match: [delta]
+- iata: UA
+  name: United Airlines
+  short: United
+  match: [united]
+- iata: AA
+  name: American Airlines
+  short: American
+  match: [american]
+- iata: WN
+  name: Southwest Airlines
+  short: Southwest
+  match: [southwest]
+- iata: B6
+  name: JetBlue
+  short: JetBlue
+  match: [jetblue]
+- iata: AS
+  name: Alaska Airlines
+  short: Alaska
+  match: [alaska]
+- iata: NK
+  name: Spirit Airlines
+  short: Spirit
+  match: [spirit]
+- iata: F9
+  name: Frontier Airlines
+  short: Frontier
+  match: [frontier]
+- iata: HA
+  name: Hawaiian Airlines
+  short: Hawaiian
+  match: [hawaiian]
+- iata: G4
+  name: Allegiant Air
+  short: Allegiant
+  match: [allegiant]
+- iata: SY
+  name: Sun Country Airlines
+  short: Sun Country
+  match: [sun country]
+- iata: MX
+  name: Breeze Airways
+  match: [breeze]
+- iata: XP
+  name: Avelo Airlines
+  match: [avelo]
+- iata: AC
+  name: Air Canada
+  match: [air canada]
+- iata: WS
+  name: WestJet
+  match: [westjet]
+- iata: PD
+  name: Porter Airlines
+  match: [porter]
+- iata: BA
+  name: British Airways
+  match: [british airways]
+- iata: VS
+  name: Virgin Atlantic
+  match: [virgin atlantic]
+- iata: LH
+  name: Lufthansa
+  match: [lufthansa]
+- iata: LX
+  name: Swiss International Air Lines
+  match: [swiss]
+- iata: OS
+  name: Austrian Airlines
+  match: [austrian]
+- iata: AF
+  name: Air France
+  match: [air france]
+- iata: KL
+  name: KLM Royal Dutch Airlines
+  match: [klm]
+- iata: IB
+  name: Iberia
+  match: [iberia]
+- iata: EI
+  name: Aer Lingus
+  match: [aer lingus]
+- iata: TP
+  name: TAP Air Portugal
+  match: [tap]
+- iata: FI
+  name: Icelandair
+  match: [icelandair]
+- iata: N0
+  name: Norse Atlantic Airways
+  match: [norse]
+- iata: FR
+  name: Ryanair
+  match: [ryanair]
+- iata: U2
+  name: easyJet
+  match: [easyjet]
+- iata: VY
+  name: Vueling
+  match: [vueling]
+- iata: AM
+  name: Aeroméxico
+  match: [aeromexico]
+- iata: Y4
+  name: Volaris
+  match: [volaris]
+- iata: VB
+  name: Viva Aerobus
+  match: [viva]
+- iata: CM
+  name: Copa Airlines
+  match: [copa]
+- iata: AV
+  name: Avianca
+  match: [avianca]
+- iata: LA
+  name: LATAM Airlines
+  match: [latam]
+- iata: EK
+  name: Emirates
+  match: [emirates]
+- iata: QR
+  name: Qatar Airways
+  match: [qatar]
+- iata: EY
+  name: Etihad Airways
+  match: [etihad]
+- iata: TK
+  name: Turkish Airlines
+  match: [turkish]
+- iata: NH
+  name: All Nippon Airways
+  match: [ana]
+- iata: JL
+  name: Japan Airlines
+  match: [japan airlines]
+- iata: KE
+  name: Korean Air
+  match: [korean air]
+- iata: SQ
+  name: Singapore Airlines
+  match: [singapore]
+- iata: CX
+  name: Cathay Pacific
+  match: [cathay]
+- iata: QF
+  name: Qantas
+  match: [qantas]
+- iata: NZ
+  name: Air New Zealand
+  match: [air new zealand]

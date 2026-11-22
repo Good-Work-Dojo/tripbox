@@ -1,0 +1,22 @@
+{
+  "document_type": "booking",
+  "reservations": [
+    {
+      "kind": "flight",
+      "status": "confirmed",
+      "confirmation_code": "QWS987",
+      "provider": "Delta Air Lines",
+      "passengers": ["SAMPLE/SAM"],
+      "segments": [
+        {"carrier_iata": "DL", "flight_number": "9412", "origin": "MSP", "destination": "BOS",
+         "departure_local": "2027-03-11T08:05", "arrival_local": "2027-03-11T11:52",
+         "cabin": "Economy"},
+        {"carrier_iata": "DL", "flight_number": "9435", "origin": "BOS", "destination": "MSP",
+         "departure_local": "2027-03-14T17:20", "arrival_local": "2027-03-14T19:38",
+         "cabin": "Economy"}
+      ],
+      "price": 360.80,
+      "currency": "USD"
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+Return-Path: <alex+caf_=trips=example.com@example.com>
+X-Forwarded-To: trips@example.com
+X-Forwarded-For: alex@example.com trips@example.com
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@sampletrips.example;
+       spf=pass smtp.mailfrom="alex+caf_=trips=example.com@example.com";
+       dmarc=pass header.from=sampletrips.example
+From: Sample Trips <itinerary@sampletrips.example>
+To: alex@example.com
+Subject: Your Sample Trips itinerary QZY432: Chicago, May 1 - 2
+Date: Tue, 02 Mar 2027 13:37:52 -0600
+Message-ID: <itin.qzy432.v2.h6t8r@sampletrips.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+SAMPLE TRIPS
+Your trip itinerary
+
+Hello Alex,
+
+Thank you for booking your Chicago getaway with Sample Trips. Everything
+below is confirmed and paid in full. Please keep this itinerary handy
+while you travel.
+
+Sample Trips booking number: QZY432
+Booked: Tuesday, March 2, 2027
+
+Quote the booking number above when you contact us. The airline and the
+hotel each have their own confirmation number, shown in their sections
+below; use those when you check in.
+
+
+1. FLIGHTS
+   Airline: American Airlines
+   Airline confirmation (record locator): RWV431
+
+   Passengers
+     Alex Sample        adult
+     Sam Sample         adult
+     Robin Sample       child
+     Jamie Sample       child
+
+   Saturday, May 1, 2027
+     AA 9630   Minneapolis-St. Paul (MSP)  9:10 AM
+               Chicago O'Hare (ORD)        10:35 AM
+               Nonstop, Economy
+
+   Sunday, May 2, 2027
+     AA 9655   Chicago O'Hare (ORD)        6:25 PM
+               Minneapolis-St. Paul (MSP)  7:55 PM
+               Nonstop, Economy
+
+   Each passenger may bring one carry-on bag and one personal item.
+   Checked bags are paid to the airline. Seats can be chosen with the
+   airline using the record locator.
+
+
+2. HOTEL
+   Example Riverside Hotel Chicago
+   400 Example Drive, Chicago, IL 60601
+   Phone 312-555-0136
+   Hotel confirmation number: SUT320
+
+   Check-in    Saturday, May 1, 2027
+   Check-out   Sunday, May 2, 2027
+   1 night, 1 Family Room (two queen beds), 2 adults and 2 children
+   Reserved under: Alex Sample
+
+   Check-in from 3:00 PM, check-out by 11:00 AM. A card is asked for at
+   check-in for incidentals. Parking is not included.
+
+
+3. PAYMENT
+   Package price, flights and hotel with taxes     USD 1,684.20
+   Charged to Visa ending in 0000 on March 2, 2027
+
+
+CHANGES AND CANCELLATIONS
+Flight changes follow the airline's fare rules and may cost a fee plus
+any difference in fare. The hotel can be canceled without charge until
+48 hours before check-in. Ask us about either, or deal with the airline
+or the hotel directly using their own confirmation number.
+
+We are here every day from 7 AM to 10 PM Central time:
+612-555-0157, or https://www.example.com/ at any hour.
+
+Have a wonderful trip,
+The Sample Trips team
+900 Example Parkway, Minneapolis, MN 55401

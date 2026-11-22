@@ -1,0 +1,57 @@
+Return-Path: <alex.sample@example.org>
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@example.org;
+       spf=pass smtp.mailfrom=alex.sample@example.org;
+       dmarc=pass header.from=example.org
+From: Alex Sample <alex.sample@example.org>
+To: trips@example.com
+Subject: FW: Your reservation at The Sample House Inn
+Date: Wed, 10 Feb 2027 16:48:02 -0600
+Message-ID: <fwd.vwx543.t6j1q@example.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+-----Original Message-----
+From: The Sample House Inn <reservations@samplehouseinn.example>
+Sent: Wednesday, February 10, 2027 4:31 PM
+To: Alex Sample <alex.sample@example.org>
+Subject: Your reservation at The Sample House Inn
+
+The Sample House Inn
+200 Example Avenue, Denver, CO 80202
+303-555-0117 | https://www.example.com/
+
+Dear Alex,
+
+Thank you for booking with us directly. We are delighted to confirm your
+reservation and look forward to having you stay.
+
+Confirmation number: VWX543
+Guest: Alex Sample
+Arrival: Thursday, April 8, 2027 (check-in from 3:00 PM)
+Departure: Sunday, April 11, 2027 (check-out by 11:00 AM)
+Length of stay: 3 nights
+Room: The Garden Room, one queen bed and a sofa bed
+
+Rate: 179.00 USD per night
+Lodging tax: 85.12 USD
+Total for your stay: 622.12 USD
+
+We have charged a deposit of one night (179.00 USD) to the card ending
+0000. The balance is due when you check out.
+
+A few things to know
+- Breakfast is served in the parlor from 7:00 to 10:00 each morning.
+- Street parking is free after 6:00 PM; ask us for a guest permit.
+- The front door locks at 10:00 PM. We will text your door code on the
+  morning you arrive.
+
+Cancellations are free up to 72 hours before arrival. After that, the
+first night is charged.
+
+If anything changes, just reply to this email or call us at 303-555-0117.
+
+Warm regards,
+The innkeepers
+The Sample House Inn

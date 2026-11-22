@@ -1,0 +1,25 @@
+{
+  "wire_schema": 1,
+  "source": "hand-written",
+  "model": null,
+  "answer": {
+    "document_type": "booking",
+    "confidence": 0.9,
+    "reservations": [
+      {
+        "kind": "car",
+        "status": "confirmed",
+        "code": "TUY654",
+        "provider": "Example Rent A Car",
+        "passengers": ["Alex Sample"],
+        "legs": [],
+        "place": "DEN",
+        "address": "DEN",
+        "start": "2027-04-08T09:00",
+        "end": "2027-04-11T14:30",
+        "price": 240.37,
+        "currency": "USD"
+      }
+    ]
+  }
+}

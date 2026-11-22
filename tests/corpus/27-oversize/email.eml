@@ -1,0 +1,1591 @@
+Return-Path: <alex+caf_=trips=example.com@example.com>
+X-Forwarded-To: trips@example.com
+X-Forwarded-For: alex@example.com trips@example.com
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@aa.com;
+       spf=pass smtp.mailfrom="alex+caf_=trips=example.com@example.com";
+       dmarc=pass header.from=aa.com
+From: American Airlines <no-reply@aa.com>
+To: alex@example.com
+Subject: Your trip confirmation and receipt (RYT941)
+Date: Mon, 26 Jul 2027 09:09:18 -0500
+Message-ID: <rcpt.ryt941.p5v8z@mta.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+American Airlines
+
+Your trip confirmation and receipt
+
+Hello Alex Sample,
+
+Your trip is booked and your tickets are issued.
+
+Record locator: RYT941
+
+Travelers
+  Alex Sample
+  Sam Sample
+
+Thursday, November 4, 2027
+  AA 9720    Minneapolis/St. Paul (MSP) to Phoenix (PHX)
+  Departs 10:15 AM, arrives 12:05 PM
+  Economy
+
+Monday, November 8, 2027
+  AA 9741    Phoenix (PHX) to Minneapolis/St. Paul (MSP)
+  Departs 1:30 PM, arrives 6:05 PM
+  Economy
+
+All times are local to the airport.
+
+Payment
+  Fare, 2 travelers:   USD 512.00
+  Taxes and fees:      USD  78.64
+  Total:               USD 590.64 (card ending 0000)
+
+Manage your trip: https://www.example.com/
+
+The rules of your fare follow. They are the same for every traveler
+and every flight on this record, and are repeated for each.
+
+Fare rules: flight 1 of 2, traveler 1 of 2
+
+1. Changes before departure
+1.1 A change made before the first flight on this ticket carries no
+change fee.
+1.2 The new flight must be in the same cabin or a higher one, and any
+difference in fare is collected when the change is made.
+1.3 When the new fare is lower, the difference is kept as travel credit
+in the name of the traveler on the ticket.
+1.4 A change must be made no later than the scheduled departure time of
+the flight that is being changed.
+1.5 A change to one traveler on the record does not change the tickets
+of any other traveler on it.
+1.6 Where a change moves travel into a period with higher fares, the
+higher fare applies.
+
+2. Changes after departure
+2.1 Once the first flight has been flown, the flights that remain may be
+moved only to another date or time on the same route.
+2.2 The starting point of the next flight may not be changed once travel
+has begun.
+2.3 A change after departure is priced at the fare on offer on the day
+the change is made.
+2.4 A change made at the airport on the day of travel depends on seats
+being free on the new flight.
+
+3. Cancellation and refunds
+3.1 This ticket is non-refundable except where the law requires a
+refund.
+3.2 A ticket canceled within 24 hours of purchase, and at least seven
+days before departure, is refunded in full to the card that paid for it.
+3.3 After that period the value of a canceled ticket is kept as travel
+credit, in full or less a fee, as rule 39 sets out.
+3.4 Taxes collected for flights that are not flown may be refunded on
+request.
+3.5 A request for a refund must be made within one year of the day the
+ticket was issued.
+
+4. Travel credit
+4.1 Travel credit may be used toward a new ticket for the same traveler
+and has no cash value.
+4.2 Credit must be used to book new travel before it expires; the travel
+itself may take place later.
+4.3 When a new ticket costs less than the credit, what is left stays as
+credit with the same expiry.
+4.4 Credit may not be passed to another person, sold or exchanged.
+
+5. Missed flights
+5.1 If a traveler does not take a flight and does not cancel it before
+departure, every later flight on the same ticket is canceled.
+5.2 A ticket marked as not flown keeps no value, apart from taxes that
+may be refunded on request.
+5.3 A traveler who reaches the gate after boarding has closed is treated
+as not having flown.
+5.4 A traveler who misses a flight because an earlier flight on the same
+ticket ran late is moved to the next flight with a free seat at no
+charge.
+
+6. Names on tickets
+6.1 The name on the ticket must match the photo ID the traveler shows at
+the airport.
+6.2 A small correction, such as one wrong letter, may be made without a
+new ticket.
+6.3 A ticket may not be transferred to another person.
+6.4 A legal change of name needs proof and is handled by the
+reservations desk.
+
+7. Schedule changes by the airline
+7.1 The airline may change flight times, flight numbers or aircraft
+after a ticket is issued.
+7.2 When a schedule change moves a departure by more than ninety
+minutes, the traveler may choose another flight at no charge or ask for
+a refund.
+7.3 Notice of a schedule change is sent to the email address on the
+record.
+
+8. Delays and cancellations by the airline
+8.1 If the airline cancels a flight, the traveler is rebooked on the
+next flight with a free seat in the same cabin.
+8.2 A traveler who chooses not to travel after a cancellation by the
+airline is owed a refund of the unused part of the ticket.
+8.3 Meals and a hotel room may be offered for long delays that are
+within the airline's control.
+8.4 Delays caused by weather or by air traffic control are outside the
+airline's control.
+
+9. Checked bags
+9.1 Checked bags are not included in this fare unless the receipt says
+otherwise.
+9.2 Each checked bag may weigh up to 57 pounds and measure up to 71
+inches in length, width and height added together.
+9.3 Bags over the weight or size limit carry an extra charge and may be
+refused.
+9.4 Fees for checked bags are charged for each direction of travel.
+9.5 Bags must be checked at least 53 minutes before the scheduled
+departure.
+
+10. Carry-on items
+10.1 Each traveler may bring one carry-on bag and one personal item on
+board.
+10.2 A carry-on bag must fit in the overhead bin, and a personal item
+under the seat in front.
+10.3 An item that does not fit may be checked at the gate, and a fee may
+apply.
+
+11. Seats
+11.1 Seat assignments are not guaranteed and may change for operational
+reasons.
+11.2 A seat bought for an extra charge is refunded if the airline moves
+the traveler to a seat of lower value.
+11.3 Seats in exit rows are offered only to travelers who are willing
+and able to help in an emergency.
+
+12. Children and infants
+12.1 A child under two years old may travel on an adult's lap on flights
+within the country.
+12.2 An infant on a lap must travel with an adult who is at least 18
+years old.
+12.3 A child who turns two during the trip needs a seat of their own for
+every flight after the birthday.
+12.4 Children traveling without an adult must be booked through the
+reservations desk, and an extra charge applies.
+
+13. Pets
+13.1 Small cats and dogs may travel in the cabin in a carrier that fits
+under the seat.
+13.2 A pet in the cabin counts as the traveler's carry-on bag.
+13.3 The number of pets on each flight is limited, so a pet must be
+added to the booking in advance.
+
+14. Sports and special items
+14.1 Golf clubs, skis and bicycles may be checked as one bag when packed
+in a hard case.
+14.2 Musical instruments may travel in the cabin when they fit in the
+overhead bin.
+14.3 Items too large for the cabin may be checked for an extra charge.
+
+15. Combining fares
+15.1 This fare may be combined with other one-way fares in the same
+cabin.
+15.2 When two fares are combined, the stricter of the two sets of rules
+applies to the whole ticket.
+15.3 A round trip priced as one fare must be flown in order.
+
+16. Length of stay
+16.1 No minimum stay is required.
+16.2 The return flight must be flown within one year of the outbound
+flight.
+16.3 A stop of more than four hours between connecting flights is not
+allowed on this fare.
+
+17. Upgrades
+17.1 Upgrades depend on availability and are confirmed only when shown
+on the ticket.
+17.2 A paid upgrade applies to the flights shown and is not refundable
+once the first upgraded flight has been flown.
+17.3 Upgrades paid for with miles or points are not available on this
+fare.
+
+18. Payment
+18.1 The price of the ticket is charged in full at the time of booking.
+18.2 The card used to pay may need to be shown at check-in.
+18.3 A payment in another currency is converted by the card issuer,
+which may add a fee.
+
+19. Check-in and boarding
+19.1 Check-in closes 47 minutes before departure on flights within the
+country.
+19.2 Boarding begins about 38 minutes before departure, and the aircraft
+door closes 13 minutes before departure.
+19.3 A traveler who has not checked in by the cut-off time may lose the
+seat.
+
+20. Conduct
+20.1 The airline may refuse to carry a traveler whose conduct puts the
+safety of the flight at risk.
+20.2 A traveler refused for conduct is not owed a refund.
+
+21. Help at the airport
+21.1 Wheelchair help is free of charge and should be asked for at least
+48 hours before departure.
+21.2 Trained service animals travel free of charge in the cabin.
+
+22. Taxes and fees
+22.1 Government taxes and fees are set by the authorities and may change
+before travel.
+22.2 A new or higher tax that comes into force after purchase may be
+collected at the airport.
+
+23. Travel documents
+23.1 Each traveler is responsible for carrying the identity and travel
+documents that every place on the trip requires.
+23.2 The airline may refuse to carry a traveler whose documents are
+missing, damaged or out of date, and no refund is owed in that case.
+23.3 A fine charged to the airline because a traveler lacked the right
+documents may be passed on to that traveler.
+
+24. Liability for bags
+24.1 The airline's liability for a lost, damaged or delayed bag is
+limited by the contract of carriage and by law.
+24.2 Cash, keys, medicine, jewelry, computers and other valuables should
+be carried in the cabin and never packed in a checked bag.
+24.3 Normal wear to a bag, such as scuffs, small cuts and dents, is not
+damage the airline pays for.
+24.4 Damage to a bag must be reported within seven days of arrival.
+
+25. Lost and delayed bags
+25.1 A bag that does not arrive should be reported at the airport before
+the traveler leaves the baggage hall.
+25.2 Reasonable costs for essential items while a bag is delayed may be
+paid back when receipts are sent in.
+25.3 A bag that has not been found within 21 days is treated as lost.
+
+26. Health and fitness to fly
+26.1 A traveler who needs medical oxygen or a medical device on board
+must tell the airline at least 48 hours before departure.
+26.2 The airline may ask for a doctor's note when a traveler's fitness
+to fly is in doubt.
+26.3 A traveler late in pregnancy may need a doctor's note that gives
+the expected date of birth.
+
+27. Batteries and dangerous goods
+27.1 Spare batteries for phones, cameras and computers must travel in
+the cabin, never in a checked bag.
+27.2 Fuel, gas cylinders, fireworks and other dangerous goods may not be
+carried at all.
+27.3 A bag found to hold a forbidden item may be opened and the item
+removed.
+
+28. Overbooking
+28.1 A flight may be sold with more tickets than seats.
+28.2 When a flight has too many travelers, the airline first asks for
+volunteers to give up their seats in exchange for agreed benefits.
+28.3 A traveler who is denied boarding against their wishes is rebooked
+and paid compensation as the law requires.
+
+29. Connections
+29.1 Connections on a single ticket are planned with enough time to
+change aircraft.
+29.2 A connection that a traveler makes between two separate tickets is
+not protected, and a missed flight on the second ticket is the
+traveler's own cost.
+29.3 Bags are checked through to the final stop only when every flight
+is on one ticket.
+
+30. Flights run by partner airlines
+30.1 A flight sold by this airline may be run by a partner airline.
+30.2 On a flight run by a partner, that partner's rules on bags, seats
+and service may apply.
+30.3 Check-in for a flight run by a partner may take place at that
+partner's counter.
+
+31. Earning miles or points
+31.1 Miles or points are earned on this fare at the rate shown in the
+rules of the program the traveler belongs to.
+31.2 The part of a ticket paid for with travel credit may earn at a
+lower rate.
+31.3 Miles or points for a flight cannot be added more than six months
+after it was flown.
+
+32. Price changes
+32.1 The price of a ticket is fixed once it has been issued.
+32.2 If the fare for the same flight falls later, the difference is not
+paid back unless the ticket is changed.
+
+33. Information shared with authorities
+33.1 Details of the booking may be shared with border and security
+authorities where the law requires it.
+33.2 A traveler's date of birth and gender as printed on their ID may be
+needed before check-in.
+
+34. Requests and complaints
+34.1 A request about this ticket may be made through
+https://www.example.com/ at any time.
+34.2 A complaint should be sent in writing within 45 days of travel,
+with the record locator and the ticket number.
+34.3 The airline answers a written complaint within 30 days.
+
+35. Food and drink
+35.1 Soft drinks and a small snack are served free of charge on most
+flights.
+35.2 Meals may be bought on longer flights, while supplies last.
+35.3 Alcohol may be served only by the crew, and only to travelers aged
+21 and over.
+
+36. Devices on board
+36.1 Phones and other devices must be set to flight mode when the crew
+asks.
+36.2 Wi-Fi is not included in this fare and may be bought on board where
+it is offered.
+36.3 Wi-Fi that was bought and did not work may be paid back as travel
+credit.
+
+37. Smoking
+37.1 Smoking is not allowed on board, and that includes electronic
+cigarettes.
+37.2 Tampering with a smoke detector on board is against the law.
+
+38. The contract of carriage
+38.1 These rules form part of the contract of carriage between the
+traveler and the airline.
+38.2 Where these rules and the contract of carriage differ, the contract
+of carriage applies.
+38.3 The full contract of carriage may be read at
+https://www.example.com/ at any time.
+
+39. Charges, by when the request is made
+39.1 A change of date or time, more than 60 days before departure: no
+fee; any difference in fare is collected.
+39.2 A change of date or time, from 60 to 21 days before departure: no
+fee; any difference in fare is collected.
+39.3 A change of date or time, from 20 to 7 days before departure: no
+fee; any difference in fare is collected.
+39.4 A change of date or time, less than 7 days before departure: no
+fee; any difference in fare is collected, and seats must be free.
+39.5 A change of date or time, after departure: allowed only for flights
+not yet flown, for the difference in fare.
+39.6 A change of route, more than 60 days before departure: no fee; the
+ticket is priced again at today's fares.
+39.7 A change of route, from 60 to 21 days before departure: no fee; the
+ticket is priced again at today's fares.
+39.8 A change of route, from 20 to 7 days before departure: no fee; the
+ticket is priced again at today's fares.
+39.9 A change of route, less than 7 days before departure: no fee; the
+ticket is priced again at today's fares.
+39.10 A change of route, after departure: not allowed.
+39.11 A cancellation for travel credit, more than 60 days before
+departure: the full value is kept as credit.
+39.12 A cancellation for travel credit, from 60 to 21 days before
+departure: the full value is kept as credit.
+39.13 A cancellation for travel credit, from 20 to 7 days before
+departure: the full value is kept as credit.
+39.14 A cancellation for travel credit, less than 7 days before
+departure: the value less USD 41.25 is kept as credit.
+39.15 A cancellation for travel credit, after departure: only the value
+of flights not yet flown is kept as credit.
+39.16 A cancellation for a refund, more than 60 days before departure:
+only within 24 hours of purchase.
+39.17 A cancellation for a refund, from 60 to 21 days before departure:
+only within 24 hours of purchase.
+39.18 A cancellation for a refund, from 20 to 7 days before departure:
+only within 24 hours of purchase.
+39.19 A cancellation for a refund, less than 7 days before departure:
+not allowed.
+39.20 A cancellation for a refund, after departure: not allowed.
+39.21 A change to an earlier flight on the same day, more than 60 days
+before departure: not offered this far ahead.
+39.22 A change to an earlier flight on the same day, from 60 to 21 days
+before departure: not offered this far ahead.
+39.23 A change to an earlier flight on the same day, from 20 to 7 days
+before departure: not offered this far ahead.
+39.24 A change to an earlier flight on the same day, less than 7 days
+before departure: not offered until the day of travel.
+39.25 A change to an earlier flight on the same day, after departure: a
+fee of USD 63.50 when seats are free.
+39.26 Adding a checked bag, more than 60 days before departure: USD 32.45
+for the first bag and USD 47.40 for the second.
+39.27 Adding a checked bag, from 60 to 21 days before departure: USD 32.45
+for the first bag and USD 47.40 for the second.
+39.28 Adding a checked bag, from 20 to 7 days before departure: USD 32.45
+for the first bag and USD 47.40 for the second.
+39.29 Adding a checked bag, less than 7 days before departure: USD 32.45
+for the first bag and USD 47.40 for the second.
+39.30 Adding a checked bag, after departure: USD 41.85 for the first bag
+at the airport.
+39.31 Choosing a seat, more than 60 days before departure: free for a
+standard seat; extra-legroom seats are charged.
+39.32 Choosing a seat, from 60 to 21 days before departure: free for a
+standard seat; extra-legroom seats are charged.
+39.33 Choosing a seat, from 20 to 7 days before departure: free for a
+standard seat; extra-legroom seats are charged.
+39.34 Choosing a seat, less than 7 days before departure: free for a
+standard seat while any remain.
+39.35 Choosing a seat, after departure: a seat is given at check-in.
+39.36 Correcting a name, more than 60 days before departure: free for a
+correction of up to three letters.
+39.37 Correcting a name, from 60 to 21 days before departure: free for a
+correction of up to three letters.
+39.38 Correcting a name, from 20 to 7 days before departure: free for a
+correction of up to three letters.
+39.39 Correcting a name, less than 7 days before departure: free for a
+correction of up to three letters.
+39.40 Correcting a name, after departure: not allowed.
+
+Fare rules: flight 1 of 2, traveler 2 of 2
+
+1. Changes before departure
+1.1 A change made before the first flight on this ticket carries no
+change fee.
+1.2 The new flight must be in the same cabin or a higher one, and any
+difference in fare is collected when the change is made.
+1.3 When the new fare is lower, the difference is kept as travel credit
+in the name of the traveler on the ticket.
+1.4 A change must be made no later than the scheduled departure time of
+the flight that is being changed.
+1.5 A change to one traveler on the record does not change the tickets
+of any other traveler on it.
+1.6 Where a change moves travel into a period with higher fares, the
+higher fare applies.
+
+2. Changes after departure
+2.1 Once the first flight has been flown, the flights that remain may be
+moved only to another date or time on the same route.
+2.2 The starting point of the next flight may not be changed once travel
+has begun.
+2.3 A change after departure is priced at the fare on offer on the day
+the change is made.
+2.4 A change made at the airport on the day of travel depends on seats
+being free on the new flight.
+
+3. Cancellation and refunds
+3.1 This ticket is non-refundable except where the law requires a
+refund.
+3.2 A ticket canceled within 24 hours of purchase, and at least seven
+days before departure, is refunded in full to the card that paid for it.
+3.3 After that period the value of a canceled ticket is kept as travel
+credit, in full or less a fee, as rule 39 sets out.
+3.4 Taxes collected for flights that are not flown may be refunded on
+request.
+3.5 A request for a refund must be made within one year of the day the
+ticket was issued.
+
+4. Travel credit
+4.1 Travel credit may be used toward a new ticket for the same traveler
+and has no cash value.
+4.2 Credit must be used to book new travel before it expires; the travel
+itself may take place later.
+4.3 When a new ticket costs less than the credit, what is left stays as
+credit with the same expiry.
+4.4 Credit may not be passed to another person, sold or exchanged.
+
+5. Missed flights
+5.1 If a traveler does not take a flight and does not cancel it before
+departure, every later flight on the same ticket is canceled.
+5.2 A ticket marked as not flown keeps no value, apart from taxes that
+may be refunded on request.
+5.3 A traveler who reaches the gate after boarding has closed is treated
+as not having flown.
+5.4 A traveler who misses a flight because an earlier flight on the same
+ticket ran late is moved to the next flight with a free seat at no
+charge.
+
+6. Names on tickets
+6.1 The name on the ticket must match the photo ID the traveler shows at
+the airport.
+6.2 A small correction, such as one wrong letter, may be made without a
+new ticket.
+6.3 A ticket may not be transferred to another person.
+6.4 A legal change of name needs proof and is handled by the
+reservations desk.
+
+7. Schedule changes by the airline
+7.1 The airline may change flight times, flight numbers or aircraft
+after a ticket is issued.
+7.2 When a schedule change moves a departure by more than ninety
+minutes, the traveler may choose another flight at no charge or ask for
+a refund.
+7.3 Notice of a schedule change is sent to the email address on the
+record.
+
+8. Delays and cancellations by the airline
+8.1 If the airline cancels a flight, the traveler is rebooked on the
+next flight with a free seat in the same cabin.
+8.2 A traveler who chooses not to travel after a cancellation by the
+airline is owed a refund of the unused part of the ticket.
+8.3 Meals and a hotel room may be offered for long delays that are
+within the airline's control.
+8.4 Delays caused by weather or by air traffic control are outside the
+airline's control.
+
+9. Checked bags
+9.1 Checked bags are not included in this fare unless the receipt says
+otherwise.
+9.2 Each checked bag may weigh up to 57 pounds and measure up to 71
+inches in length, width and height added together.
+9.3 Bags over the weight or size limit carry an extra charge and may be
+refused.
+9.4 Fees for checked bags are charged for each direction of travel.
+9.5 Bags must be checked at least 53 minutes before the scheduled
+departure.
+
+10. Carry-on items
+10.1 Each traveler may bring one carry-on bag and one personal item on
+board.
+10.2 A carry-on bag must fit in the overhead bin, and a personal item
+under the seat in front.
+10.3 An item that does not fit may be checked at the gate, and a fee may
+apply.
+
+11. Seats
+11.1 Seat assignments are not guaranteed and may change for operational
+reasons.
+11.2 A seat bought for an extra charge is refunded if the airline moves
+the traveler to a seat of lower value.
+11.3 Seats in exit rows are offered only to travelers who are willing
+and able to help in an emergency.
+
+12. Children and infants
+12.1 A child under two years old may travel on an adult's lap on flights
+within the country.
+12.2 An infant on a lap must travel with an adult who is at least 18
+years old.
+12.3 A child who turns two during the trip needs a seat of their own for
+every flight after the birthday.
+12.4 Children traveling without an adult must be booked through the
+reservations desk, and an extra charge applies.
+
+13. Pets
+13.1 Small cats and dogs may travel in the cabin in a carrier that fits
+under the seat.
+13.2 A pet in the cabin counts as the traveler's carry-on bag.
+13.3 The number of pets on each flight is limited, so a pet must be
+added to the booking in advance.
+
+14. Sports and special items
+14.1 Golf clubs, skis and bicycles may be checked as one bag when packed
+in a hard case.
+14.2 Musical instruments may travel in the cabin when they fit in the
+overhead bin.
+14.3 Items too large for the cabin may be checked for an extra charge.
+
+15. Combining fares
+15.1 This fare may be combined with other one-way fares in the same
+cabin.
+15.2 When two fares are combined, the stricter of the two sets of rules
+applies to the whole ticket.
+15.3 A round trip priced as one fare must be flown in order.
+
+16. Length of stay
+16.1 No minimum stay is required.
+16.2 The return flight must be flown within one year of the outbound
+flight.
+16.3 A stop of more than four hours between connecting flights is not
+allowed on this fare.
+
+17. Upgrades
+17.1 Upgrades depend on availability and are confirmed only when shown
+on the ticket.
+17.2 A paid upgrade applies to the flights shown and is not refundable
+once the first upgraded flight has been flown.
+17.3 Upgrades paid for with miles or points are not available on this
+fare.
+
+18. Payment
+18.1 The price of the ticket is charged in full at the time of booking.
+18.2 The card used to pay may need to be shown at check-in.
+18.3 A payment in another currency is converted by the card issuer,
+which may add a fee.
+
+19. Check-in and boarding
+19.1 Check-in closes 47 minutes before departure on flights within the
+country.
+19.2 Boarding begins about 38 minutes before departure, and the aircraft
+door closes 13 minutes before departure.
+19.3 A traveler who has not checked in by the cut-off time may lose the
+seat.
+
+20. Conduct
+20.1 The airline may refuse to carry a traveler whose conduct puts the
+safety of the flight at risk.
+20.2 A traveler refused for conduct is not owed a refund.
+
+21. Help at the airport
+21.1 Wheelchair help is free of charge and should be asked for at least
+48 hours before departure.
+21.2 Trained service animals travel free of charge in the cabin.
+
+22. Taxes and fees
+22.1 Government taxes and fees are set by the authorities and may change
+before travel.
+22.2 A new or higher tax that comes into force after purchase may be
+collected at the airport.
+
+23. Travel documents
+23.1 Each traveler is responsible for carrying the identity and travel
+documents that every place on the trip requires.
+23.2 The airline may refuse to carry a traveler whose documents are
+missing, damaged or out of date, and no refund is owed in that case.
+23.3 A fine charged to the airline because a traveler lacked the right
+documents may be passed on to that traveler.
+
+24. Liability for bags
+24.1 The airline's liability for a lost, damaged or delayed bag is
+limited by the contract of carriage and by law.
+24.2 Cash, keys, medicine, jewelry, computers and other valuables should
+be carried in the cabin and never packed in a checked bag.
+24.3 Normal wear to a bag, such as scuffs, small cuts and dents, is not
+damage the airline pays for.
+24.4 Damage to a bag must be reported within seven days of arrival.
+
+25. Lost and delayed bags
+25.1 A bag that does not arrive should be reported at the airport before
+the traveler leaves the baggage hall.
+25.2 Reasonable costs for essential items while a bag is delayed may be
+paid back when receipts are sent in.
+25.3 A bag that has not been found within 21 days is treated as lost.
+
+26. Health and fitness to fly
+26.1 A traveler who needs medical oxygen or a medical device on board
+must tell the airline at least 48 hours before departure.
+26.2 The airline may ask for a doctor's note when a traveler's fitness
+to fly is in doubt.
+26.3 A traveler late in pregnancy may need a doctor's note that gives
+the expected date of birth.
+
+27. Batteries and dangerous goods
+27.1 Spare batteries for phones, cameras and computers must travel in
+the cabin, never in a checked bag.
+27.2 Fuel, gas cylinders, fireworks and other dangerous goods may not be
+carried at all.
+27.3 A bag found to hold a forbidden item may be opened and the item
+removed.
+
+28. Overbooking
+28.1 A flight may be sold with more tickets than seats.
+28.2 When a flight has too many travelers, the airline first asks for
+volunteers to give up their seats in exchange for agreed benefits.
+28.3 A traveler who is denied boarding against their wishes is rebooked
+and paid compensation as the law requires.
+
+29. Connections
+29.1 Connections on a single ticket are planned with enough time to
+change aircraft.
+29.2 A connection that a traveler makes between two separate tickets is
+not protected, and a missed flight on the second ticket is the
+traveler's own cost.
+29.3 Bags are checked through to the final stop only when every flight
+is on one ticket.
+
+30. Flights run by partner airlines
+30.1 A flight sold by this airline may be run by a partner airline.
+30.2 On a flight run by a partner, that partner's rules on bags, seats
+and service may apply.
+30.3 Check-in for a flight run by a partner may take place at that
+partner's counter.
+
+31. Earning miles or points
+31.1 Miles or points are earned on this fare at the rate shown in the
+rules of the program the traveler belongs to.
+31.2 The part of a ticket paid for with travel credit may earn at a
+lower rate.
+31.3 Miles or points for a flight cannot be added more than six months
+after it was flown.
+
+32. Price changes
+32.1 The price of a ticket is fixed once it has been issued.
+32.2 If the fare for the same flight falls later, the difference is not
+paid back unless the ticket is changed.
+
+33. Information shared with authorities
+33.1 Details of the booking may be shared with border and security
+authorities where the law requires it.
+33.2 A traveler's date of birth and gender as printed on their ID may be
+needed before check-in.
+
+34. Requests and complaints
+34.1 A request about this ticket may be made through
+https://www.example.com/ at any time.
+34.2 A complaint should be sent in writing within 45 days of travel,
+with the record locator and the ticket number.
+34.3 The airline answers a written complaint within 30 days.
+
+35. Food and drink
+35.1 Soft drinks and a small snack are served free of charge on most
+flights.
+35.2 Meals may be bought on longer flights, while supplies last.
+35.3 Alcohol may be served only by the crew, and only to travelers aged
+21 and over.
+
+36. Devices on board
+36.1 Phones and other devices must be set to flight mode when the crew
+asks.
+36.2 Wi-Fi is not included in this fare and may be bought on board where
+it is offered.
+36.3 Wi-Fi that was bought and did not work may be paid back as travel
+credit.
+
+37. Smoking
+37.1 Smoking is not allowed on board, and that includes electronic
+cigarettes.
+37.2 Tampering with a smoke detector on board is against the law.
+
+38. The contract of carriage
+38.1 These rules form part of the contract of carriage between the
+traveler and the airline.
+38.2 Where these rules and the contract of carriage differ, the contract
+of carriage applies.
+38.3 The full contract of carriage may be read at
+https://www.example.com/ at any time.
+
+39. Charges, by when the request is made
+39.1 A change of date or time, more than 60 days before departure: no
+fee; any difference in fare is collected.
+39.2 A change of date or time, from 60 to 21 days before departure: no
+fee; any difference in fare is collected.
+39.3 A change of date or time, from 20 to 7 days before departure: no
+fee; any difference in fare is collected.
+39.4 A change of date or time, less than 7 days before departure: no
+fee; any difference in fare is collected, and seats must be free.
+39.5 A change of date or time, after departure: allowed only for flights
+not yet flown, for the difference in fare.
+39.6 A change of route, more than 60 days before departure: no fee; the
+ticket is priced again at today's fares.
+39.7 A change of route, from 60 to 21 days before departure: no fee; the
+ticket is priced again at today's fares.
+39.8 A change of route, from 20 to 7 days before departure: no fee; the
+ticket is priced again at today's fares.
+39.9 A change of route, less than 7 days before departure: no fee; the
+ticket is priced again at today's fares.
+39.10 A change of route, after departure: not allowed.
+39.11 A cancellation for travel credit, more than 60 days before
+departure: the full value is kept as credit.
+39.12 A cancellation for travel credit, from 60 to 21 days before
+departure: the full value is kept as credit.
+39.13 A cancellation for travel credit, from 20 to 7 days before
+departure: the full value is kept as credit.
+39.14 A cancellation for travel credit, less than 7 days before
+departure: the value less USD 41.25 is kept as credit.
+39.15 A cancellation for travel credit, after departure: only the value
+of flights not yet flown is kept as credit.
+39.16 A cancellation for a refund, more than 60 days before departure:
+only within 24 hours of purchase.
+39.17 A cancellation for a refund, from 60 to 21 days before departure:
+only within 24 hours of purchase.
+39.18 A cancellation for a refund, from 20 to 7 days before departure:
+only within 24 hours of purchase.
+39.19 A cancellation for a refund, less than 7 days before departure:
+not allowed.
+39.20 A cancellation for a refund, after departure: not allowed.
+39.21 A change to an earlier flight on the same day, more than 60 days
+before departure: not offered this far ahead.
+39.22 A change to an earlier flight on the same day, from 60 to 21 days
+before departure: not offered this far ahead.
+39.23 A change to an earlier flight on the same day, from 20 to 7 days
+before departure: not offered this far ahead.
+39.24 A change to an earlier flight on the same day, less than 7 days
+before departure: not offered until the day of travel.
+39.25 A change to an earlier flight on the same day, after departure: a
+fee of USD 63.50 when seats are free.
+39.26 Adding a checked bag, more than 60 days before departure: USD 32.45
+for the first bag and USD 47.40 for the second.
+39.27 Adding a checked bag, from 60 to 21 days before departure: USD 32.45
+for the first bag and USD 47.40 for the second.
+39.28 Adding a checked bag, from 20 to 7 days before departure: USD 32.45
+for the first bag and USD 47.40 for the second.
+39.29 Adding a checked bag, less than 7 days before departure: USD 32.45
+for the first bag and USD 47.40 for the second.
+39.30 Adding a checked bag, after departure: USD 41.85 for the first bag
+at the airport.
+39.31 Choosing a seat, more than 60 days before departure: free for a
+standard seat; extra-legroom seats are charged.
+39.32 Choosing a seat, from 60 to 21 days before departure: free for a
+standard seat; extra-legroom seats are charged.
+39.33 Choosing a seat, from 20 to 7 days before departure: free for a
+standard seat; extra-legroom seats are charged.
+39.34 Choosing a seat, less than 7 days before departure: free for a
+standard seat while any remain.
+39.35 Choosing a seat, after departure: a seat is given at check-in.
+39.36 Correcting a name, more than 60 days before departure: free for a
+correction of up to three letters.
+39.37 Correcting a name, from 60 to 21 days before departure: free for a
+correction of up to three letters.
+39.38 Correcting a name, from 20 to 7 days before departure: free for a
+correction of up to three letters.
+39.39 Correcting a name, less than 7 days before departure: free for a
+correction of up to three letters.
+39.40 Correcting a name, after departure: not allowed.
+
+Fare rules: flight 2 of 2, traveler 1 of 2
+
+1. Changes before departure
+1.1 A change made before the first flight on this ticket carries no
+change fee.
+1.2 The new flight must be in the same cabin or a higher one, and any
+difference in fare is collected when the change is made.
+1.3 When the new fare is lower, the difference is kept as travel credit
+in the name of the traveler on the ticket.
+1.4 A change must be made no later than the scheduled departure time of
+the flight that is being changed.
+1.5 A change to one traveler on the record does not change the tickets
+of any other traveler on it.
+1.6 Where a change moves travel into a period with higher fares, the
+higher fare applies.
+
+2. Changes after departure
+2.1 Once the first flight has been flown, the flights that remain may be
+moved only to another date or time on the same route.
+2.2 The starting point of the next flight may not be changed once travel
+has begun.
+2.3 A change after departure is priced at the fare on offer on the day
+the change is made.
+2.4 A change made at the airport on the day of travel depends on seats
+being free on the new flight.
+
+3. Cancellation and refunds
+3.1 This ticket is non-refundable except where the law requires a
+refund.
+3.2 A ticket canceled within 24 hours of purchase, and at least seven
+days before departure, is refunded in full to the card that paid for it.
+3.3 After that period the value of a canceled ticket is kept as travel
+credit, in full or less a fee, as rule 39 sets out.
+3.4 Taxes collected for flights that are not flown may be refunded on
+request.
+3.5 A request for a refund must be made within one year of the day the
+ticket was issued.
+
+4. Travel credit
+4.1 Travel credit may be used toward a new ticket for the same traveler
+and has no cash value.
+4.2 Credit must be used to book new travel before it expires; the travel
+itself may take place later.
+4.3 When a new ticket costs less than the credit, what is left stays as
+credit with the same expiry.
+4.4 Credit may not be passed to another person, sold or exchanged.
+
+5. Missed flights
+5.1 If a traveler does not take a flight and does not cancel it before
+departure, every later flight on the same ticket is canceled.
+5.2 A ticket marked as not flown keeps no value, apart from taxes that
+may be refunded on request.
+5.3 A traveler who reaches the gate after boarding has closed is treated
+as not having flown.
+5.4 A traveler who misses a flight because an earlier flight on the same
+ticket ran late is moved to the next flight with a free seat at no
+charge.
+
+6. Names on tickets
+6.1 The name on the ticket must match the photo ID the traveler shows at
+the airport.
+6.2 A small correction, such as one wrong letter, may be made without a
+new ticket.
+6.3 A ticket may not be transferred to another person.
+6.4 A legal change of name needs proof and is handled by the
+reservations desk.
+
+7. Schedule changes by the airline
+7.1 The airline may change flight times, flight numbers or aircraft
+after a ticket is issued.
+7.2 When a schedule change moves a departure by more than ninety
+minutes, the traveler may choose another flight at no charge or ask for
+a refund.
+7.3 Notice of a schedule change is sent to the email address on the
+record.
+
+8. Delays and cancellations by the airline
+8.1 If the airline cancels a flight, the traveler is rebooked on the
+next flight with a free seat in the same cabin.
+8.2 A traveler who chooses not to travel after a cancellation by the
+airline is owed a refund of the unused part of the ticket.
+8.3 Meals and a hotel room may be offered for long delays that are
+within the airline's control.
+8.4 Delays caused by weather or by air traffic control are outside the
+airline's control.
+
+9. Checked bags
+9.1 Checked bags are not included in this fare unless the receipt says
+otherwise.
+9.2 Each checked bag may weigh up to 57 pounds and measure up to 71
+inches in length, width and height added together.
+9.3 Bags over the weight or size limit carry an extra charge and may be
+refused.
+9.4 Fees for checked bags are charged for each direction of travel.
+9.5 Bags must be checked at least 53 minutes before the scheduled
+departure.
+
+10. Carry-on items
+10.1 Each traveler may bring one carry-on bag and one personal item on
+board.
+10.2 A carry-on bag must fit in the overhead bin, and a personal item
+under the seat in front.
+10.3 An item that does not fit may be checked at the gate, and a fee may
+apply.
+
+11. Seats
+11.1 Seat assignments are not guaranteed and may change for operational
+reasons.
+11.2 A seat bought for an extra charge is refunded if the airline moves
+the traveler to a seat of lower value.
+11.3 Seats in exit rows are offered only to travelers who are willing
+and able to help in an emergency.
+
+12. Children and infants
+12.1 A child under two years old may travel on an adult's lap on flights
+within the country.
+12.2 An infant on a lap must travel with an adult who is at least 18
+years old.
+12.3 A child who turns two during the trip needs a seat of their own for
+every flight after the birthday.
+12.4 Children traveling without an adult must be booked through the
+reservations desk, and an extra charge applies.
+
+13. Pets
+13.1 Small cats and dogs may travel in the cabin in a carrier that fits
+under the seat.
+13.2 A pet in the cabin counts as the traveler's carry-on bag.
+13.3 The number of pets on each flight is limited, so a pet must be
+added to the booking in advance.
+
+14. Sports and special items
+14.1 Golf clubs, skis and bicycles may be checked as one bag when packed
+in a hard case.
+14.2 Musical instruments may travel in the cabin when they fit in the
+overhead bin.
+14.3 Items too large for the cabin may be checked for an extra charge.
+
+15. Combining fares
+15.1 This fare may be combined with other one-way fares in the same
+cabin.
+15.2 When two fares are combined, the stricter of the two sets of rules
+applies to the whole ticket.
+15.3 A round trip priced as one fare must be flown in order.
+
+16. Length of stay
+16.1 No minimum stay is required.
+16.2 The return flight must be flown within one year of the outbound
+flight.
+16.3 A stop of more than four hours between connecting flights is not
+allowed on this fare.
+
+17. Upgrades
+17.1 Upgrades depend on availability and are confirmed only when shown
+on the ticket.
+17.2 A paid upgrade applies to the flights shown and is not refundable
+once the first upgraded flight has been flown.
+17.3 Upgrades paid for with miles or points are not available on this
+fare.
+
+18. Payment
+18.1 The price of the ticket is charged in full at the time of booking.
+18.2 The card used to pay may need to be shown at check-in.
+18.3 A payment in another currency is converted by the card issuer,
+which may add a fee.
+
+19. Check-in and boarding
+19.1 Check-in closes 47 minutes before departure on flights within the
+country.
+19.2 Boarding begins about 38 minutes before departure, and the aircraft
+door closes 13 minutes before departure.
+19.3 A traveler who has not checked in by the cut-off time may lose the
+seat.
+
+20. Conduct
+20.1 The airline may refuse to carry a traveler whose conduct puts the
+safety of the flight at risk.
+20.2 A traveler refused for conduct is not owed a refund.
+
+21. Help at the airport
+21.1 Wheelchair help is free of charge and should be asked for at least
+48 hours before departure.
+21.2 Trained service animals travel free of charge in the cabin.
+
+22. Taxes and fees
+22.1 Government taxes and fees are set by the authorities and may change
+before travel.
+22.2 A new or higher tax that comes into force after purchase may be
+collected at the airport.
+
+23. Travel documents
+23.1 Each traveler is responsible for carrying the identity and travel
+documents that every place on the trip requires.
+23.2 The airline may refuse to carry a traveler whose documents are
+missing, damaged or out of date, and no refund is owed in that case.
+23.3 A fine charged to the airline because a traveler lacked the right
+documents may be passed on to that traveler.
+
+24. Liability for bags
+24.1 The airline's liability for a lost, damaged or delayed bag is
+limited by the contract of carriage and by law.
+24.2 Cash, keys, medicine, jewelry, computers and other valuables should
+be carried in the cabin and never packed in a checked bag.
+24.3 Normal wear to a bag, such as scuffs, small cuts and dents, is not
+damage the airline pays for.
+24.4 Damage to a bag must be reported within seven days of arrival.
+
+25. Lost and delayed bags
+25.1 A bag that does not arrive should be reported at the airport before
+the traveler leaves the baggage hall.
+25.2 Reasonable costs for essential items while a bag is delayed may be
+paid back when receipts are sent in.
+25.3 A bag that has not been found within 21 days is treated as lost.
+
+26. Health and fitness to fly
+26.1 A traveler who needs medical oxygen or a medical device on board
+must tell the airline at least 48 hours before departure.
+26.2 The airline may ask for a doctor's note when a traveler's fitness
+to fly is in doubt.
+26.3 A traveler late in pregnancy may need a doctor's note that gives
+the expected date of birth.
+
+27. Batteries and dangerous goods
+27.1 Spare batteries for phones, cameras and computers must travel in
+the cabin, never in a checked bag.
+27.2 Fuel, gas cylinders, fireworks and other dangerous goods may not be
+carried at all.
+27.3 A bag found to hold a forbidden item may be opened and the item
+removed.
+
+28. Overbooking
+28.1 A flight may be sold with more tickets than seats.
+28.2 When a flight has too many travelers, the airline first asks for
+volunteers to give up their seats in exchange for agreed benefits.
+28.3 A traveler who is denied boarding against their wishes is rebooked
+and paid compensation as the law requires.
+
+29. Connections
+29.1 Connections on a single ticket are planned with enough time to
+change aircraft.
+29.2 A connection that a traveler makes between two separate tickets is
+not protected, and a missed flight on the second ticket is the
+traveler's own cost.
+29.3 Bags are checked through to the final stop only when every flight
+is on one ticket.
+
+30. Flights run by partner airlines
+30.1 A flight sold by this airline may be run by a partner airline.
+30.2 On a flight run by a partner, that partner's rules on bags, seats
+and service may apply.
+30.3 Check-in for a flight run by a partner may take place at that
+partner's counter.
+
+31. Earning miles or points
+31.1 Miles or points are earned on this fare at the rate shown in the
+rules of the program the traveler belongs to.
+31.2 The part of a ticket paid for with travel credit may earn at a
+lower rate.
+31.3 Miles or points for a flight cannot be added more than six months
+after it was flown.
+
+32. Price changes
+32.1 The price of a ticket is fixed once it has been issued.
+32.2 If the fare for the same flight falls later, the difference is not
+paid back unless the ticket is changed.
+
+33. Information shared with authorities
+33.1 Details of the booking may be shared with border and security
+authorities where the law requires it.
+33.2 A traveler's date of birth and gender as printed on their ID may be
+needed before check-in.
+
+34. Requests and complaints
+34.1 A request about this ticket may be made through
+https://www.example.com/ at any time.
+34.2 A complaint should be sent in writing within 45 days of travel,
+with the record locator and the ticket number.
+34.3 The airline answers a written complaint within 30 days.
+
+35. Food and drink
+35.1 Soft drinks and a small snack are served free of charge on most
+flights.
+35.2 Meals may be bought on longer flights, while supplies last.
+35.3 Alcohol may be served only by the crew, and only to travelers aged
+21 and over.
+
+36. Devices on board
+36.1 Phones and other devices must be set to flight mode when the crew
+asks.
+36.2 Wi-Fi is not included in this fare and may be bought on board where
+it is offered.
+36.3 Wi-Fi that was bought and did not work may be paid back as travel
+credit.
+
+37. Smoking
+37.1 Smoking is not allowed on board, and that includes electronic
+cigarettes.
+37.2 Tampering with a smoke detector on board is against the law.
+
+38. The contract of carriage
+38.1 These rules form part of the contract of carriage between the
+traveler and the airline.
+38.2 Where these rules and the contract of carriage differ, the contract
+of carriage applies.
+38.3 The full contract of carriage may be read at
+https://www.example.com/ at any time.
+
+39. Charges, by when the request is made
+39.1 A change of date or time, more than 60 days before departure: no
+fee; any difference in fare is collected.
+39.2 A change of date or time, from 60 to 21 days before departure: no
+fee; any difference in fare is collected.
+39.3 A change of date or time, from 20 to 7 days before departure: no
+fee; any difference in fare is collected.
+39.4 A change of date or time, less than 7 days before departure: no
+fee; any difference in fare is collected, and seats must be free.
+39.5 A change of date or time, after departure: allowed only for flights
+not yet flown, for the difference in fare.
+39.6 A change of route, more than 60 days before departure: no fee; the
+ticket is priced again at today's fares.
+39.7 A change of route, from 60 to 21 days before departure: no fee; the
+ticket is priced again at today's fares.
+39.8 A change of route, from 20 to 7 days before departure: no fee; the
+ticket is priced again at today's fares.
+39.9 A change of route, less than 7 days before departure: no fee; the
+ticket is priced again at today's fares.
+39.10 A change of route, after departure: not allowed.
+39.11 A cancellation for travel credit, more than 60 days before
+departure: the full value is kept as credit.
+39.12 A cancellation for travel credit, from 60 to 21 days before
+departure: the full value is kept as credit.
+39.13 A cancellation for travel credit, from 20 to 7 days before
+departure: the full value is kept as credit.
+39.14 A cancellation for travel credit, less than 7 days before
+departure: the value less USD 41.25 is kept as credit.
+39.15 A cancellation for travel credit, after departure: only the value
+of flights not yet flown is kept as credit.
+39.16 A cancellation for a refund, more than 60 days before departure:
+only within 24 hours of purchase.
+39.17 A cancellation for a refund, from 60 to 21 days before departure:
+only within 24 hours of purchase.
+39.18 A cancellation for a refund, from 20 to 7 days before departure:
+only within 24 hours of purchase.
+39.19 A cancellation for a refund, less than 7 days before departure:
+not allowed.
+39.20 A cancellation for a refund, after departure: not allowed.
+39.21 A change to an earlier flight on the same day, more than 60 days
+before departure: not offered this far ahead.
+39.22 A change to an earlier flight on the same day, from 60 to 21 days
+before departure: not offered this far ahead.
+39.23 A change to an earlier flight on the same day, from 20 to 7 days
+before departure: not offered this far ahead.
+39.24 A change to an earlier flight on the same day, less than 7 days
+before departure: not offered until the day of travel.
+39.25 A change to an earlier flight on the same day, after departure: a
+fee of USD 63.50 when seats are free.
+39.26 Adding a checked bag, more than 60 days before departure: USD 32.45
+for the first bag and USD 47.40 for the second.
+39.27 Adding a checked bag, from 60 to 21 days before departure: USD 32.45
+for the first bag and USD 47.40 for the second.
+39.28 Adding a checked bag, from 20 to 7 days before departure: USD 32.45
+for the first bag and USD 47.40 for the second.
+39.29 Adding a checked bag, less than 7 days before departure: USD 32.45
+for the first bag and USD 47.40 for the second.
+39.30 Adding a checked bag, after departure: USD 41.85 for the first bag
+at the airport.
+39.31 Choosing a seat, more than 60 days before departure: free for a
+standard seat; extra-legroom seats are charged.
+39.32 Choosing a seat, from 60 to 21 days before departure: free for a
+standard seat; extra-legroom seats are charged.
+39.33 Choosing a seat, from 20 to 7 days before departure: free for a
+standard seat; extra-legroom seats are charged.
+39.34 Choosing a seat, less than 7 days before departure: free for a
+standard seat while any remain.
+39.35 Choosing a seat, after departure: a seat is given at check-in.
+39.36 Correcting a name, more than 60 days before departure: free for a
+correction of up to three letters.
+39.37 Correcting a name, from 60 to 21 days before departure: free for a
+correction of up to three letters.
+39.38 Correcting a name, from 20 to 7 days before departure: free for a
+correction of up to three letters.
+39.39 Correcting a name, less than 7 days before departure: free for a
+correction of up to three letters.
+39.40 Correcting a name, after departure: not allowed.
+
+Fare rules: flight 2 of 2, traveler 2 of 2
+
+1. Changes before departure
+1.1 A change made before the first flight on this ticket carries no
+change fee.
+1.2 The new flight must be in the same cabin or a higher one, and any
+difference in fare is collected when the change is made.
+1.3 When the new fare is lower, the difference is kept as travel credit
+in the name of the traveler on the ticket.
+1.4 A change must be made no later than the scheduled departure time of
+the flight that is being changed.
+1.5 A change to one traveler on the record does not change the tickets
+of any other traveler on it.
+1.6 Where a change moves travel into a period with higher fares, the
+higher fare applies.
+
+2. Changes after departure
+2.1 Once the first flight has been flown, the flights that remain may be
+moved only to another date or time on the same route.
+2.2 The starting point of the next flight may not be changed once travel
+has begun.
+2.3 A change after departure is priced at the fare on offer on the day
+the change is made.
+2.4 A change made at the airport on the day of travel depends on seats
+being free on the new flight.
+
+3. Cancellation and refunds
+3.1 This ticket is non-refundable except where the law requires a
+refund.
+3.2 A ticket canceled within 24 hours of purchase, and at least seven
+days before departure, is refunded in full to the card that paid for it.
+3.3 After that period the value of a canceled ticket is kept as travel
+credit, in full or less a fee, as rule 39 sets out.
+3.4 Taxes collected for flights that are not flown may be refunded on
+request.
+3.5 A request for a refund must be made within one year of the day the
+ticket was issued.
+
+4. Travel credit
+4.1 Travel credit may be used toward a new ticket for the same traveler
+and has no cash value.
+4.2 Credit must be used to book new travel before it expires; the travel
+itself may take place later.
+4.3 When a new ticket costs less than the credit, what is left stays as
+credit with the same expiry.
+4.4 Credit may not be passed to another person, sold or exchanged.
+
+5. Missed flights
+5.1 If a traveler does not take a flight and does not cancel it before
+departure, every later flight on the same ticket is canceled.
+5.2 A ticket marked as not flown keeps no value, apart from taxes that
+may be refunded on request.
+5.3 A traveler who reaches the gate after boarding has closed is treated
+as not having flown.
+5.4 A traveler who misses a flight because an earlier flight on the same
+ticket ran late is moved to the next flight with a free seat at no
+charge.
+
+6. Names on tickets
+6.1 The name on the ticket must match the photo ID the traveler shows at
+the airport.
+6.2 A small correction, such as one wrong letter, may be made without a
+new ticket.
+6.3 A ticket may not be transferred to another person.
+6.4 A legal change of name needs proof and is handled by the
+reservations desk.
+
+7. Schedule changes by the airline
+7.1 The airline may change flight times, flight numbers or aircraft
+after a ticket is issued.
+7.2 When a schedule change moves a departure by more than ninety
+minutes, the traveler may choose another flight at no charge or ask for
+a refund.
+7.3 Notice of a schedule change is sent to the email address on the
+record.
+
+8. Delays and cancellations by the airline
+8.1 If the airline cancels a flight, the traveler is rebooked on the
+next flight with a free seat in the same cabin.
+8.2 A traveler who chooses not to travel after a cancellation by the
+airline is owed a refund of the unused part of the ticket.
+8.3 Meals and a hotel room may be offered for long delays that are
+within the airline's control.
+8.4 Delays caused by weather or by air traffic control are outside the
+airline's control.
+
+9. Checked bags
+9.1 Checked bags are not included in this fare unless the receipt says
+otherwise.
+9.2 Each checked bag may weigh up to 57 pounds and measure up to 71
+inches in length, width and height added together.
+9.3 Bags over the weight or size limit carry an extra charge and may be
+refused.
+9.4 Fees for checked bags are charged for each direction of travel.
+9.5 Bags must be checked at least 53 minutes before the scheduled
+departure.
+
+10. Carry-on items
+10.1 Each traveler may bring one carry-on bag and one personal item on
+board.
+10.2 A carry-on bag must fit in the overhead bin, and a personal item
+under the seat in front.
+10.3 An item that does not fit may be checked at the gate, and a fee may
+apply.
+
+11. Seats
+11.1 Seat assignments are not guaranteed and may change for operational
+reasons.
+11.2 A seat bought for an extra charge is refunded if the airline moves
+the traveler to a seat of lower value.
+11.3 Seats in exit rows are offered only to travelers who are willing
+and able to help in an emergency.
+
+12. Children and infants
+12.1 A child under two years old may travel on an adult's lap on flights
+within the country.
+12.2 An infant on a lap must travel with an adult who is at least 18
+years old.
+12.3 A child who turns two during the trip needs a seat of their own for
+every flight after the birthday.
+12.4 Children traveling without an adult must be booked through the
+reservations desk, and an extra charge applies.
+
+13. Pets
+13.1 Small cats and dogs may travel in the cabin in a carrier that fits
+under the seat.
+13.2 A pet in the cabin counts as the traveler's carry-on bag.
+13.3 The number of pets on each flight is limited, so a pet must be
+added to the booking in advance.
+
+14. Sports and special items
+14.1 Golf clubs, skis and bicycles may be checked as one bag when packed
+in a hard case.
+14.2 Musical instruments may travel in the cabin when they fit in the
+overhead bin.
+14.3 Items too large for the cabin may be checked for an extra charge.
+
+15. Combining fares
+15.1 This fare may be combined with other one-way fares in the same
+cabin.
+15.2 When two fares are combined, the stricter of the two sets of rules
+applies to the whole ticket.
+15.3 A round trip priced as one fare must be flown in order.
+
+16. Length of stay
+16.1 No minimum stay is required.
+16.2 The return flight must be flown within one year of the outbound
+flight.
+16.3 A stop of more than four hours between connecting flights is not
+allowed on this fare.
+
+17. Upgrades
+17.1 Upgrades depend on availability and are confirmed only when shown
+on the ticket.
+17.2 A paid upgrade applies to the flights shown and is not refundable
+once the first upgraded flight has been flown.
+17.3 Upgrades paid for with miles or points are not available on this
+fare.
+
+18. Payment
+18.1 The price of the ticket is charged in full at the time of booking.
+18.2 The card used to pay may need to be shown at check-in.
+18.3 A payment in another currency is converted by the card issuer,
+which may add a fee.
+
+19. Check-in and boarding
+19.1 Check-in closes 47 minutes before departure on flights within the
+country.
+19.2 Boarding begins about 38 minutes before departure, and the aircraft
+door closes 13 minutes before departure.
+19.3 A traveler who has not checked in by the cut-off time may lose the
+seat.
+
+20. Conduct
+20.1 The airline may refuse to carry a traveler whose conduct puts the
+safety of the flight at risk.
+20.2 A traveler refused for conduct is not owed a refund.
+
+21. Help at the airport
+21.1 Wheelchair help is free of charge and should be asked for at least
+48 hours before departure.
+21.2 Trained service animals travel free of charge in the cabin.
+
+22. Taxes and fees
+22.1 Government taxes and fees are set by the authorities and may change
+before travel.
+22.2 A new or higher tax that comes into force after purchase may be
+collected at the airport.
+
+23. Travel documents
+23.1 Each traveler is responsible for carrying the identity and travel
+documents that every place on the trip requires.
+23.2 The airline may refuse to carry a traveler whose documents are
+missing, damaged or out of date, and no refund is owed in that case.
+23.3 A fine charged to the airline because a traveler lacked the right
+documents may be passed on to that traveler.
+
+24. Liability for bags
+24.1 The airline's liability for a lost, damaged or delayed bag is
+limited by the contract of carriage and by law.
+24.2 Cash, keys, medicine, jewelry, computers and other valuables should
+be carried in the cabin and never packed in a checked bag.
+24.3 Normal wear to a bag, such as scuffs, small cuts and dents, is not
+damage the airline pays for.
+24.4 Damage to a bag must be reported within seven days of arrival.
+
+25. Lost and delayed bags
+25.1 A bag that does not arrive should be reported at the airport before
+the traveler leaves the baggage hall.
+25.2 Reasonable costs for essential items while a bag is delayed may be
+paid back when receipts are sent in.
+25.3 A bag that has not been found within 21 days is treated as lost.
+
+26. Health and fitness to fly
+26.1 A traveler who needs medical oxygen or a medical device on board
+must tell the airline at least 48 hours before departure.
+26.2 The airline may ask for a doctor's note when a traveler's fitness
+to fly is in doubt.
+26.3 A traveler late in pregnancy may need a doctor's note that gives
+the expected date of birth.
+
+27. Batteries and dangerous goods
+27.1 Spare batteries for phones, cameras and computers must travel in
+the cabin, never in a checked bag.
+27.2 Fuel, gas cylinders, fireworks and other dangerous goods may not be
+carried at all.
+27.3 A bag found to hold a forbidden item may be opened and the item
+removed.
+
+28. Overbooking
+28.1 A flight may be sold with more tickets than seats.
+28.2 When a flight has too many travelers, the airline first asks for
+volunteers to give up their seats in exchange for agreed benefits.
+28.3 A traveler who is denied boarding against their wishes is rebooked
+and paid compensation as the law requires.
+
+29. Connections
+29.1 Connections on a single ticket are planned with enough time to
+change aircraft.
+29.2 A connection that a traveler makes between two separate tickets is
+not protected, and a missed flight on the second ticket is the
+traveler's own cost.
+29.3 Bags are checked through to the final stop only when every flight
+is on one ticket.
+
+30. Flights run by partner airlines
+30.1 A flight sold by this airline may be run by a partner airline.
+30.2 On a flight run by a partner, that partner's rules on bags, seats
+and service may apply.
+30.3 Check-in for a flight run by a partner may take place at that
+partner's counter.
+
+31. Earning miles or points
+31.1 Miles or points are earned on this fare at the rate shown in the
+rules of the program the traveler belongs to.
+31.2 The part of a ticket paid for with travel credit may earn at a
+lower rate.
+31.3 Miles or points for a flight cannot be added more than six months
+after it was flown.
+
+32. Price changes
+32.1 The price of a ticket is fixed once it has been issued.
+32.2 If the fare for the same flight falls later, the difference is not
+paid back unless the ticket is changed.
+
+33. Information shared with authorities
+33.1 Details of the booking may be shared with border and security
+authorities where the law requires it.
+33.2 A traveler's date of birth and gender as printed on their ID may be
+needed before check-in.
+
+34. Requests and complaints
+34.1 A request about this ticket may be made through
+https://www.example.com/ at any time.
+34.2 A complaint should be sent in writing within 45 days of travel,
+with the record locator and the ticket number.
+34.3 The airline answers a written complaint within 30 days.
+
+35. Food and drink
+35.1 Soft drinks and a small snack are served free of charge on most
+flights.
+35.2 Meals may be bought on longer flights, while supplies last.
+35.3 Alcohol may be served only by the crew, and only to travelers aged
+21 and over.
+
+36. Devices on board
+36.1 Phones and other devices must be set to flight mode when the crew
+asks.
+36.2 Wi-Fi is not included in this fare and may be bought on board where
+it is offered.
+36.3 Wi-Fi that was bought and did not work may be paid back as travel
+credit.
+
+37. Smoking
+37.1 Smoking is not allowed on board, and that includes electronic
+cigarettes.
+37.2 Tampering with a smoke detector on board is against the law.
+
+38. The contract of carriage
+38.1 These rules form part of the contract of carriage between the
+traveler and the airline.
+38.2 Where these rules and the contract of carriage differ, the contract
+of carriage applies.
+38.3 The full contract of carriage may be read at
+https://www.example.com/ at any time.
+
+39. Charges, by when the request is made
+39.1 A change of date or time, more than 60 days before departure: no
+fee; any difference in fare is collected.
+39.2 A change of date or time, from 60 to 21 days before departure: no
+fee; any difference in fare is collected.
+39.3 A change of date or time, from 20 to 7 days before departure: no
+fee; any difference in fare is collected.
+39.4 A change of date or time, less than 7 days before departure: no
+fee; any difference in fare is collected, and seats must be free.
+39.5 A change of date or time, after departure: allowed only for flights
+not yet flown, for the difference in fare.
+39.6 A change of route, more than 60 days before departure: no fee; the
+ticket is priced again at today's fares.
+39.7 A change of route, from 60 to 21 days before departure: no fee; the
+ticket is priced again at today's fares.
+39.8 A change of route, from 20 to 7 days before departure: no fee; the
+ticket is priced again at today's fares.
+39.9 A change of route, less than 7 days before departure: no fee; the
+ticket is priced again at today's fares.
+39.10 A change of route, after departure: not allowed.
+39.11 A cancellation for travel credit, more than 60 days before
+departure: the full value is kept as credit.
+39.12 A cancellation for travel credit, from 60 to 21 days before
+departure: the full value is kept as credit.
+39.13 A cancellation for travel credit, from 20 to 7 days before
+departure: the full value is kept as credit.
+39.14 A cancellation for travel credit, less than 7 days before
+departure: the value less USD 41.25 is kept as credit.
+39.15 A cancellation for travel credit, after departure: only the value
+of flights not yet flown is kept as credit.
+39.16 A cancellation for a refund, more than 60 days before departure:
+only within 24 hours of purchase.
+39.17 A cancellation for a refund, from 60 to 21 days before departure:
+only within 24 hours of purchase.
+39.18 A cancellation for a refund, from 20 to 7 days before departure:
+only within 24 hours of purchase.
+39.19 A cancellation for a refund, less than 7 days before departure:
+not allowed.
+39.20 A cancellation for a refund, after departure: not allowed.
+39.21 A change to an earlier flight on the same day, more than 60 days
+before departure: not offered this far ahead.
+39.22 A change to an earlier flight on the same day, from 60 to 21 days
+before departure: not offered this far ahead.
+39.23 A change to an earlier flight on the same day, from 20 to 7 days
+before departure: not offered this far ahead.
+39.24 A change to an earlier flight on the same day, less than 7 days
+before departure: not offered until the day of travel.
+39.25 A change to an earlier flight on the same day, after departure: a
+fee of USD 63.50 when seats are free.
+39.26 Adding a checked bag, more than 60 days before departure: USD 32.45
+for the first bag and USD 47.40 for the second.
+39.27 Adding a checked bag, from 60 to 21 days before departure: USD 32.45
+for the first bag and USD 47.40 for the second.
+39.28 Adding a checked bag, from 20 to 7 days before departure: USD 32.45
+for the first bag and USD 47.40 for the second.
+39.29 Adding a checked bag, less than 7 days before departure: USD 32.45
+for the first bag and USD 47.40 for the second.
+39.30 Adding a checked bag, after departure: USD 41.85 for the first bag
+at the airport.
+39.31 Choosing a seat, more than 60 days before departure: free for a
+standard seat; extra-legroom seats are charged.
+39.32 Choosing a seat, from 60 to 21 days before departure: free for a
+standard seat; extra-legroom seats are charged.
+39.33 Choosing a seat, from 20 to 7 days before departure: free for a
+standard seat; extra-legroom seats are charged.
+39.34 Choosing a seat, less than 7 days before departure: free for a
+standard seat while any remain.
+39.35 Choosing a seat, after departure: a seat is given at check-in.
+39.36 Correcting a name, more than 60 days before departure: free for a
+correction of up to three letters.
+39.37 Correcting a name, from 60 to 21 days before departure: free for a
+correction of up to three letters.
+39.38 Correcting a name, from 20 to 7 days before departure: free for a
+correction of up to three letters.
+39.39 Correcting a name, less than 7 days before departure: free for a
+correction of up to three letters.
+39.40 Correcting a name, after departure: not allowed.
+
+End of fare rules.
+
+American Airlines

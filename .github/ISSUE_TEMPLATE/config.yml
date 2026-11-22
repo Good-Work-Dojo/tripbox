@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Additional terms: see NOTICE
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security problem
+    url: https://github.com/Good-Work-Dojo/tripbox/security/policy
+    about: Read SECURITY.md and report it privately. Never in a public issue.

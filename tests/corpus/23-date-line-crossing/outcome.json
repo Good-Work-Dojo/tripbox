@@ -1,0 +1,15 @@
+{
+  "status": "processed",
+  "read_by": "model",
+  "document_type": "booking",
+  "items": [
+    {"kind": "flight", "key": "NZ|9007|2027-10-05|SFO", "result": "filed",
+     "people": {"me": 1, "guests": 0, "others": 0},
+     "booking": {"status": "confirmed", "travellers": ["Alex Sample"], "trip": "Auckland",
+                 "checks": [], "sync": "off"}},
+    {"kind": "flight", "key": "NZ|9008|2027-10-15|AKL", "result": "filed",
+     "people": {"me": 1, "guests": 0, "others": 0},
+     "booking": {"status": "confirmed", "travellers": ["Alex Sample"], "trip": "Auckland",
+                 "checks": [], "sync": "off"}}
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "wire_schema": 1,
+  "source": "hand-written",
+  "model": null,
+  "answer": {
+    "document_type": "cancellation",
+    "confidence": 0.9,
+    "reservations": [
+      {
+        "kind": "lodging",
+        "status": "cancelled",
+        "code": "YUQ621",
+        "provider": null,
+        "passengers": [
+          "Alex Sample"
+        ],
+        "legs": [],
+        "place": "Example Plaza Hotel Nashville",
+        "address": "700 Example Boulevard, Nashville, TN 37203",
+        "start": "2027-09-17",
+        "end": "2027-09-19",
+        "price": null,
+        "currency": null
+      }
+    ]
+  }
+}

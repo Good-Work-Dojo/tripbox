@@ -1,0 +1,63 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Additional terms: see NOTICE
+name: Parse problem
+description: tripbox read an email wrongly, or did not read it.
+title: "Parse problem: "
+labels: ["parse-problem"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Never attach an original email. It holds names, booking codes and where you will be, and
+        anything you post here is public. Make a redacted report instead, and read it before you
+        paste it: `docker compose run --rm -T worker tripbox report 12 --name "<your name>" > tripbox-report.txt`
+        (12 is the message's number; `tripbox report` alone lists the newest; give `--name` once
+        for each traveller on the booking). What it keeps and removes is in docs/privacy.md.
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: What the email says should have been filed, in your own words, with invented values if you like.
+    validations:
+      required: true
+  - type: textarea
+    id: filed
+    attributes:
+      label: What tripbox filed
+      description: What the page shows for it, or that nothing was filed.
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: The report
+      description: The output of `tripbox report`, as text.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The version the page shows at the foot of Settings, or the image tag.
+    validations:
+      required: true
+  - type: dropdown
+    id: reader
+    attributes:
+      label: Who read the email
+      description: The report says "read by" near its top.
+      options:
+        - kitinerary
+        - a model
+        - nobody
+        - I do not know
+    validations:
+      required: true
+  - type: checkboxes
+    id: checked
+    attributes:
+      label: Before you send
+      options:
+        - label: I read the report and it holds nothing I do not want public.
+          required: true

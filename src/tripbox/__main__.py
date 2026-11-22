@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Additional terms: see NOTICE
+from tripbox.cli import main
+
+raise SystemExit(main())

@@ -1,0 +1,24 @@
+# The build context is nothing but what the Dockerfile copies: everything is left out, then these
+# come back.
+*
+!pyproject.toml
+!uv.lock
+!README.md
+!src
+!scripts
+!config
+!tests
+!compose.yaml
+!.env.example
+!LICENSE
+!NOTICE
+!THIRD_PARTY_NOTICES.md
+!LICENSES
+!docs/configuration.md
+!docs/gmail-filters.md
+# and out again: the real travellers file a user writes, the agents' notes, bytecode
+config/travellers.yaml
+src/**/AGENTS.md
+src/**/CLAUDE.md
+**/__pycache__
+**/*.pyc

@@ -1,0 +1,175 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Additional terms: see NOTICE
+# tripbox: forwarded travel confirmation emails become a trips page.
+# One image, three services: web (the page), worker (reads mail and what you hand in) and,
+# with the "telegram" profile, bot.
+#
+# Quick start, in an empty directory (in .env a $ is written $$):
+#   curl -fsSL https://github.com/Good-Work-Dojo/tripbox/releases/latest/download/tripbox.tar.gz \
+#     | tar -xz && cd tripbox
+#   (umask 077 && echo 'TRIPBOX_PASSWORD=<choose a password of 10 characters or more>' > .env)
+#   docker compose up -d
+# then open http://localhost:8110 and sign in. On a server, add two lines to .env first:
+#   TRIPBOX_LISTEN=0.0.0.0:8110
+#   TRIPBOX_BASE_URL=http://<its name or address>:8110
+# The guides are in the source at https://github.com/Good-Work-Dojo/tripbox: docs/install.md
+# (backup, restore, upgrade), docs/configuration.md (every setting), docs/mail.md, docs/models.md,
+# docs/privacy.md, docs/security.md, docs/airtrail.md and docs/reverse-proxy.md.
+# "docker compose run --rm worker tripbox doctor" says what is set up and what is wrong.
+# The folders data, archive, logs, config and backups beside this file are yours: the services
+# run as user 1000 unless TRIPBOX_UID and TRIPBOX_GID say otherwise. Back up data and archive.
+name: tripbox
+
+# What every service shares: the image, the user it runs as, and a container that can change
+# nothing but its own folders and /tmp.
+x-hardening: &hardening
+  image: "${TRIPBOX_IMAGE:-ghcr.io/good-work-dojo/tripbox:1}"
+  user: "${TRIPBOX_UID:-1000}:${TRIPBOX_GID:-1000}"
+  restart: unless-stopped
+  init: true
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  # The page. It is the one a browser reaches, so it gets its own settings by name and nothing
+  # else: no settings file, no mailbox, model, AirTrail or notifier credential (its only
+  # secrets are its login pair) and no folder of raw emails or backups.
+  web:
+    <<: *hardening
+    command: ["python", "-m", "tripbox", "web", "--host", "0.0.0.0", "--port", "8110"]
+    environment:
+      TZ: "${TZ:-UTC}"
+      TRIPBOX_HOME_AIRPORTS: "${TRIPBOX_HOME_AIRPORTS:-}"
+      TRIPBOX_DATA_DIR: /app/data
+      TRIPBOX_LOGS_DIR: /app/logs
+      TRIPBOX_CONFIG_DIR: /app/config
+      TRIPBOX_AIRTRAIL_PUBLIC_URL: "${TRIPBOX_AIRTRAIL_PUBLIC_URL:-}"
+      TRIPBOX_AUTH: "${TRIPBOX_AUTH:-}"
+      TRIPBOX_PASSWORD: "${TRIPBOX_PASSWORD:-}"
+      TRIPBOX_PASSWORD_HASH: "${TRIPBOX_PASSWORD_HASH:-}"
+      TRIPBOX_ACCESS_TEAM: "${TRIPBOX_ACCESS_TEAM:-}"
+      TRIPBOX_ACCESS_AUD: "${TRIPBOX_ACCESS_AUD:-}"
+      TRIPBOX_ALLOWED_EMAILS: "${TRIPBOX_ALLOWED_EMAILS:-}"
+      TRIPBOX_TRUSTED_PROXIES: "${TRIPBOX_TRUSTED_PROXIES:-}"
+      TRIPBOX_PROXY_USER_HEADER: "${TRIPBOX_PROXY_USER_HEADER:-}"
+      TRIPBOX_PROXY_USERS: "${TRIPBOX_PROXY_USERS:-}"
+      TRIPBOX_BASE_URL: "${TRIPBOX_BASE_URL:-}"
+      TRIPBOX_LISTEN: "${TRIPBOX_LISTEN:-127.0.0.1:8110}"
+      TRIPBOX_SOURCE_URL: "${TRIPBOX_SOURCE_URL:-}"
+      TRIPBOX_OFFLINE: "${TRIPBOX_OFFLINE:-}"
+    volumes:
+      - type: bind
+        source: ./data
+        target: /app/data
+        bind: {create_host_path: false}
+      - type: bind
+        source: ./logs
+        target: /app/logs
+        bind: {create_host_path: false}
+      - type: bind
+        source: ./config
+        target: /app/config
+        read_only: true
+        bind: {create_host_path: false}
+    # Inside its container the page listens on every interface; this is where it is reached
+    # from outside: this computer alone unless TRIPBOX_LISTEN says otherwise.
+    ports:
+      - "${TRIPBOX_LISTEN:-127.0.0.1:8110}:8110"
+    tmpfs: ["/tmp:size=64m"]
+    mem_limit: 512m
+    depends_on: [worker]
+    healthcheck:
+      test: ["CMD", "python", "/app/scripts/healthcheck.py", "web"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+  # Reads mail and what is handed in on the page, keeps the flight log in step and fills in
+  # flights: every setting in .env. The folders are written out after it, so no line there
+  # moves one.
+  worker:
+    <<: *hardening
+    command: ["python", "-m", "tripbox", "work"]
+    env_file: .env
+    environment:
+      TRIPBOX_DATA_DIR: /app/data
+      TRIPBOX_ARCHIVE_DIR: /app/archive
+      TRIPBOX_LOGS_DIR: /app/logs
+      TRIPBOX_CONFIG_DIR: /app/config
+      TRIPBOX_BACKUPS_DIR: /app/backups
+    volumes:
+      - type: bind
+        source: ./data
+        target: /app/data
+        bind: {create_host_path: false}
+      - type: bind
+        source: ./archive
+        target: /app/archive
+        bind: {create_host_path: false}
+      - type: bind
+        source: ./logs
+        target: /app/logs
+        bind: {create_host_path: false}
+      - type: bind
+        source: ./backups
+        target: /app/backups
+        bind: {create_host_path: false}
+      - type: bind
+        source: ./config
+        target: /app/config
+        read_only: true
+        bind: {create_host_path: false}
+    tmpfs: ["/tmp:size=256m"]
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD", "python", "/app/scripts/healthcheck.py", "worker"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+  # The Telegram bot, with COMPOSE_PROFILES=telegram in .env (or --profile telegram).
+  bot:
+    <<: *hardening
+    profiles: ["telegram"]
+    command: ["python", "-m", "tripbox", "bot"]
+    env_file: .env
+    environment:
+      TRIPBOX_DATA_DIR: /app/data
+      TRIPBOX_ARCHIVE_DIR: /app/archive
+      TRIPBOX_LOGS_DIR: /app/logs
+      TRIPBOX_CONFIG_DIR: /app/config
+    volumes:
+      - type: bind
+        source: ./data
+        target: /app/data
+        bind: {create_host_path: false}
+      - type: bind
+        source: ./archive
+        target: /app/archive
+        bind: {create_host_path: false}
+      - type: bind
+        source: ./logs
+        target: /app/logs
+        bind: {create_host_path: false}
+      - type: bind
+        source: ./config
+        target: /app/config
+        read_only: true
+        bind: {create_host_path: false}
+    tmpfs: ["/tmp:size=256m"]
+    mem_limit: 512m
+    depends_on: [worker]
+    healthcheck:
+      test: ["CMD", "python", "/app/scripts/healthcheck.py", "bot"]
+      interval: 2m
+      timeout: 20s
+      start_period: 1m
+      retries: 3

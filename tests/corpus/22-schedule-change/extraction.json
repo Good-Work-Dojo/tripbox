@@ -1,0 +1,16 @@
+{
+  "document_type": "change",
+  "reservations": [
+    {
+      "kind": "flight",
+      "status": "changed",
+      "confirmation_code": "XZS975",
+      "provider": "Alaska Airlines",
+      "passengers": ["Alex Sample", "Sam Sample", "Robin Sample", "Jamie Sample"],
+      "segments": [
+        {"carrier_iata": "AS", "flight_number": "9228", "origin": "SEA", "destination": "MSP",
+         "departure_local": "2027-06-20T15:10", "arrival_local": "2027-06-20T20:30"}
+      ]
+    }
+  ]
+}

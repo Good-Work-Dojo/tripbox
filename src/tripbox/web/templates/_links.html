@@ -1,0 +1,20 @@
+{# SPDX-License-Identifier: AGPL-3.0-only -#}
+{# Additional terms: see NOTICE -#}
+{# Each share link that works (`links`): what it shows, the last day it works, Copy link and Revoke, which comes back to the page it is on (`from_page`) #}
+{% if links %}
+<ul class="share-list">
+  {% for l in links %}
+  <li class="share-row">
+    {% if l.shows %}<p>{{ l.shows }}</p>{% endif %}
+    <p class="muted small">Works until {{ l.until }}</p>
+    <div class="row">
+      <button type="button" class="btn" data-copy="{{ l.url }}">Copy link</button>
+      <form method="post" action="{{ base }}/links/{{ l.id }}/revoke" data-confirm="Revoke this link? It stops working at once.">
+        <input type="hidden" name="from" value="{{ from_page }}">
+        <button type="submit" class="btn link danger">Revoke</button>
+      </form>
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}

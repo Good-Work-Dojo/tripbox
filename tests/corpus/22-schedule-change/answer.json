@@ -1,0 +1,36 @@
+{
+  "wire_schema": 1,
+  "source": "hand-written",
+  "model": null,
+  "answer": {
+    "document_type": "change",
+    "confidence": 0.9,
+    "reservations": [
+      {
+        "kind": "flight",
+        "status": "changed",
+        "code": "XZS975",
+        "provider": "Alaska Airlines",
+        "passengers": ["Alex Sample", "Sam Sample", "Robin Sample", "Jamie Sample"],
+        "legs": [
+          {
+            "carrier": "AS",
+            "number": "9228",
+            "origin": "SEA",
+            "destination": "MSP",
+            "departure": "2027-06-20T15:10",
+            "arrival": "2027-06-20T20:30",
+            "seats": [],
+            "cabin": null
+          }
+        ],
+        "place": null,
+        "address": null,
+        "start": null,
+        "end": null,
+        "price": null,
+        "currency": null
+      }
+    ]
+  }
+}

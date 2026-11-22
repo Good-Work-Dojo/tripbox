@@ -1,0 +1,15 @@
+{
+  "status": "processed",
+  "read_by": "model",
+  "document_type": "booking",
+  "items": [
+    {"kind": "flight", "key": "WN|9471|2027-09-10|MSP", "result": "filed",
+     "people": {"me": 0, "guests": 1, "others": 0},
+     "booking": {"status": "confirmed", "travellers": ["Sam Sample"], "trip": "Kansas City",
+                 "checks": [], "sync": "off"}},
+    {"kind": "flight", "key": "WN|9488|2027-09-12|MCI", "result": "filed",
+     "people": {"me": 0, "guests": 1, "others": 0},
+     "booking": {"status": "confirmed", "travellers": ["Sam Sample"], "trip": "Kansas City",
+                 "checks": [], "sync": "off"}}
+  ]
+}

@@ -1,0 +1,68 @@
+Return-Path: <alex+caf_=trips=example.com@example.com>
+X-Forwarded-To: trips@example.com
+X-Forwarded-For: alex@example.com trips@example.com
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@delta.com;
+       spf=pass smtp.mailfrom="alex+caf_=trips=example.com@example.com";
+       dmarc=pass header.from=delta.com
+From: Delta Air Lines <no-reply@delta.com>
+To: alex@example.com
+Subject: Receipt for your ticket - confirmation QWS987
+Date: Mon, 25 Jan 2027 09:15:07 -0600
+Message-ID: <tkt.qws987.a3.rzk6t@mta.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+DELTA AIR LINES
+Ticket receipt
+
+Thank you for your purchase. Your ticket has been issued and your
+reservation is confirmed. This receipt is for the ticket of the traveler
+named below.
+
+Confirmation number   QWS987
+Ticket issued         January 25, 2027, 9:11 AM CT
+
+TRAVELER
+  Name                SAMPLE/ALEX QUINN
+  Ticket number       0001234500001
+
+ITINERARY
+  Thursday, March 11, 2027
+    Flight DL 9412          Economy
+    Depart  8:05 AM         Minneapolis/St. Paul (MSP)
+    Arrive  11:52 AM        Boston Logan (BOS)
+
+  Sunday, March 14, 2027
+    Flight DL 9435          Economy
+    Depart  5:20 PM         Boston Logan (BOS)
+    Arrive  7:38 PM         Minneapolis/St. Paul (MSP)
+
+  All times are local to the airport.
+
+CHARGES FOR THIS TICKET
+  Base fare                              USD 312.56
+  Taxes, fees and charges                USD  48.24
+  Total                                  USD 360.80
+  Paid with Visa ending in 0000
+
+BAGGAGE
+  One carry-on bag and one personal item are included. A first checked bag
+  is USD 33.15 and a second USD 46.85, each way, paid at check-in.
+
+GOOD TO KNOW
+  - Check in online or in the app from 24 hours before departure, and at
+    the airport no later than 52 minutes before a domestic flight.
+  - Bring a government-issued photo ID that matches the name on the ticket.
+  - This fare can be changed before departure; any difference in fare
+    applies. Unused flights are not refundable.
+  - If you do not take the first flight, the rest of the ticket is
+    canceled.
+
+Manage your trip, choose seats or add bags at https://www.example.com/.
+Questions about this receipt? Call 404-555-0123.
+
+Please do not reply to this message; replies to this address are not read.
+
+Delta Air Lines

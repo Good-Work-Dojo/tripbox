@@ -1,0 +1,23 @@
+{# SPDX-License-Identifier: AGPL-3.0-only -#}
+{# Additional terms: see NOTICE -#}
+<!doctype html>
+<html lang="en" data-base="{{ base }}"{% if offline %} data-sw="{{ base }}/sw.js"{% endif %}>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}Trips{% endblock %}</title>
+<meta name="apple-mobile-web-app-title" content="Trips">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d0d0f" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="{{ base }}/static/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="{{ base }}/static/apple-touch-icon.png">
+<link rel="manifest" href="{{ base }}/manifest.webmanifest" crossorigin="use-credentials">
+<link rel="stylesheet" href="{{ base }}/static/app.css?v={{ asset_v }}">
+{% block head %}{% endblock %}
+</head>
+<body{% block body_attrs %}{% endblock %}>
+{% block body %}{% endblock %}
+<div id="toast" class="toast" role="status" aria-live="polite" hidden{% if flash %} data-flash="{{ flash }}"{% endif %}></div>
+{% block script %}<script src="{{ base }}/static/app.js?v={{ asset_v }}" defer></script>{% endblock %}
+</body>
+</html>

@@ -1,0 +1,54 @@
+{# SPDX-License-Identifier: AGPL-3.0-only -#}
+{# Additional terms: see NOTICE -#}
+<!doctype html>
+{# A shared trip's page: it stands alone (no base.html): no script, no form, no link into the app #}
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>{{ view.title }}</title>
+<link rel="icon" href="{{ base }}/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="{{ base }}/static/app.css?v={{ asset_v }}">
+</head>
+<body>
+<header class="top">
+  <h1 class="ellipsis">{{ view.title }}</h1>
+</header>
+<main class="page shared">
+  <p class="dates shared-dates">{{ view.range }}</p>
+  {% if view.notes %}
+  <section class="notes">
+    <h2 class="section">Notes</h2>
+    <p class="notes-text">{{ view.notes }}</p>
+  </section>
+  {% endif %}
+  <div class="timeline">
+  {% for d in view.days %}
+    <h2 class="day">{{ d.band }}</h2>
+    {% for it in d.bookings %}
+    <article class="item" data-kind="{{ it.kind }}">
+      <div class="time">{% if it.time %}<span class="t">{{ it.time }}</span><span class="tz">{{ it.tz }}</span>{% endif %}</div>
+      <div class="rail"><span class="dot">{{ it.icon }}</span></div>
+      <div class="content">
+        <div class="primary">{{ it.primary }}</div>
+        <div class="secondary">{{ it.secondary }}</div>
+        {% if it.arrives %}<div class="line">arrives {{ it.arrives }}</div>{% endif %}
+        {% for ln in it.lines %}<div class="line">{{ ln }}</div>{% endfor %}
+        {% if it.code or it.names or it.seats %}
+        <div class="line meta">
+          {% if it.code %}<span>conf {{ it.code }}</span>{% endif %}
+          {% if it.names %}<span>{{ it.names }}</span>{% endif %}
+          {% if it.seats %}<span>seats {{ it.seats }}</span>{% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  {% endfor %}
+  </div>
+  {% set shared_from = true %}{% include "_about.html" %}
+</main>
+</body>
+</html>

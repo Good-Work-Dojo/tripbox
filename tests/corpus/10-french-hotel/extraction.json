@@ -1,0 +1,17 @@
+{
+  "document_type": "booking",
+  "reservations": [
+    {
+      "kind": "lodging",
+      "status": "confirmed",
+      "confirmation_code": "SXZ642",
+      "passengers": ["Alex Sample"],
+      "property_name": "Hôtel Exemple Rive Gauche",
+      "address": "12 Rue de l'Exemple, 75006 Paris, France",
+      "check_in": "2027-07-03",
+      "check_out": "2027-07-07",
+      "price": 983.20,
+      "currency": "EUR"
+    }
+  ]
+}

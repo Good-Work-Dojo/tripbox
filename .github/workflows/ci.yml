@@ -1,0 +1,100 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Additional terms: see NOTICE
+# Lint and test the app and the tools, then start the stack and the screenshot checks, on every
+# push to main, on a pull request and by hand, on a GitHub-hosted runner. The steps are
+# tools/verify/ci.sh's stages, in its order and under its names, then two only a workflow runs:
+# `stack` (the quick start's default path, tools/verify/stack_smoke.sh) and `browser` (the
+# screenshot stack's checks, tools/verify/browser_checks.sh).
+# A pull request's run spends nothing while the repository is private: the job waits for it to
+# be public. Each job's runner is a GitHub-hosted label written as a fixed literal, never an
+# expression. tools/verify/check_workflows.py enforces that, GitHub's own actions alone and the
+# full-SHA pin on every action. Every value a script reads reaches it through its environment.
+# Tracebacks and the warnings summary are off (--tb=no -rN --disable-warnings) because CI logs are
+# stored on GitHub; nothing is uploaded. The corpus scorecard prints only what the invented corpus
+# holds, and the secret scan prints a finding's rule and place with its value redacted. The app
+# runs as uid 12345, which the image has no account for, as an install may run it.
+name: ci
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['docs/dev/**']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    if: github.event_name != 'pull_request' || github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: AGENTS.md byte budget
+        run: test "$(wc -c < AGENTS.md)" -le 40000
+      - name: workflow rules
+        run: python3 tools/verify/check_workflows.py
+      - name: licence headers
+        run: python3 tools/verify/spdx.py
+      - name: test image
+        run: docker build --target test -t tripboxoss:ci .
+      - name: dependency licences
+        run: >-
+          docker build --target runtime -t tripboxoss:rt . &&
+          docker run --rm --network none -v "$PWD:/repo:ro" -w /repo
+          -e PYTHONDONTWRITEBYTECODE=1 tripboxoss:rt
+          python /repo/tools/verify/licences.py --collect > "$RUNNER_TEMP/dists.json" &&
+          python3 tools/verify/licences.py --dists "$RUNNER_TEMP/dists.json"
+      - name: lint
+        run: docker run --rm --network none tripboxoss:ci ruff check src tests --statistics
+      - name: tests
+        run: >-
+          docker run --rm --network none --user 12345:54321 -e PYTHONDONTWRITEBYTECODE=1
+          tripboxoss:ci pytest -q --tb=no -rN --disable-warnings -p no:cacheprovider
+      - name: a new install as any user
+        run: >-
+          docker run --rm --network none --user 12345:54321 --read-only --tmpfs /tmp
+          -v "$PWD:/repo:ro" -w /repo -e PYTHONDONTWRITEBYTECODE=1
+          -e TRIPBOX_DATA_DIR=/tmp/data -e TRIPBOX_LOGS_DIR=/tmp/logs
+          -e TRIPBOX_ARCHIVE_DIR=/tmp/archive -e TRIPBOX_CONFIG_DIR=/tmp/config
+          tripboxoss:ci python /repo/tools/verify/standalone_smoke.py
+      - name: corpus scorecard
+        run: >-
+          docker run --rm --network none --user 12345:54321 --read-only --tmpfs /tmp
+          tripboxoss:ci python -m tripbox eval --recorded
+      - name: tools lint
+        run: >-
+          docker run --rm --network none -v "$PWD:/repo:ro" -w /repo
+          -e PYTHONDONTWRITEBYTECODE=1 tripboxoss:ci
+          ruff check --no-cache tools --statistics
+      - name: tools tests
+        run: >-
+          docker run --rm --network none -v "$PWD:/repo:ro" -w /repo
+          -e PYTHONDONTWRITEBYTECODE=1 tripboxoss:ci
+          pytest -q --tb=no -rN --disable-warnings -p no:cacheprovider tools
+      - name: demo site
+        run: >-
+          docker run --rm --network none --user 12345:54321 --read-only --tmpfs /tmp
+          -v "$PWD:/repo:ro" -w /repo -e PYTHONDONTWRITEBYTECODE=1 tripboxoss:ci
+          sh -c 'tripbox demo export --out /tmp/site --today 2027-06-16 &&
+          python /repo/tools/verify/demo_site_check.py /tmp/site'
+      # gitleaks's own rules and the allowances in .gitleaks.toml, over the checkout, with no network
+      - name: secrets
+        env:
+          GITLEAKS: ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+        run: |
+          docker pull "$GITLEAKS"
+          docker run --rm --network none -v "$PWD:/repo:ro" "$GITLEAKS" dir /repo --config /repo/.gitleaks.toml --redact --no-banner --exit-code 1
+      - name: stack
+        run: TRIPBOX_SMOKE=1 tools/verify/stack_smoke.sh --image tripboxoss:rt
+      - name: browser
+        run: TRIPBOX_SMOKE=1 tools/verify/browser_checks.sh --image tripboxoss:rt

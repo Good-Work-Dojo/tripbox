@@ -1,0 +1,15 @@
+{
+  "document_type": "cancellation",
+  "reservations": [
+    {
+      "kind": "lodging",
+      "status": "cancelled",
+      "confirmation_code": "YUQ621",
+      "passengers": ["Alex Sample"],
+      "property_name": "Example Plaza Hotel Nashville",
+      "address": "700 Example Boulevard, Nashville, TN 37203",
+      "check_in": "2027-09-17",
+      "check_out": "2027-09-19"
+    }
+  ]
+}

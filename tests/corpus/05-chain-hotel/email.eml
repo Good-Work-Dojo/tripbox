@@ -1,0 +1,51 @@
+Return-Path: <alex@example.com>
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@example.com;
+       spf=pass smtp.mailfrom=alex@example.com;
+       dmarc=pass header.from=example.com
+From: Alex Sample <alex@example.com>
+To: trips@example.com
+Subject: Fwd: Your reservation at Example Suites Boston Seaport
+Date: Wed, 27 Jan 2027 19:40:26 -0600
+Message-ID: <fwd.zwt876.m3k9t@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+---------- Forwarded message ---------
+From: Example Hotels <reservations@examplehotels.example>
+Date: Wed, Jan 27, 2027 at 6:55 PM
+Subject: Your reservation at Example Suites Boston Seaport
+To: <alex@example.com>
+
+
+Example Hotels
+Reservation confirmation
+
+Dear Alex Sample,
+
+Thank you for choosing Example Suites Boston Seaport. Your reservation is
+confirmed.
+
+Confirmation number: ZWT876
+
+Hotel: Example Suites Boston Seaport
+Address: 100 Example Street, Boston, MA 02210
+Phone: 617-555-0110
+
+Guest name: Alex Sample
+Check-in: Thursday, March 11, 2027
+Check-out: Sunday, March 14, 2027
+Nights: 3
+Room: King Studio Suite, 2 adults
+
+Room rate: 289.00 USD per night
+Taxes and fees: 143.06 USD
+Total: 1,010.06 USD
+
+Example Hotels Rewards number: 9000000001
+
+To change or cancel, visit https://www.example.com/ or call 617-555-0110.
+
+We look forward to welcoming you.
+Example Suites Boston Seaport

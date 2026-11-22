@@ -1,0 +1,17 @@
+{
+  "status": "processed",
+  "read_by": "model",
+  "document_type": "booking",
+  "items": [
+    {"kind": "flight", "key": "AS|9320|2027-05-21|PDX", "result": "filed",
+     "people": {"me": 0, "guests": 0, "others": 2},
+     "booking": {"status": "confirmed", "travellers": ["Lee Example", "Pat Example"],
+                 "trip": "Portland",
+                 "checks": [], "sync": "off"}},
+    {"kind": "flight", "key": "AS|9347|2027-05-25|MSP", "result": "filed",
+     "people": {"me": 0, "guests": 0, "others": 2},
+     "booking": {"status": "confirmed", "travellers": ["Lee Example", "Pat Example"],
+                 "trip": "Portland",
+                 "checks": [], "sync": "off"}}
+  ]
+}

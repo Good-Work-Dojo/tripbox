@@ -1,0 +1,27 @@
+Return-Path: <bounce@exampletripoffers.example>
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@exampletripoffers.example;
+       spf=pass smtp.mailfrom=bounce@exampletripoffers.example;
+       dmarc=pass header.from=exampletripoffers.example
+From: Example Trip Offers <deals@exampletripoffers.example>
+To: trips@example.com
+Subject: Your trip is waiting
+Date: Fri, 07 May 2027 23:11:42 -0500
+Message-ID: <offer.q8v3n@exampletripoffers.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+Your trip is waiting!
+
+Somewhere sunny has your name on it. Fares this week start at 89 USD one
+way, and a few of our favorite getaways still have seats.
+
+Pick a place, pick a day, and we take care of the rest:
+https://www.example.com/
+
+This offer ends Sunday at midnight. You are receiving this email because
+this address was entered on our site. To stop these emails, visit
+https://www.example.com/ and choose Unsubscribe.
+
+Example Trip Offers, 820 Example Boulevard, Example City

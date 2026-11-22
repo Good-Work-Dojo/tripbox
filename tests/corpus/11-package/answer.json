@@ -1,0 +1,67 @@
+{
+  "wire_schema": 1,
+  "source": "hand-written",
+  "model": null,
+  "answer": {
+    "document_type": "booking",
+    "confidence": 0.9,
+    "reservations": [
+      {
+        "kind": "flight",
+        "status": "confirmed",
+        "code": "RWV431",
+        "provider": "American Airlines",
+        "passengers": [
+          "Alex Sample",
+          "Sam Sample",
+          "Robin Sample",
+          "Jamie Sample"
+        ],
+        "legs": [
+          {
+            "carrier": "AA",
+            "number": "9630",
+            "origin": "MSP",
+            "destination": "ORD",
+            "departure": "2027-05-01T09:10",
+            "arrival": "2027-05-01T10:35",
+            "seats": [],
+            "cabin": "Economy"
+          },
+          {
+            "carrier": "AA",
+            "number": "9655",
+            "origin": "ORD",
+            "destination": "MSP",
+            "departure": "2027-05-02T18:25",
+            "arrival": "2027-05-02T19:55",
+            "seats": [],
+            "cabin": "Economy"
+          }
+        ],
+        "place": null,
+        "address": null,
+        "start": null,
+        "end": null,
+        "price": null,
+        "currency": null
+      },
+      {
+        "kind": "lodging",
+        "status": "confirmed",
+        "code": "SUT320",
+        "provider": null,
+        "passengers": [
+          "Alex Sample"
+        ],
+        "legs": [],
+        "place": "Example Riverside Hotel Chicago",
+        "address": "400 Example Drive, Chicago, IL 60601",
+        "start": "2027-05-01",
+        "end": "2027-05-02",
+        "price": null,
+        "currency": null
+      }
+    ]
+  }
+}

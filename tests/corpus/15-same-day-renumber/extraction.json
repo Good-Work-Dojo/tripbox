@@ -1,0 +1,17 @@
+{
+  "document_type": "change",
+  "reservations": [
+    {
+      "kind": "flight",
+      "status": "changed",
+      "confirmation_code": "RSV765",
+      "provider": "Delta Air Lines",
+      "passengers": ["Alex Sample"],
+      "segments": [
+        {"carrier_iata": "DL", "flight_number": "9287", "origin": "MSP", "destination": "DEN",
+         "departure_local": "2027-04-08T07:40", "arrival_local": "2027-04-08T08:47",
+         "cabin": "Economy"}
+      ]
+    }
+  ]
+}

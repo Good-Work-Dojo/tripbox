@@ -1,0 +1,25 @@
+{
+  "wire_schema": 1,
+  "source": "hand-written",
+  "model": null,
+  "answer": {
+    "document_type": "booking",
+    "confidence": 0.9,
+    "reservations": [
+      {
+        "kind": "lodging",
+        "status": "confirmed",
+        "code": "VWX543",
+        "provider": null,
+        "passengers": ["Alex Sample"],
+        "legs": [],
+        "place": "The Sample House Inn",
+        "address": "200 Example Avenue, Denver, CO 80202",
+        "start": "2027-04-08T15:00",
+        "end": "2027-04-11T11:00",
+        "price": 622.12,
+        "currency": "USD"
+      }
+    ]
+  }
+}

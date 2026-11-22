@@ -1,0 +1,36 @@
+{
+  "wire_schema": 1,
+  "source": "hand-written",
+  "model": null,
+  "answer": {
+    "document_type": "change",
+    "confidence": 0.9,
+    "reservations": [
+      {
+        "kind": "flight",
+        "status": "changed",
+        "code": "RSV765",
+        "provider": "Delta Air Lines",
+        "passengers": ["Alex Sample"],
+        "legs": [
+          {
+            "carrier": "DL",
+            "number": "9287",
+            "origin": "MSP",
+            "destination": "DEN",
+            "departure": "2027-04-08T07:40",
+            "arrival": "2027-04-08T08:47",
+            "seats": [],
+            "cabin": "Economy"
+          }
+        ],
+        "place": null,
+        "address": null,
+        "start": null,
+        "end": null,
+        "price": null,
+        "currency": null
+      }
+    ]
+  }
+}

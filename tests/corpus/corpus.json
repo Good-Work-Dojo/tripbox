@@ -1,0 +1,34 @@
+{
+  "settings": {
+    "TZ": "America/Chicago",
+    "TRIPBOX_HOME_AIRPORTS": "MSP",
+    "TRIPBOX_MAIL_ALLOWED_SENDERS": "alex@example.com,alex.sample@example.org",
+    "TRIPBOX_MAIL_TRUST": "gmail"
+  },
+  "demo": {
+    "anchor": "2027-06-16",
+    "entries": [
+      "01-markup-flight",
+      "02-markup-hotel",
+      "03-receipt-companion-first",
+      "04-receipt-owner-second",
+      "05-chain-hotel",
+      "06-city-names-receipt",
+      "07-airport-car",
+      "08-independent-hotel",
+      "09-html-only",
+      "10-french-hotel",
+      "11-package",
+      "12-markup-rail",
+      "13-german-hotel",
+      "14-day-first-24h",
+      "15-same-day-renumber",
+      "16-partial-cancellation",
+      "17-full-cancellation",
+      "18-relative-itinerary",
+      "19-unknown-cancellation",
+      "22-schedule-change",
+      "25-flight-without-date"
+    ]
+  }
+}

@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Additional terms: see NOTICE
+# Sender domains whose filter-forwarded mail may write to the flight log without a human look.
+# TRIPBOX_MAIL_TRUSTED_SENDER_DOMAINS replaces this list whole.
+trusted_domains:
+  - aa.com
+  - united.com
+  - delta.com
+  - southwest.com
+  - jetblue.com
+  - alaskaair.com
+  - spirit.com
+  - spirit-airlines.com
+  - flyfrontier.com
+  - allegiantair.com
+  - hawaiianairlines.com
+  - flybreeze.com
+  - aveloair.com
+  - suncountry.com
+  - aircanada.com
+  - aircanada.ca
+  - westjet.com
+  - aeromexico.com
+  - volaris.com
+  - vivaaerobus.com
+  - copaair.com
+  - britishairways.com
+  - virginatlantic.com
+  - airfrance.com
+  - klm.com
+  - lufthansa.com
+  - iberia.com
+  - aerlingus.com
+  - icelandair.com
+  - emirates.com
+  - qatarairways.com
+  - latam.com
+  - avianca.com
+  - expedia.com
+  - expediamail.com
+  - priceline.com
+  - costcotravel.com
+  - orbitz.com
+  - travelocity.com
+  - hotwire.com
+  - booking.com
+  - kayak.com

@@ -1,0 +1,21 @@
+{# SPDX-License-Identifier: AGPL-3.0-only -#}
+{# Additional terms: see NOTICE -#}
+{% extends "base.html" %}
+{% block title %}Paste a confirmation · Trips{% endblock %}
+{% block body %}
+<header class="top">
+  <a class="back" href="{{ base }}/add" aria-label="Back to Add a booking">‹</a>
+  <h1>Paste a confirmation</h1>
+</header>
+<main class="page">
+  {% if error %}<p class="error" role="alert" id="add-error">{{ error }}</p>{% endif %}
+  <form method="post" action="{{ base }}/add/paste" class="col">
+    <label class="field"><span>Confirmation text</span><textarea name="text" rows="12" required autocomplete="off" spellcheck="false" aria-describedby="paste-hint{% if error %} add-error{% endif %}"{% if error %} aria-invalid="true"{% endif %}>{{ text }}</textarea></label>
+    <p class="muted small" id="paste-hint">Paste the whole email or itinerary.</p>
+    <div class="row">
+      <button type="submit" class="btn primary">Send</button>
+      <a class="btn link" href="{{ base }}/add">Cancel</a>
+    </div>
+  </form>
+</main>
+{% endblock %}

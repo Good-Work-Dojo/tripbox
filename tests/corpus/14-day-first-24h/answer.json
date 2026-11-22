@@ -1,0 +1,36 @@
+{
+  "wire_schema": 1,
+  "source": "hand-written",
+  "model": null,
+  "answer": {
+    "document_type": "booking",
+    "confidence": 0.9,
+    "reservations": [
+      {
+        "kind": "flight",
+        "status": "confirmed",
+        "code": "XQT310",
+        "provider": "British Airways",
+        "passengers": ["Alex Sample", "Sam Sample", "Robin Sample", "Jamie Sample"],
+        "legs": [
+          {
+            "carrier": "BA",
+            "number": "9951",
+            "origin": "MUC",
+            "destination": "LHR",
+            "departure": "2027-07-11T14:25",
+            "arrival": "2027-07-11T15:30",
+            "seats": [],
+            "cabin": "Economy"
+          }
+        ],
+        "place": null,
+        "address": null,
+        "start": null,
+        "end": null,
+        "price": 642.80,
+        "currency": "GBP"
+      }
+    ]
+  }
+}

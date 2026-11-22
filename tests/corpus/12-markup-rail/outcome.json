@@ -1,0 +1,13 @@
+{
+  "status": "processed",
+  "read_by": "kitinerary",
+  "document_type": "booking",
+  "items": [
+    {"kind": "train", "key": "train|9907|2027-07-07|parisest", "result": "filed",
+     "people": {"me": 1, "guests": 3, "others": 0},
+     "booking": {"status": "confirmed",
+                 "travellers": ["Alex Sample", "Jamie Sample", "Robin Sample", "Sam Sample"],
+                 "trip": "Paris",
+                 "checks": [], "sync": "off"}}
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "wire_schema": 1,
+  "source": "hand-written",
+  "model": null,
+  "answer": {
+    "document_type": "booking",
+    "confidence": 0.9,
+    "reservations": [
+      {
+        "kind": "flight",
+        "status": "confirmed",
+        "code": "QWS987",
+        "provider": "Delta Air Lines",
+        "passengers": [
+          "SAMPLE/ALEX QUINN"
+        ],
+        "legs": [
+          {
+            "carrier": "DL",
+            "number": "9412",
+            "origin": "MSP",
+            "destination": "BOS",
+            "departure": "2027-03-11T08:05",
+            "arrival": "2027-03-11T11:52",
+            "seats": [],
+            "cabin": "Economy"
+          },
+          {
+            "carrier": "DL",
+            "number": "9435",
+            "origin": "BOS",
+            "destination": "MSP",
+            "departure": "2027-03-14T17:20",
+            "arrival": "2027-03-14T19:38",
+            "seats": [],
+            "cabin": "Economy"
+          }
+        ],
+        "place": null,
+        "address": null,
+        "start": null,
+        "end": null,
+        "price": 360.8,
+        "currency": "USD"
+      }
+    ]
+  }
+}

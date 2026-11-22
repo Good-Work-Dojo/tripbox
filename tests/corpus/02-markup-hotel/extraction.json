@@ -1,0 +1,17 @@
+{
+  "document_type": "booking",
+  "reservations": [
+    {
+      "kind": "lodging",
+      "status": "confirmed",
+      "confirmation_code": "YTR864",
+      "passengers": ["Alex Sample"],
+      "property_name": "Example Bay Hotel Seattle",
+      "address": "300 Example Way, Seattle, WA 98101",
+      "check_in": "2027-06-14T15:00",
+      "check_out": "2027-06-20T11:00",
+      "price": 1592.34,
+      "currency": "USD"
+    }
+  ]
+}

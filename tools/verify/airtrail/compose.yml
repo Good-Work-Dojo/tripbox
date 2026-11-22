@@ -1,0 +1,66 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Additional terms: see NOTICE
+# The throwaway stock AirTrail of the end-to-end run: AirTrail as upstream ships it, its own
+# Postgres, and a container of the test image that runs tests/test_flightlog_e2e.py and
+# tests/test_flightlog_matrix.py against it. One run starts this compose project, inserts fresh API
+# keys for two demo users (tools/verify/airtrail_test_key.py), runs the tests in the e2e container
+# and removes the project again. It reads these environment variables: E2E_AIRTRAIL_PORT, the
+# loopback port AirTrail is published on; E2E_TRIPBOX_IMAGE, the test image (the Dockerfile's
+# `test` target); and the five keys, each passed to the e2e container by name:
+# E2E_AIRTRAIL_API_KEY (the instance's owner, the six scopes tripbox uses), E2E_AIRTRAIL_HAND_KEY
+# (the owner's own hands: the six and flight.delete.own), E2E_AIRTRAIL_NARROW_KEY (the six less
+# flight.passengers.manage.own), E2E_AIRTRAIL_FULL_KEY (the six and the three `.any` scopes a key
+# made before AirTrail had scopes holds) and E2E_AIRTRAIL_OTHER_KEY (another user, the six).
+# Nothing persists: the
+# database lives in a tmpfs, and there is no volume and no bind mount. The three services' memory
+# limits add up to 4g, under the 8g the compose wrapper lets one stack take.
+name: tripbox-e2e
+
+services:
+  flightlogdb:
+    image: postgres:16-alpine@sha256:f377d590e5474681d4d7838635031a2b50647923b7abfa803ce9b5ff35d5c663
+    environment:
+      POSTGRES_USER: flightlog
+      POSTGRES_DB: flightlog
+      POSTGRES_PASSWORD: e2e-only
+    tmpfs:
+      - /var/lib/postgresql/data
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "flightlog", "-d", "flightlog"]
+      interval: 2s
+      retries: 30
+
+  # Published on loopback so the run can wait for it to answer; its first start downloads the
+  # public airport table. Demo mode seeds users, which the test key is given to.
+  flightlog:
+    image: johly/airtrail:v3.14.0@sha256:69ef0a421d6a5f99c06d04ea6b66445a5d1261dd533d6efe3bd8bc3e2dfd018f
+    environment:
+      DB_URL: postgres://flightlog:e2e-only@flightlogdb:5432/flightlog
+      ORIGIN: http://localhost:${E2E_AIRTRAIL_PORT:?}
+      DEMO_MODE: screenshots
+    ports:
+      - "127.0.0.1:${E2E_AIRTRAIL_PORT:?}:3000"
+    mem_limit: 2g
+    depends_on:
+      - flightlogdb
+
+  # Idle until the run execs pytest in it; the keys reach it by name, from the run's environment.
+  # init: the sleep is not PID 1, so the stop signal ends it at once.
+  e2e:
+    image: ${E2E_TRIPBOX_IMAGE:?}
+    command: ["sleep", "infinity"]
+    init: true
+    user: "1000:1000"
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 1g
+    environment:
+      E2E_AIRTRAIL_URL: http://flightlog:3000
+      E2E_AIRTRAIL_API_KEY:
+      E2E_AIRTRAIL_HAND_KEY:
+      E2E_AIRTRAIL_NARROW_KEY:
+      E2E_AIRTRAIL_FULL_KEY:
+      E2E_AIRTRAIL_OTHER_KEY:
+      PYTHONDONTWRITEBYTECODE: "1"

@@ -1,0 +1,65 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Additional terms: see NOTICE
+# The flight log's end to end: the AirTrail add-on run against a throwaway stock AirTrail
+# (tools/verify/flightlog_e2e.sh: AirTrail and its database started under the project
+# tripbox-e2e, five fresh API keys passed to the tests by name, both test modules, the stack
+# removed whatever happened). It runs only when a change reaches what it tests or how it runs,
+# on a push to main, on a pull request and by hand. A pull request's run spends nothing while the
+# repository is private: the job waits for it to be public. The runner is a fixed literal, never
+# an expression (see ci.yml). Nothing is uploaded; the tests print only invented flights, and the
+# demo users by id.
+name: flight log
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/tripbox/write/**'
+      - 'src/tripbox/trips/backfill.py'
+      - 'src/tripbox/enrich/**'
+      - 'tests/test_flightlog_*.py'
+      - 'tests/helpers/e2e.py'
+      - 'tests/corpus/**'
+      - 'tools/verify/airtrail/**'
+      - 'tools/verify/airtrail_test_key.py'
+      - 'tools/verify/flightlog_e2e.sh'
+      - 'Dockerfile'
+      - 'uv.lock'
+      - '.github/workflows/flightlog.yml'
+  pull_request:
+    paths:
+      - 'src/tripbox/write/**'
+      - 'src/tripbox/trips/backfill.py'
+      - 'src/tripbox/enrich/**'
+      - 'tests/test_flightlog_*.py'
+      - 'tests/helpers/e2e.py'
+      - 'tests/corpus/**'
+      - 'tools/verify/airtrail/**'
+      - 'tools/verify/airtrail_test_key.py'
+      - 'tools/verify/flightlog_e2e.sh'
+      - 'Dockerfile'
+      - 'uv.lock'
+      - '.github/workflows/flightlog.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: flightlog-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    if: github.event_name != 'pull_request' || github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test image
+        run: docker build --target test -t tripboxoss:test .
+      - name: Flight log end to end
+        run: TRIPBOX_SMOKE=1 tools/verify/flightlog_e2e.sh

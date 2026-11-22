@@ -1,0 +1,18 @@
+{
+  "document_type": "booking",
+  "reservations": [
+    {
+      "kind": "car",
+      "status": "confirmed",
+      "confirmation_code": "SWU830",
+      "provider": "Example Rent A Car",
+      "passengers": ["Alex Sample"],
+      "pickup_location": "1 Example Loop, Phoenix, AZ 85034",
+      "pickup_time": "2027-11-04T12:45",
+      "dropoff_location": "1 Example Loop, Phoenix, AZ 85034",
+      "dropoff_time": "2027-11-08T12:00",
+      "price": 263.4,
+      "currency": "USD"
+    }
+  ]
+}

@@ -1,0 +1,240 @@
+{
+ "properties": {
+  "confidence": {
+   "default": 1.0,
+   "type": "number"
+  },
+  "document_type": {
+   "enum": [
+    "booking",
+    "change",
+    "cancellation",
+    "receipt_only",
+    "check_in_or_boarding",
+    "marketing",
+    "other"
+   ],
+   "type": "string"
+  },
+  "reservations": {
+   "items": {
+    "properties": {
+     "address": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "code": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "currency": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "end": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "kind": {
+      "enum": [
+       "flight",
+       "lodging",
+       "car",
+       "train",
+       "other"
+      ],
+      "type": "string"
+     },
+     "legs": {
+      "items": {
+       "properties": {
+        "arrival": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null
+        },
+        "cabin": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null
+        },
+        "carrier": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null
+        },
+        "departure": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null
+        },
+        "destination": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null
+        },
+        "number": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null
+        },
+        "origin": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null
+        },
+        "seats": {
+         "items": {
+          "type": "string"
+         },
+         "type": "array"
+        }
+       },
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "passengers": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array"
+     },
+     "place": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "price": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "provider": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "start": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "status": {
+      "default": "unknown",
+      "enum": [
+       "confirmed",
+       "changed",
+       "cancelled",
+       "unknown"
+      ],
+      "type": "string"
+     }
+    },
+    "required": [
+     "kind"
+    ],
+    "type": "object"
+   },
+   "type": "array"
+  }
+ },
+ "required": [
+  "document_type"
+ ],
+ "type": "object"
+}

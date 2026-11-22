@@ -1,0 +1,26 @@
+{# SPDX-License-Identifier: AGPL-3.0-only -#}
+{# Additional terms: see NOTICE -#}
+{% extends "base.html" %}
+{% block title %}Sign in · Trips{% endblock %}
+{# the login page's one script empties the store of saved copies (`clear.js`) #}
+{% block script %}<script src="{{ base }}/static/clear.js?v={{ asset_v }}" defer></script>{% endblock %}
+{% block body %}
+<header class="top">
+  <h1>Sign in</h1>
+</header>
+<main class="page signin">
+  {% if signed_out %}<p class="notice" role="status">You are signed out.</p>{% endif %}
+  <form method="post" action="{{ base }}/login" class="col">
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" autocomplete="current-password" required{% if error %} aria-invalid="true" aria-describedby="password-error"{% endif %}>
+    </div>
+    {% if error %}<p class="error" role="alert" id="password-error">{{ error }}</p>{% endif %}
+    <div class="row">
+      <button type="submit" class="btn primary">Sign in</button>
+    </div>
+  </form>
+  {% include "_about.html" %}
+</main>
+{% endblock %}

@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Additional terms: see NOTICE
+name: Feature
+description: Something tripbox could do that it does not.
+title: "Feature: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        docs/ROADMAP.md lists what is already on the list. Say what you are trying to do, not only
+        what you would add.
+  - type: textarea
+    id: goal
+    attributes:
+      label: What you are trying to do
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you have in mind

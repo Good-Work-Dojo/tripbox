@@ -1,0 +1,122 @@
+{# SPDX-License-Identifier: AGPL-3.0-only -#}
+{# Additional terms: see NOTICE -#}
+{% extends "base.html" %}
+{% block title %}{{ trip.title }} · Trips{% endblock %}
+{% block body_attrs %} data-refresh{% endblock %}
+{% block body %}
+<header class="top">
+  <a class="back" href="{{ base }}/" aria-label="All trips">‹</a>
+  <h1 class="ellipsis">{{ trip.title }}</h1>
+  <a class="icon-btn" href="{{ base }}/trips/{{ trip.id }}/share" aria-label="Share" data-share>
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+  </a>
+  <details class="menu">
+    <summary class="icon-btn" aria-label="More">⋯</summary>
+    <div class="sheet">
+      <form method="post" action="{{ base }}/trips/{{ trip.id }}/rename" class="row">
+        <input type="text" name="title" value="{{ trip.title }}" maxlength="80" required aria-label="Trip name">
+        <button type="submit" class="btn">Rename</button>
+      </form>
+      <form method="post" action="{{ base }}/trips/{{ trip.id }}/place" class="row">
+        <input type="text" name="place" value="{{ trip.place or '' }}" placeholder="City" maxlength="80" aria-label="Place" aria-describedby="place-help">
+        <button type="submit" class="btn">Save place</button>
+      </form>
+      <p class="muted small" id="place-help">The city this trip is about. Bookings there on nearby dates join this trip.</p>
+      {% if others %}
+      <form method="post" action="{{ base }}/trips/{{ trip.id }}/merge" class="row" data-confirm="Merge this trip into the chosen one?">
+        <select name="into" required aria-label="Merge into">
+          <option value="" disabled selected>Choose a trip…</option>
+          {% for o in others %}<option value="{{ o.id }}">{{ o.title }} · {{ o.range }}</option>{% endfor %}
+        </select>
+        <button type="submit" class="btn">Merge into…</button>
+      </form>
+      {% endif %}
+      <a class="btn link" href="{{ base }}/add?trip={{ trip.id }}">Add a booking</a>
+      <a class="btn link" href="{{ base }}/trips/{{ trip.id }}/trip.ics">Add to calendar</a>
+      <form method="post" action="{{ base }}/trips/{{ trip.id }}/delete" data-confirm="{{ said.delete_trip }}">
+        <button type="submit" class="btn link danger">Delete trip</button>
+      </form>
+    </div>
+  </details>
+</header>
+<main class="page">
+  <section class="hero">
+    <div class="cover big tile tile-{{ trip.id % 8 }}"><span>{{ trip.title[:1]|upper }}</span></div>
+    <div class="hero-text">
+      <div class="dates">{{ range }}{% if to_check %} <span class="chip chip-amber">{{ to_check }} to check</span>{% endif %}</div>
+      {% if trip.cancelled %}<span class="chip chip-red">Cancelled</span>{% endif %}
+    </div>
+  </section>
+  <section class="notes">
+    {% if trip.notes %}
+    <h2 class="section">Notes</h2>
+    <p class="notes-text">{{ trip.notes }}</p>
+    {% endif %}
+    <details class="inline">
+      <summary class="btn link">{{ 'Edit notes' if trip.notes else 'Add notes' }}</summary>
+      <form method="post" action="{{ base }}/trips/{{ trip.id }}/notes" class="col">
+        <textarea name="notes" rows="4" placeholder="Gate code, parking level, where the rental desk is…" aria-label="Notes">{{ trip.notes or '' }}</textarea>
+        <button type="submit" class="btn primary">Save notes</button>
+      </form>
+    </details>
+  </section>
+  {% if empty %}<p class="empty">This trip has no bookings. <a class="inline-link" href="{{ base }}/add?trip={{ trip.id }}">Add a booking</a> or restore one from <a class="inline-link" href="{{ base }}/deleted">Recently deleted</a>.</p>{% endif %}
+  <div class="timeline">
+  {% for d in days %}
+    <h2 class="day">{{ d.band }}</h2>
+    {% for it in d.lines %}
+    <article class="item {{ 'cancelled' if it.cancelled }}" id="item-{{ it.id }}{{ '-end' if it.role == 'end' }}" data-kind="{{ it.kind }}">
+      <div class="time">{% if it.time %}<span class="t">{{ it.time }}</span><span class="tz">{{ it.tz }}</span>{% endif %}</div>
+      <div class="rail"><span class="dot">{{ it.icon }}</span></div>
+      <div class="content">
+        <div class="primary">{{ it.primary }}{% if it.cancelled %} <span class="chip chip-red">Cancelled</span>{% endif %}{% if it.checks %} <span class="chip chip-amber">To check</span>{% endif %}</div>
+        <div class="secondary">{{ it.secondary }}</div>
+        {% for ln in it.lines %}
+          {% if ln.url %}<a class="line addr" href="{{ ln.url }}" target="_blank" rel="noopener">{{ ln.text }}</a>{% else %}<div class="line">{{ ln.text }}</div>{% endif %}
+        {% endfor %}
+        {% if it.sync_line %}<div class="line sync">{{ it.sync_line }}</div>{% endif %}
+        {% if it.checks or it.can %}{% include "_check.html" %}{% endif %}
+        {% if it.conf or it.names or it.seats %}
+        <div class="line meta">
+          {% if it.conf %}<button type="button" class="conf" data-copy="{{ it.conf }}" title="Copy">conf {{ it.conf }}</button>{% endif %}
+          {% if it.names %}<span>{{ it.names }}</span>{% endif %}
+          {% if it.seats %}<span>seats {{ it.seats }}</span>{% endif %}
+        </div>
+        {% endif %}
+        <details class="item-menu">
+          <summary aria-label="More for this item">⋯</summary>
+          <div class="sheet">
+            <a class="btn link" href="{{ base }}/items/{{ it.id }}/edit" data-edit="{{ it.kind }}">Edit details</a>
+            <button type="button" class="btn copy" data-copy="{{ it.text }}">Copy this item</button>
+            {% if it.maps_url %}<a class="btn link" href="{{ it.maps_url }}" target="_blank" rel="noopener">Open in Maps</a>{% endif %}
+            {% if it.track_url %}<a class="btn link" href="{{ it.track_url }}" target="_blank" rel="noopener">Track flight</a>{% endif %}
+            <form method="post" action="{{ base }}/items/{{ it.id }}/status">
+              <input type="hidden" name="status" value="{{ 'confirmed' if it.cancelled else 'cancelled' }}">
+              <button type="submit" class="btn link">{{ 'Mark confirmed' if it.cancelled else 'Mark cancelled' }}</button>
+            </form>
+            <form method="post" action="{{ base }}/items/{{ it.id }}/move" class="row">
+              <select name="to" required aria-label="Move to">
+                <option value="" disabled selected>Move to…</option>
+                <option value="new">New trip</option>
+                {% for o in others %}<option value="{{ o.id }}">{{ o.title }} · {{ o.range }}</option>{% endfor %}
+              </select>
+              <button type="submit" class="btn">Move</button>
+            </form>
+            <form method="post" action="{{ base }}/items/{{ it.id }}/remove" data-confirm="{{ said.remove_from_trip }}">
+              <button type="submit" class="btn link danger">Remove from trip</button>
+            </form>
+          </div>
+        </details>
+      </div>
+    </article>
+    {% endfor %}
+  {% endfor %}
+  </div>
+  {% if people %}
+  <section class="people">
+    <h2 class="section">People</h2>
+    <p>{{ people }}</p>
+  </section>
+  {% endif %}
+</main>
+{% endblock %}

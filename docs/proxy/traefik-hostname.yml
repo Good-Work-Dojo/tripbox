@@ -1,0 +1,20 @@
+# TRIPBOX_BASE_URL=https://trips.example.com
+# Traefik in front of tripbox at a name of its own: a dynamic configuration for the file
+# provider. Not run in tripbox's own checks. "web:8110" is tripbox's page when Traefik is a
+# service in the same compose project; for a Traefik on the host, write 127.0.0.1:8110 instead.
+# "websecure" and "letsencrypt" are the names of an entry point on port 443 and a certificate
+# resolver in Traefik's static configuration: use the names yours has.
+# Traefik passes the Host header on and sets no body limit, which is what the page needs.
+http:
+  routers:
+    tripbox:
+      rule: "Host(`trips.example.com`)"
+      entryPoints: ["websecure"]
+      service: tripbox
+      tls:
+        certResolver: letsencrypt
+  services:
+    tripbox:
+      loadBalancer:
+        servers:
+          - url: "http://web:8110"

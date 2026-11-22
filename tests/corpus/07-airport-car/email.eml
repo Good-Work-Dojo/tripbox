@@ -1,0 +1,57 @@
+Return-Path: <alex@example.com>
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@example.com;
+       spf=pass smtp.mailfrom=alex@example.com;
+       dmarc=pass header.from=example.com
+From: Alex Sample <alex@example.com>
+To: trips@example.com
+Subject: Fwd: Your car is reserved: TUY654
+Date: Tue, 09 Feb 2027 12:05:31 -0600
+Message-ID: <fwd.tuy654.r8d2k@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+Begin forwarded message:
+
+From: Example Rent A Car <confirm@examplerentacar.example>
+Subject: Your car is reserved: TUY654
+Date: February 9, 2027 at 11:58:12 AM CST
+To: alex@example.com
+
+EXAMPLE RENT A CAR
+
+Your car is reserved
+
+Hi Alex,
+
+Thanks for booking with Example Rent A Car. The details of your
+reservation are below. Please bring your driver's license and the card
+you booked with.
+
+Confirmation number: TUY654
+Driver: Alex Sample
+
+PICK-UP
+Location: DEN
+Thursday, April 8, 2027 at 9:00 AM
+
+RETURN
+Location: DEN
+Sunday, April 11, 2027 at 2:30 PM
+
+Your car: Midsize SUV or similar, automatic, 5 seats
+Mileage: unlimited
+
+ESTIMATED CHARGES
+Base rental charge             186.00 USD
+Taxes and surcharges            54.37 USD
+Estimated total                240.37 USD
+You pay at the counter when you collect the car.
+
+Rewards number: 9000000001
+
+Change or cancel at https://www.example.com/ or call 303-555-0134.
+
+Have a great trip!
+Example Rent A Car

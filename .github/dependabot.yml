@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Additional terms: see NOTICE
+# Weekly dependency updates, one pull request per ecosystem for the minor and patch updates together
+# and one for each major update: the Python lockfile (uv.lock), the base images the two Dockerfiles
+# name by tag and digest (the app's and the screenshot browser's), the images the test stacks'
+# compose files name themselves (the throwaway AirTrail and its database, and the one-hostname
+# stack's database; a compose file whose images come from variables has nothing to update), and the
+# workflows' actions, pinned by commit. Each pull request runs the ci workflow like any other.
+version: 2
+updates:
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: docker
+    directories: [/, /tools/verify/screens]
+    schedule:
+      interval: weekly
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: docker-compose
+    directories: [/tools/verify/airtrail, /tools/verify/onehost]
+    schedule:
+      interval: weekly
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]

@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Additional terms: see NOTICE
+# The Sample family: the invented travellers of the test suite.
+owner:
+  names: ["Alex Sample", "Alex Quinn Sample", "Alex Q Sample"]
+companions:
+  - name: "Sam Sample"
+    names: ["Sam Sample"]
+  - name: "Robin Sample"
+    names: ["Robin Sample"]
+  - name: "Jamie Sample"
+    names: ["Jamie Sample"]

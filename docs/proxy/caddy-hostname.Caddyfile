@@ -1,0 +1,9 @@
+# TRIPBOX_BASE_URL=https://trips.example.com
+# Caddy in front of tripbox at a name of its own. Caddy gets and renews the certificate for the
+# name by itself (its DNS must point at this server, ports 80 and 443 open to it); nothing else is
+# needed for TLS. "web:8110" is tripbox's page when Caddy is a service in the same compose
+# project; for a Caddy on the host, write 127.0.0.1:8110 instead.
+# Caddy passes the Host header on and sets no body limit, which is what the page needs.
+trips.example.com {
+	reverse_proxy web:8110
+}

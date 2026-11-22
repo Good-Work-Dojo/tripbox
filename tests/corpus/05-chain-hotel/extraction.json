@@ -1,0 +1,18 @@
+{
+  "document_type": "booking",
+  "reservations": [
+    {
+      "kind": "lodging",
+      "status": "confirmed",
+      "confirmation_code": "ZWT876",
+      "provider": "Example Hotels",
+      "passengers": ["Alex Sample"],
+      "property_name": "Example Suites Boston Seaport",
+      "address": "100 Example Street, Boston, MA 02210",
+      "check_in": "2027-03-11",
+      "check_out": "2027-03-14",
+      "price": 1010.06,
+      "currency": "USD"
+    }
+  ]
+}

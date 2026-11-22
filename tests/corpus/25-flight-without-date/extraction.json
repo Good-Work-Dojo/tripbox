@@ -1,0 +1,16 @@
+{
+  "document_type": "booking",
+  "reservations": [
+    {
+      "kind": "flight",
+      "status": "confirmed",
+      "confirmation_code": "VZQ651",
+      "provider": "Delta Air Lines",
+      "passengers": ["Alex Sample"],
+      "segments": [
+        {"carrier_iata": "DL", "flight_number": "9777", "origin": "MSP", "destination": "ATL",
+         "cabin": "Economy"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+{# SPDX-License-Identifier: AGPL-3.0-only -#}
+{# Additional terms: see NOTICE -#}
+{% extends "base.html" %}
+{#- The one form a booking is edited by, and added by hand by (`adding`): the same fields, labels
+    and refusals; adding, it posts no digest and asks which trip the booking goes into. -#}
+{% block title %}{{ heading }} · Trips{% endblock %}
+{% block body %}
+{#- one labelled field; a refusal or a hard check about it marks it and points at its sentence -#}
+{% macro input(label, name, type="text", maxlength=None, code=False, digits=False, placeholder=None) -%}
+{%- set about = (["edit-error"] if name == refused else []) + (["check-" ~ invalid[name]] if name in invalid else []) -%}
+<label class="field"><span>{{ label }}{% if about %} <span class="flag" aria-hidden="true">⚠</span>{% endif %}</span><input type="{{ type }}" name="{{ name }}" value="{{ f[name] }}"{% if maxlength %} maxlength="{{ maxlength }}"{% endif %}{% if code %} autocapitalize="characters" autocomplete="off" spellcheck="false"{% endif %}{% if digits %} inputmode="numeric"{% endif %}{% if placeholder %} placeholder="{{ placeholder }}"{% endif %}{% if about %} aria-invalid="true" aria-describedby="{{ about|join(' ') }}"{% endif %}></label>
+{%- endmacro %}
+<header class="top">
+  <a class="back" href="{{ base }}{{ back }}" aria-label="{{ back_label }}">‹</a>
+  <h1>{{ heading }}</h1>
+</header>
+<main class="page">
+  {% if error %}<p class="error" role="alert" id="edit-error">{{ error }}</p>{% endif %}
+  {% if checks %}
+  <section aria-labelledby="to-check">
+    <h2 class="section" id="to-check">To check</h2>
+    <ul class="checks">
+      {% for ck in checks %}<li id="check-{{ ck.code }}">{{ ck.text }}</li>{% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+  <form method="post" action="{{ base }}{{ action }}" class="col">
+    {% if not adding %}
+    <input type="hidden" name="shown" value="{{ shown }}">
+    <input type="hidden" name="seen" value="{{ seen }}">
+    {% endif %}
+    {% if kind in ('flight', 'train') %}
+    {% if kind == 'flight' %}
+    <div class="row">
+      {{ input("Airline code", "carrier", maxlength=3, code=True) }}
+      {{ input("Flight number", "flight_number", maxlength=8, digits=True) }}
+    </div>
+    <div class="row">
+      {{ input("From (airport)", "origin", maxlength=120, code=True) }}
+      {{ input("To (airport)", "destination", maxlength=120, code=True) }}
+    </div>
+    {% else %}
+    <div class="row">
+      {{ input("Operator", "provider", maxlength=120) }}
+      {{ input("Train number", "train_number", maxlength=20) }}
+    </div>
+    <div class="row">
+      {{ input("From (station)", "origin", maxlength=120) }}
+      {{ input("To (station)", "destination", maxlength=120) }}
+    </div>
+    {% endif %}
+    <div class="row">
+      {{ input("Departs", "departs_date", type="date") }}
+      {{ input("Time", "departs_time", type="time") }}
+    </div>
+    <div class="row">
+      {{ input("Arrives", "arrives_date", type="date") }}
+      {{ input("Time", "arrives_time", type="time") }}
+    </div>
+    <p class="muted small">Times are local to each {{ 'airport' if kind == 'flight' else 'station' }}.</p>
+    {{ input("Confirmation code", "confirmation_code", maxlength=40, code=True) }}
+    <label class="field"><span>Travellers (one per line)</span><textarea name="passengers" rows="3" autocomplete="off" spellcheck="false"{% if adding %} aria-describedby="passengers-hint"{% endif %}>{{ f.passengers }}</textarea></label>
+    {% if adding %}<p class="muted small" id="passengers-hint">One name per line. Take your own name off if you are not travelling.</p>{% endif %}
+    {% else %}
+    {% if kind == 'lodging' %}
+    {{ input("Hotel", "property_name", maxlength=120) }}
+    {{ input("Address", "address", maxlength=200) }}
+    <div class="row">
+      {{ input("Check-in", "check_in_date", type="date") }}
+      {{ input("Time", "check_in_time", type="time") }}
+    </div>
+    <div class="row">
+      {{ input("Check-out", "check_out_date", type="date") }}
+      {{ input("Time", "check_out_time", type="time") }}
+    </div>
+    {% else %}
+    {{ input("Company", "provider", maxlength=120) }}
+    {{ input("Pick-up location", "pickup_location", maxlength=200) }}
+    <div class="row">
+      {{ input("Pick-up", "pickup_date", type="date") }}
+      {{ input("Time", "pickup_time", type="time") }}
+    </div>
+    {{ input("Drop-off location", "dropoff_location", maxlength=200, placeholder="Same as pick-up") }}
+    <div class="row">
+      {{ input("Drop-off", "dropoff_date", type="date") }}
+      {{ input("Time", "dropoff_time", type="time") }}
+    </div>
+    {% endif %}
+    <p class="muted small">Leave the time empty for a date-only stay.</p>
+    {{ input("Confirmation code", "confirmation_code", maxlength=40, code=True) }}
+    {% endif %}
+    {% if adding %}
+    <label class="field"><span>Trip</span><select name="trip">
+      <option value="">Decide by the dates</option>
+      {% for o in trips %}<option value="{{ o.id }}"{% if o.id|string == f.trip %} selected{% endif %}>{{ o.title }} · {{ o.range }}</option>{% endfor %}
+    </select></label>
+    {% endif %}
+    <div class="row">
+      <button type="submit" class="btn primary">{{ button }}</button>
+      <a class="btn link" href="{{ base }}{{ back }}">Cancel</a>
+    </div>
+  </form>
+</main>
+{% endblock %}

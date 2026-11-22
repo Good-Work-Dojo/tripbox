@@ -1,0 +1,72 @@
+Return-Path: <alex@example.com>
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@example.com;
+       spf=pass smtp.mailfrom=alex@example.com;
+       dmarc=pass header.from=example.com
+From: Alex Sample <alex@example.com>
+To: trips@example.com
+Subject: Fwd: Booking confirmed - San Francisco to Auckland - ZRU981
+Date: Mon, 21 Jun 2027 17:20:44 -0500
+Message-ID: <fwd.zru981.w2c7h@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+---------- Forwarded message ---------
+From: Air New Zealand <itinerary@nzflights.example>
+Date: Mon, Jun 21, 2027 at 3:02 PM
+Subject: Booking confirmed - San Francisco to Auckland - ZRU981
+To: <alex@example.com>
+
+
+Air New Zealand
+Booking confirmed
+
+Hello Alex,
+
+Your booking is confirmed and your ticket has been issued. Please
+check that everything below is right, and that the name matches the
+passport you will travel on.
+
+Booking reference: ZRU981
+Passenger: Alex Sample (adult)
+
+Outbound
+  Flight:   NZ 9007, Economy, seat 42C
+  From:     San Francisco (SFO)
+  Departs:  Tuesday 5 October 2027, 9:15 PM
+  To:       Auckland (AKL)
+  Arrives:  Thursday 7 October 2027, 5:30 AM
+
+  Arrives two days later.
+
+Return
+  Flight:   NZ 9008, Economy, seat 40A
+  From:     Auckland (AKL)
+  Departs:  Friday 15 October 2027, 7:45 PM
+  To:       San Francisco (SFO)
+  Arrives:  Friday 15 October 2027, 11:55 AM
+
+  Arrives the same day.
+
+All times are local to the airport.
+
+Payment
+  Air fare:           USD 1,286.00
+  Taxes and charges:  USD   147.30
+  Total paid:         USD 1,433.30 (card ending 0000)
+
+Baggage
+  One checked bag up to 27.5 kg and one cabin bag up to 16.5 kg.
+
+Before you fly
+- Check in online from 24 hours before departure.
+- Make sure you meet the entry requirements for New Zealand,
+  including any travel authority you need, before you leave home.
+- Your passport must be valid for at least three months after the
+  day you plan to leave New Zealand.
+
+Manage your booking: https://www.example.com/
+
+Safe travels,
+Air New Zealand

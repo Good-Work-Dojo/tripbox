@@ -1,0 +1,13 @@
+{
+  "status": "processed",
+  "read_by": "model",
+  "document_type": "booking",
+  "items": [
+    {"kind": "flight", "key": "BA|9951|2027-07-11|MUC", "result": "filed",
+     "people": {"me": 1, "guests": 3, "others": 0},
+     "booking": {"status": "confirmed",
+                 "travellers": ["Alex Sample", "Jamie Sample", "Robin Sample", "Sam Sample"],
+                 "trip": "Paris",
+                 "checks": [], "sync": "off"}}
+  ]
+}

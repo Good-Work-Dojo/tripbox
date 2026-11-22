@@ -1,0 +1,11 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* Additional terms: see NOTICE */
+/* The read-only demo copy of the page: a banner, switched-off links and controls, the about line.
+   Colours come from the page's own tokens (app.css), so both schemes read as the page does. */
+.demo-banner { margin: 0; padding: 8px var(--gutter); text-align: center; font-size: 14px; font-weight: 600;
+               color: var(--fg); background: var(--band); border-bottom: 1px solid var(--line); }
+.demo-off { cursor: not-allowed; opacity: .6; }
+a.demo-off { pointer-events: none; }
+button:disabled, input:disabled, select:disabled, textarea:disabled { cursor: not-allowed; opacity: .6; }
+button.conf:disabled { opacity: 1; cursor: default; }
+.demo-about { padding-top: 0; padding-bottom: 24px; }

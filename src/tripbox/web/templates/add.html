@@ -1,0 +1,28 @@
+{# SPDX-License-Identifier: AGPL-3.0-only -#}
+{# Additional terms: see NOTICE -#}
+{% extends "base.html" %}
+{% block title %}Add a booking · Trips{% endblock %}
+{% block body %}
+<header class="top">
+  <a class="back" href="{{ base }}{{ back }}" aria-label="{{ 'Back to trips' if back == '/' else 'Back to the trip' }}">‹</a>
+  <h1>Add a booking</h1>
+</header>
+<main class="page">
+  <section aria-labelledby="from-confirmation">
+    <h2 class="section" id="from-confirmation">From a confirmation</h2>
+    <ul class="choices">
+      <li><a class="choice" href="{{ base }}/add/paste"><span>Paste its text</span><span class="chev" aria-hidden="true">›</span></a></li>
+      <li>
+        <a class="choice" href="{{ base }}/add/upload" aria-describedby="upload-what"><span>Upload a file</span><span class="chev" aria-hidden="true">›</span></a>
+        <p class="muted small choice-note" id="upload-what">An email (.eml), a PDF or a text file, up to 10 MB.</p>
+      </li>
+    </ul>
+  </section>
+  <section aria-labelledby="by-hand">
+    <h2 class="section" id="by-hand">By hand</h2>
+    <ul class="choices">
+      {% for k in by_hand %}<li><a class="choice" href="{{ base }}/add/{{ k.word }}{{ query }}"><span><span aria-hidden="true">{{ k.icon }}</span> {{ k.label }}</span><span class="chev" aria-hidden="true">›</span></a></li>{% endfor %}
+    </ul>
+  </section>
+</main>
+{% endblock %}

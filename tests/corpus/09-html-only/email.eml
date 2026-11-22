@@ -1,0 +1,133 @@
+Return-Path: <alex+caf_=trips=example.com@example.com>
+X-Forwarded-To: trips@example.com
+X-Forwarded-For: alex@example.com trips@example.com
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@delta.com;
+       spf=pass smtp.mailfrom="alex+caf_=trips=example.com@example.com";
+       dmarc=pass header.from=delta.com
+From: Delta Air Lines <no-reply@delta.com>
+To: alex@example.com
+Subject: Your trip is booked: RTW753
+Date: Sat, 20 Feb 2027 21:10:44 -0600
+Message-ID: <itin.rtw753.p4v8n@mta.example>
+MIME-Version: 1.0
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html>
+<html lang=3D"en">
+<head>
+<meta charset=3D"utf-8">
+<meta name=3D"viewport" content=3D"width=3Ddevice-width, initial-scale=3D1">
+<title>Your trip is booked: RTW753</title>
+<style>
+body { margin: 0; padding: 0; background-color: #eef1f5; }
+.outer { width: 100%; background-color: #eef1f5; padding: 16px 0; }
+.card { max-width: 640px; margin: 0 auto; background-color: #ffffff; font-f=
+amily: Arial, Helvetica, sans-serif; color: #1f2a36; }
+.top { background-color: #12355b; color: #ffffff; padding: 18px 24px; font-=
+size: 18px; font-weight: bold; letter-spacing: 1px; }
+.section { padding: 16px 24px; border-bottom: 1px solid #dde3ea; }
+.label { font-size: 12px; color: #5f6f80; text-transform: uppercase; letter=
+-spacing: 1px; margin-bottom: 6px; }
+.code { font-size: 24px; font-weight: bold; letter-spacing: 3px; }
+table.grid { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.grid th { text-align: left; background-color: #f3f6f9; padding: 6px 8=
+px; font-size: 12px; color: #5f6f80; }
+table.grid td { padding: 8px; border-top: 1px solid #e4e9ef; vertical-align=
+: top; }
+.fine { font-size: 11px; color: #6b7785; line-height: 16px; }
+a { color: #12355b; }
+</style>
+</head>
+<body>
+<div class=3D"outer">
+<div class=3D"card">
+
+<div class=3D"top">DELTA AIR LINES</div>
+
+<div class=3D"section">
+<p style=3D"font-size: 20px; margin: 0 0 8px 0;">Your trip is booked</p>
+<p style=3D"margin: 0;">Thank you for your purchase. Your reservation is co=
+nfirmed and your e-tickets have been issued. Please check the details below=
+ and keep this email for your records.</p>
+</div>
+
+<div class=3D"section">
+<div class=3D"label">Confirmation number</div>
+<div class=3D"code">RTW753</div>
+</div>
+
+<div class=3D"section">
+<div class=3D"label">Your flights</div>
+<table class=3D"grid" role=3D"presentation">
+<tr><th>Flight</th><th>Departs</th><th>Arrives</th><th>Cabin</th></tr>
+<tr>
+<td><strong>DL 9140</strong></td>
+<td>Fri, Jul 2, 2027<br>4:45 PM<br>Minneapolis/St. Paul (MSP)</td>
+<td>Sat, Jul 3, 2027<br>7:55 AM<br>Paris (CDG)</td>
+<td>Economy</td>
+</tr>
+<tr>
+<td><strong>DL 9017</strong></td>
+<td>Thu, Jul 15, 2027<br>12:10 PM<br>London Heathrow (LHR)</td>
+<td>Thu, Jul 15, 2027<br>3:05 PM<br>Minneapolis/St. Paul (MSP)</td>
+<td>Economy</td>
+</tr>
+</table>
+<p class=3D"fine">DL 9140 flies overnight and arrives the next day. All tim=
+es are local to the airport shown.</p>
+</div>
+
+<div class=3D"section">
+<div class=3D"label">Passengers and seats</div>
+<table class=3D"grid" role=3D"presentation">
+<tr><th>Passenger</th><th>DL 9140</th><th>DL 9017</th></tr>
+<tr><td>SAMPLE/ALEX QUINN<br><span class=3D"fine">Frequent flyer number 900=
+0000001</span></td><td>32A</td><td>41A</td></tr>
+<tr><td>SAMPLE/SAM<br><span class=3D"fine">Frequent flyer number 9000000002=
+</span></td><td>32B</td><td>41B</td></tr>
+<tr><td>SAMPLE/ROBIN</td><td>32C</td><td>41C</td></tr>
+<tr><td>SAMPLE/JAMIE</td><td>32D</td><td>41D</td></tr>
+</table>
+</div>
+
+<div class=3D"section">
+<div class=3D"label">Payment</div>
+<table class=3D"grid" role=3D"presentation">
+<tr><td>Fares, 4 passengers</td><td style=3D"text-align: right;">USD 4,128.=
+00</td></tr>
+<tr><td>Taxes, fees and charges</td><td style=3D"text-align: right;">USD 73=
+3.20</td></tr>
+<tr><td><strong>Total charged</strong></td><td style=3D"text-align: right;"=
+><strong>USD 4,861.20</strong></td></tr>
+</table>
+<p class=3D"fine">Charged to the card ending in 0000.</p>
+</div>
+
+<div class=3D"section">
+<div class=3D"label">Before you go</div>
+<ul style=3D"margin: 0; padding-left: 20px; font-size: 14px; line-height: 2=
+0px;">
+<li>Check in online from 24 hours before departure.</li>
+<li>Every traveler needs a passport that stays valid for the whole trip, ch=
+ildren included.</li>
+<li>Your fare includes one carry-on bag and one personal item per passenger=
+.</li>
+</ul>
+<p style=3D"margin: 12px 0 0 0;"><a href=3D"https://www.example.com/">View =
+or change your trip</a></p>
+</div>
+
+<div class=3D"section fine">
+<p style=3D"margin: 0 0 6px 0;">This email was sent to alex@example.com. Re=
+plies to this address are not read; for help with your booking, visit <a hr=
+ef=3D"https://www.example.com/">our help center</a>.</p>
+<p style=3D"margin: 0;">Fares and fees are non-refundable unless the rules =
+of your fare say otherwise.</p>
+</div>
+
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,237 @@
+Return-Path: <alex+caf_=trips=example.com@example.com>
+X-Forwarded-To: trips@example.com
+X-Forwarded-For: alex@example.com trips@example.com
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@rail.example;
+       spf=pass smtp.mailfrom="alex+caf_=trips=example.com@example.com";
+       dmarc=pass header.from=rail.example
+From: Rail Exemple <billets@rail.example>
+To: alex@example.com
+Subject: Your Rail Exemple tickets: booking UVQ531
+Date: Fri, 05 Mar 2027 08:44:12 -0600
+Message-ID: <billet.uvq531.m5r8t@rail.example>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="alt-uvq531-m5r8t"
+
+--alt-uvq531-m5r8t
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+Rail Exemple
+
+Your booking is confirmed
+Booking reference: UVQ531
+
+Thank you for travelling with Rail Exemple. Your e-tickets are ready: show
+this email, or the tickets in your account, when the conductor asks.
+
+Your journey
+
+Wednesday 7 July 2027
+Train 9907, direct
+Depart  09:55  Paris Est
+Arrive  15:36  M=C3=BCnchen Hbf
+2nd class, coach 14
+
+Passengers and seats
+Alex Sample      coach 14, seat 61
+Sam Sample       coach 14, seat 62
+Robin Sample     coach 14, seat 65 (child fare)
+Jamie Sample     coach 14, seat 66 (child fare)
+
+Total paid: 412.00 EUR (card ending 0000)
+
+Good to know
+- Please be on the platform at least 10 minutes before departure. The doors
+  close shortly before the train leaves.
+- Each passenger may bring two pieces of luggage and one small bag.
+- Exchanges are free until departure. A refund costs 15.00 EUR per ticket.
+
+Manage your booking: https://www.example.com/
+
+Have a good journey,
+Rail Exemple customer service
+
+This email was sent to alex@example.com.
+
+--alt-uvq531-m5r8t
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html>
+<html lang=3D"en">
+<head>
+<meta charset=3D"utf-8">
+<title>Your booking is confirmed</title>
+<script type=3D"application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TrainReservation",
+    "reservationNumber": "UVQ531",
+    "reservationStatus": "https://schema.org/ReservationConfirmed",
+    "underName": {
+      "@type": "Person",
+      "name": "Alex Sample"
+    },
+    "reservationFor": {
+      "@type": "TrainTrip",
+      "trainNumber": "9907",
+      "provider": {
+        "@type": "Organization",
+        "name": "Rail Exemple"
+      },
+      "departureStation": {
+        "@type": "TrainStation",
+        "name": "Paris Est"
+      },
+      "departureTime": "2027-07-07T09:55:00+02:00",
+      "arrivalStation": {
+        "@type": "TrainStation",
+        "name": "M=C3=BCnchen Hbf"
+      },
+      "arrivalTime": "2027-07-07T15:36:00+02:00"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "TrainReservation",
+    "reservationNumber": "UVQ531",
+    "reservationStatus": "https://schema.org/ReservationConfirmed",
+    "underName": {
+      "@type": "Person",
+      "name": "Sam Sample"
+    },
+    "reservationFor": {
+      "@type": "TrainTrip",
+      "trainNumber": "9907",
+      "provider": {
+        "@type": "Organization",
+        "name": "Rail Exemple"
+      },
+      "departureStation": {
+        "@type": "TrainStation",
+        "name": "Paris Est"
+      },
+      "departureTime": "2027-07-07T09:55:00+02:00",
+      "arrivalStation": {
+        "@type": "TrainStation",
+        "name": "M=C3=BCnchen Hbf"
+      },
+      "arrivalTime": "2027-07-07T15:36:00+02:00"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "TrainReservation",
+    "reservationNumber": "UVQ531",
+    "reservationStatus": "https://schema.org/ReservationConfirmed",
+    "underName": {
+      "@type": "Person",
+      "name": "Robin Sample"
+    },
+    "reservationFor": {
+      "@type": "TrainTrip",
+      "trainNumber": "9907",
+      "provider": {
+        "@type": "Organization",
+        "name": "Rail Exemple"
+      },
+      "departureStation": {
+        "@type": "TrainStation",
+        "name": "Paris Est"
+      },
+      "departureTime": "2027-07-07T09:55:00+02:00",
+      "arrivalStation": {
+        "@type": "TrainStation",
+        "name": "M=C3=BCnchen Hbf"
+      },
+      "arrivalTime": "2027-07-07T15:36:00+02:00"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "TrainReservation",
+    "reservationNumber": "UVQ531",
+    "reservationStatus": "https://schema.org/ReservationConfirmed",
+    "underName": {
+      "@type": "Person",
+      "name": "Jamie Sample"
+    },
+    "reservationFor": {
+      "@type": "TrainTrip",
+      "trainNumber": "9907",
+      "provider": {
+        "@type": "Organization",
+        "name": "Rail Exemple"
+      },
+      "departureStation": {
+        "@type": "TrainStation",
+        "name": "Paris Est"
+      },
+      "departureTime": "2027-07-07T09:55:00+02:00",
+      "arrivalStation": {
+        "@type": "TrainStation",
+        "name": "M=C3=BCnchen Hbf"
+      },
+      "arrivalTime": "2027-07-07T15:36:00+02:00"
+    }
+  }
+]
+</script>
+</head>
+<body style=3D"margin: 0; padding: 16px; background-color: #f5f3ef; font-fa=
+mily: Arial, Helvetica, sans-serif; color: #222222;">
+<div style=3D"max-width: 600px; margin: 0 auto; background-color: #ffffff; =
+padding: 20px 24px;">
+<p style=3D"font-size: 18px; font-weight: bold; color: #7a1f2b; margin: 0 0=
+ 16px 0;">Rail Exemple</p>
+<h1 style=3D"font-size: 20px; margin: 0 0 8px 0;">Your booking is confirmed=
+</h1>
+<p style=3D"margin: 0 0 12px 0;">Booking reference: <strong>UVQ531</strong>=
+</p>
+<p>Thank you for travelling with Rail Exemple. Your e-tickets are ready: sh=
+ow this email, or the tickets in your account, when the conductor asks.</p>
+<h2 style=3D"font-size: 16px; margin: 20px 0 8px 0;">Your journey</h2>
+<table role=3D"presentation" style=3D"border-collapse: collapse; font-size:=
+ 14px;">
+<tr><td colspan=3D"2"><strong>Wednesday 7 July 2027</strong></td></tr>
+<tr><td colspan=3D"2">Train 9907, direct</td></tr>
+<tr><td style=3D"padding-right: 12px;">Depart 09:55</td><td>Paris Est</td><=
+/tr>
+<tr><td style=3D"padding-right: 12px;">Arrive 15:36</td><td>M=C3=BCnchen Hb=
+f</td></tr>
+<tr><td colspan=3D"2">2nd class, coach 14</td></tr>
+</table>
+<h2 style=3D"font-size: 16px; margin: 20px 0 8px 0;">Passengers and seats</=
+h2>
+<table role=3D"presentation" style=3D"border-collapse: collapse; font-size:=
+ 14px;">
+<tr><td style=3D"padding-right: 16px;">Alex Sample</td><td>coach 14, seat 6=
+1</td></tr>
+<tr><td style=3D"padding-right: 16px;">Sam Sample</td><td>coach 14, seat 62=
+</td></tr>
+<tr><td style=3D"padding-right: 16px;">Robin Sample</td><td>coach 14, seat =
+65 (child fare)</td></tr>
+<tr><td style=3D"padding-right: 16px;">Jamie Sample</td><td>coach 14, seat =
+66 (child fare)</td></tr>
+</table>
+<p>Total paid: <strong>412.00 EUR</strong> (card ending 0000)</p>
+<h2 style=3D"font-size: 16px; margin: 20px 0 8px 0;">Good to know</h2>
+<ul style=3D"padding-left: 20px; font-size: 14px;">
+<li>Please be on the platform at least 10 minutes before departure. The doo=
+rs close shortly before the train leaves.</li>
+<li>Each passenger may bring two pieces of luggage and one small bag.</li>
+<li>Exchanges are free until departure. A refund costs 15.00 EUR per ticket=
+.</li>
+</ul>
+<p><a href=3D"https://www.example.com/" style=3D"color: #7a1f2b;">Manage yo=
+ur booking</a></p>
+<p>Have a good journey,<br>Rail Exemple customer service</p>
+<p style=3D"font-size: 11px; color: #777777;">This email was sent to alex@e=
+xample.com.</p>
+</div>
+</body>
+</html>
+
+--alt-uvq531-m5r8t--

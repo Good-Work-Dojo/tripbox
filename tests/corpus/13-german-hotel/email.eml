@@ -1,0 +1,70 @@
+Return-Path: <alex@example.com>
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@example.com;
+       spf=pass smtp.mailfrom=alex@example.com;
+       dmarc=pass header.from=example.com
+From: Alex Sample <alex@example.com>
+To: trips@example.com
+Subject: Fwd: =?UTF-8?Q?Ihre_Reservierungsbest=C3=A4tigung_WYR420_?=
+ =?UTF-8?Q?=E2=80=93_Hotel_Beispiel_am_Marienplatz?=
+Date: Sat, 06 Mar 2027 18:03:51 -0600
+Message-ID: <fwd.wyr420.q2n6v@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+---------- Forwarded message ---------
+From: Hotel Beispiel am Marienplatz <reservierung@hotel-beispiel-marienplat=
+z.example>
+Date: Sat, Mar 6, 2027 at 9:41 AM
+Subject: Ihre Reservierungsbest=C3=A4tigung WYR420 =E2=80=93 Hotel Beispiel=
+ am Marienplatz
+To: <alex@example.com>
+
+
+Hotel Beispiel am Marienplatz
+Beispielstra=C3=9Fe 5, 80331 M=C3=BCnchen, Deutschland
+Telefon: 089 99998-214
+E-Mail: reservierung@hotel-beispiel-marienplatz.example
+
+Reservierungsbest=C3=A4tigung
+
+Guten Tag Alex Sample,
+
+vielen Dank f=C3=BCr Ihre Buchung. Gerne best=C3=A4tigen wir Ihre Reservier=
+ung wie
+folgt:
+
+Reservierungsnummer: WYR420
+Gast: Alex Sample
+Anreise: Mittwoch, 07.07.2027, ab 15:00 Uhr
+Abreise: Sonntag, 11.07.2027, bis 11:00 Uhr
+Aufenthalt: 4 N=C3=A4chte
+Zimmer: 1 Familienzimmer f=C3=BCr 2 Erwachsene und 2 Kinder
+Verpflegung: Fr=C3=BChst=C3=BCcksbuffet inklusive
+
+Preis pro Nacht: 214,00 =E2=82=AC
+Gesamtpreis: 856,00 =E2=82=AC (inkl. MwSt.)
+
+Die Zahlung erfolgt bei Abreise im Hotel. Ihre Kreditkarte mit den
+Endziffern 0000 dient lediglich als Garantie.
+
+Stornierungsbedingungen: Bis zum 05.07.2027, 18:00 Uhr, k=C3=B6nnen Sie
+kostenfrei stornieren. Bei sp=C3=A4terer Stornierung oder Nichtanreise
+berechnen wir den Preis der ersten Nacht.
+
+Gut zu wissen
+- Unsere Rezeption ist rund um die Uhr f=C3=BCr Sie da.
+- Die hoteleigene Tiefgarage steht Ihnen auf Anfrage f=C3=BCr 28,00 =E2=82=
+=AC pro Tag
+  zur Verf=C3=BCgung.
+- Sollten Sie nach 22:00 Uhr anreisen, geben Sie uns bitte kurz Bescheid.
+
+Ihre Reservierung =C3=A4ndern oder stornieren: https://www.example.com/
+
+Wir freuen uns auf Ihren Besuch.
+
+Mit freundlichen Gr=C3=BC=C3=9Fen
+Ihr Rezeptionsteam
+Hotel Beispiel am Marienplatz
+https://www.example.com/

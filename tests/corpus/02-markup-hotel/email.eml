@@ -1,0 +1,114 @@
+Return-Path: <alex+caf_=trips=example.com@example.com>
+X-Forwarded-To: trips@example.com
+X-Forwarded-For: alex@example.com trips@example.com
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@examplebayhotel.example;
+       spf=pass smtp.mailfrom="alex+caf_=trips=example.com@example.com";
+       dmarc=pass header.from=examplebayhotel.example
+From: Example Bay Hotel Seattle <stay@examplebayhotel.example>
+To: alex@example.com
+Subject: Your stay is confirmed: YTR864
+Date: Mon, 18 Jan 2027 10:31:44 -0600
+Message-ID: <stay.ytr864.h2v6p@examplebayhotel.example>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="alt-ytr864-h2v6p"
+
+--alt-ytr864-h2v6p
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+Example Bay Hotel Seattle
+
+Your stay is confirmed
+
+Dear Alex Sample,
+
+Thank you for booking with us. We look forward to welcoming you to Seattle.
+
+Confirmation number: YTR864
+Guest: Alex Sample
+
+Check-in: Monday, June 14, 2027, from 3:00 PM
+Check-out: Sunday, June 20, 2027, by 11:00 AM
+Nights: 6
+Room: Two Queen Beds, Bay View; 2 adults, 2 children
+
+Rate: 239.00 USD per night
+Taxes and fees: 158.34 USD
+Total: 1,592.34 USD
+
+At check-in, please have a photo ID and a credit card for incidentals
+ready. Valet parking is available for 45.00 USD per night.
+
+Example Bay Hotel Seattle
+300 Example Way, Seattle, WA 98101
+Phone: 206-555-0130
+
+Cancel free of charge up to 48 hours before arrival.
+Manage your stay: https://www.example.com/
+
+This email was sent to alex@example.com.
+
+--alt-ytr864-h2v6p
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Your stay is confirmed</title>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "LodgingReservation",
+  "reservationNumber": "YTR864",
+  "reservationStatus": "https://schema.org/ReservationConfirmed",
+  "underName": {"@type": "Person", "name": "Alex Sample"},
+  "reservationFor": {
+    "@type": "Hotel",
+    "name": "Example Bay Hotel Seattle",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "300 Example Way",
+      "addressLocality": "Seattle",
+      "addressRegion": "WA",
+      "postalCode": "98101",
+      "addressCountry": "US"
+    },
+    "telephone": "+1 206-555-0130"
+  },
+  "checkinTime": "2027-06-14T15:00:00-07:00",
+  "checkoutTime": "2027-06-20T11:00:00-07:00"
+}
+</script>
+</head>
+<body>
+<h1>Example Bay Hotel Seattle</h1>
+<h2>Your stay is confirmed</h2>
+<p>Dear Alex Sample,</p>
+<p>Thank you for booking with us. We look forward to welcoming you to Seattle.</p>
+<table>
+<tr><td>Confirmation number</td><td><strong>YTR864</strong></td></tr>
+<tr><td>Guest</td><td>Alex Sample</td></tr>
+<tr><td>Check-in</td><td>Monday, June 14, 2027, from 3:00 PM</td></tr>
+<tr><td>Check-out</td><td>Sunday, June 20, 2027, by 11:00 AM</td></tr>
+<tr><td>Nights</td><td>6</td></tr>
+<tr><td>Room</td><td>Two Queen Beds, Bay View; 2 adults, 2 children</td></tr>
+</table>
+<table>
+<tr><td>Rate</td><td>239.00 USD per night</td></tr>
+<tr><td>Taxes and fees</td><td>158.34 USD</td></tr>
+<tr><td>Total</td><td>1,592.34 USD</td></tr>
+</table>
+<p>At check-in, please have a photo ID and a credit card for incidentals ready. Valet parking is available for 45.00 USD per night.</p>
+<p>Example Bay Hotel Seattle<br>
+300 Example Way, Seattle, WA 98101<br>
+Phone: 206-555-0130</p>
+<p>Cancel free of charge up to 48 hours before arrival.</p>
+<p><a href="https://www.example.com/">Manage your stay</a></p>
+<p>This email was sent to alex@example.com.</p>
+</body>
+</html>
+
+--alt-ytr864-h2v6p--

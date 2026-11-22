@@ -1,0 +1,28 @@
+{# SPDX-License-Identifier: AGPL-3.0-only -#}
+{# Additional terms: see NOTICE -#}
+{#- A booking's box (`it` from views.present): what is to check on it, then a one-button form for
+    each answer that applies and Edit; in the list's unsorted group (`listed`) its own Add the date
+    link edits it instead. Every sentence is the view's, none is written here. -#}
+<div class="check" role="group" aria-label="To check">
+  {% if it.checks %}
+  <ul class="check-list">
+    {% for ck in it.checks %}<li>{{ ck.text }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% if it.gone %}<p>{{ it.gone }}</p>{% endif %}
+  {% if it.can or not listed %}
+  <div class="check-actions">
+    {% if 'looks_right' in it.can %}
+    <form method="post" action="{{ base }}/items/{{ it.id }}/looks-right"><input type="hidden" name="seen" value="{{ seen }}"><button type="submit" class="btn">Looks right</button></form>
+    {% endif %}
+    {% if 'on_it' in it.can %}
+    <form method="post" action="{{ base }}/items/{{ it.id }}/owner"><input type="hidden" name="on_it" value="yes"><button type="submit" class="btn">I was on this flight</button></form>
+    <form method="post" action="{{ base }}/items/{{ it.id }}/owner"><input type="hidden" name="on_it" value="no"><button type="submit" class="btn">Not me</button></form>
+    {% endif %}
+    {% if 'send_again' in it.can %}
+    <form method="post" action="{{ base }}/items/{{ it.id }}/send-again"><button type="submit" class="btn">Send again</button></form>
+    {% endif %}
+    {% if not listed %}<a class="btn" href="{{ base }}/items/{{ it.id }}/edit">Edit</a>{% endif %}
+  </div>
+  {% endif %}
+</div>

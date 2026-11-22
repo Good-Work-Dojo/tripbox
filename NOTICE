@@ -1,0 +1,31 @@
+tripbox
+Copyright (C) 2026 Jeremy Sapriel
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General
+Public License version 3 only, as published by the Free Software Foundation (the file LICENSE). It is distributed in
+the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+SPDX-License-Identifier: AGPL-3.0-only
+
+Additional terms under section 7 of the GNU Affero General Public License
+------------------------------------------------------------------------
+
+These terms are additional terms that section 7 of the licence permits. They apply to this program and to every copy
+and modified version of it.
+
+7(b) Attribution. Any copy or modified version must keep, in the Appropriate Legal Notices (section 0) its
+     interactive user interfaces display — in this program the line at the foot of Settings, of the sign-in page and
+     of a shared trip's page — a reasonable legal notice of authorship: the line "© 2026 Jeremy Sapriel" in a copy of
+     this program, and the line "Based on tripbox, © 2026 Jeremy Sapriel" in a modified version. The line must stay as
+     readable as the text around it.
+
+7(c) Marking modified versions. A modified version must be marked in reasonable ways as different from the original
+     version: it must not present itself as tripbox, and the notices in its source files must say that the files
+     were changed.
+
+7(e) Names and logos. This licence grants no right to use the name "tripbox" or its logo as a trademark or service
+     mark, except to describe the origin of the program as section 7(b) requires. TRADEMARKS.md says what is
+     allowed.
+
+Third-party components keep their own licences; THIRD_PARTY_NOTICES.md lists them.

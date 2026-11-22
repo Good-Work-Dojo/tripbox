@@ -1,0 +1,32 @@
+{
+  "wire_schema": 1,
+  "source": "hand-written",
+  "model": null,
+  "answer": {
+    "document_type": "booking",
+    "confidence": 0.9,
+    "reservations": [
+      {
+        "kind": "flight",
+        "status": "confirmed",
+        "code": "RYT941",
+        "provider": "American Airlines",
+        "passengers": ["Alex Sample", "Sam Sample"],
+        "legs": [
+          {"carrier": "AA", "number": "9720", "origin": "MSP", "destination": "PHX",
+           "departure": "2027-11-04T10:15", "arrival": "2027-11-04T12:05",
+           "seats": [], "cabin": "Economy"},
+          {"carrier": "AA", "number": "9741", "origin": "PHX", "destination": "MSP",
+           "departure": "2027-11-08T13:30", "arrival": "2027-11-08T18:05",
+           "seats": [], "cabin": "Economy"}
+        ],
+        "place": null,
+        "address": null,
+        "start": null,
+        "end": null,
+        "price": 590.64,
+        "currency": "USD"
+      }
+    ]
+  }
+}

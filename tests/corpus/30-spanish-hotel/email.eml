@@ -1,0 +1,76 @@
+Return-Path: <alex@example.com>
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@example.com;
+       spf=pass smtp.mailfrom=alex@example.com;
+       dmarc=pass header.from=example.com
+From: Alex Sample <alex@example.com>
+To: trips@example.com
+Subject: Fwd: =?UTF-8?Q?Confirmaci=C3=B3n_de_su_reservaci=C3=B3n_YSV870_?=
+ =?UTF-8?Q?-_Hotel_Ejemplo_Playa?=
+Date: Mon, 30 Aug 2027 16:25:37 -0500
+Message-ID: <fwd.ysv870.t3w9k@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+---------- Forwarded message ---------
+From: Hotel Ejemplo Playa <reservaciones@hotelejemploplaya.example>
+Date: Mon, Aug 30, 2027 at 2:08 PM
+Subject: Confirmaci=C3=B3n de su reservaci=C3=B3n YSV870 - Hotel Ejemplo Pl=
+aya
+To: <alex@example.com>
+
+
+Hotel Ejemplo Playa
+Blvd. Ejemplo Km 9, Zona Hotelera, 77500 Canc=C3=BAn, Q.R., M=C3=A9xico
+reservaciones@hotelejemploplaya.example
+https://www.example.com/
+
+CONFIRMACI=C3=93N DE RESERVACI=C3=93N
+
+Estimado(a) Alex Sample:
+
+Gracias por elegir Hotel Ejemplo Playa. Nos complace confirmar su
+reservaci=C3=B3n con los siguientes datos:
+
+N=C3=BAmero de confirmaci=C3=B3n: YSV870
+Nombre del hu=C3=A9sped: Alex Sample
+Llegada: s=C3=A1bado, 18 de diciembre de 2027 (entrada a partir de las 15:0=
+0 h)
+Salida: domingo, 26 de diciembre de 2027 (entrega de la habitaci=C3=B3n has=
+ta las 12:00 h)
+Noches: 8
+Habitaci=C3=B3n: Suite Familiar con vista al mar, 2 adultos y 2 menores
+Plan: Todo incluido
+
+Tarifa por noche: 412.00 USD
+Subtotal (8 noches): 3,296.00 USD
+Impuestos: 692.16 USD
+Total: 3,988.16 USD
+
+El total se pagar=C3=A1 en el hotel al momento de su llegada. Su tarjeta con
+terminaci=C3=B3n 0000 se utiliza =C3=BAnicamente como garant=C3=ADa.
+
+Pol=C3=ADtica de cancelaci=C3=B3n: puede cancelar sin cargo hasta el
+viernes 3 de diciembre de 2027. Despu=C3=A9s de esa fecha, o en caso de no
+presentarse, se cobrar=C3=A1 el importe de una noche.
+
+Informaci=C3=B3n importante
+- Al registrarse, presente una identificaci=C3=B3n oficial vigente y la tar=
+jeta
+  con la que garantiz=C3=B3 su reservaci=C3=B3n.
+- Puede solicitar el traslado desde el aeropuerto respondiendo a este
+  correo.
+- El acceso a las albercas y al club de playa es exclusivo para hu=C3=A9spe=
+des.
+
+Para modificar o cancelar su reservaci=C3=B3n, visite https://www.example.c=
+om/
+o escr=C3=ADbanos a reservaciones@hotelejemploplaya.example.
+
+Esperamos darle la bienvenida muy pronto.
+
+Atentamente,
+Departamento de Reservaciones
+Hotel Ejemplo Playa
+https://www.example.com/

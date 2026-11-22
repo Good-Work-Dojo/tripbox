@@ -1,0 +1,20 @@
+{
+  "document_type": "booking",
+  "reservations": [
+    {
+      "kind": "flight",
+      "status": "confirmed",
+      "confirmation_code": "XZS975",
+      "provider": "Alaska Airlines",
+      "passengers": ["Alex Sample", "Sam Sample", "Robin Sample", "Jamie Sample"],
+      "segments": [
+        {"carrier_iata": "AS", "flight_number": "9203", "origin": "MSP", "destination": "SEA",
+         "departure_local": "2027-06-14T09:30", "arrival_local": "2027-06-14T11:18",
+         "departure_offset": "-05:00", "arrival_offset": "-07:00"},
+        {"carrier_iata": "AS", "flight_number": "9228", "origin": "SEA", "destination": "MSP",
+         "departure_local": "2027-06-20T13:45", "arrival_local": "2027-06-20T19:05",
+         "departure_offset": "-07:00", "arrival_offset": "-05:00"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "status": "processed",
+  "read_by": "model",
+  "document_type": "cancellation",
+  "items": [
+    {"kind": "lodging", "key": "lodging|SUT320", "result": "updated",
+     "people": {"me": 1, "guests": 0, "others": 0},
+     "booking": {"status": "cancelled", "travellers": ["Alex Sample"], "trip": "Chicago",
+                 "checks": [], "sync": "off"}}
+  ]
+}

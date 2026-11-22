@@ -1,0 +1,25 @@
+{
+  "wire_schema": 1,
+  "source": "hand-written",
+  "model": null,
+  "answer": {
+    "document_type": "booking",
+    "confidence": 0.9,
+    "reservations": [
+      {
+        "kind": "lodging",
+        "status": "confirmed",
+        "code": "WYR420",
+        "provider": null,
+        "passengers": ["Alex Sample"],
+        "legs": [],
+        "place": "Hotel Beispiel am Marienplatz",
+        "address": "Beispielstraße 5, 80331 München, Deutschland",
+        "start": "2027-07-07",
+        "end": "2027-07-11",
+        "price": 856.00,
+        "currency": "EUR"
+      }
+    ]
+  }
+}

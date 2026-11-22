@@ -1,0 +1,19 @@
+{
+  "status": "processed",
+  "read_by": "kitinerary",
+  "document_type": "booking",
+  "items": [
+    {"kind": "flight", "key": "AS|9203|2027-06-14|MSP", "result": "filed",
+     "people": {"me": 1, "guests": 3, "others": 0},
+     "booking": {"status": "confirmed",
+                 "travellers": ["Alex Sample", "Jamie Sample", "Robin Sample", "Sam Sample"],
+                 "trip": "Seattle",
+                 "checks": [], "sync": "off"}},
+    {"kind": "flight", "key": "AS|9228|2027-06-20|SEA", "result": "filed",
+     "people": {"me": 1, "guests": 3, "others": 0},
+     "booking": {"status": "confirmed",
+                 "travellers": ["Alex Sample", "Jamie Sample", "Robin Sample", "Sam Sample"],
+                 "trip": "Seattle",
+                 "checks": [], "sync": "off"}}
+  ]
+}

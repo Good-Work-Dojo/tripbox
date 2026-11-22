@@ -1,0 +1,11 @@
+{
+  "status": "processed",
+  "read_by": "kitinerary",
+  "document_type": "booking",
+  "items": [
+    {"kind": "lodging", "key": "lodging|YTR864", "result": "filed",
+     "people": {"me": 1, "guests": 0, "others": 0},
+     "booking": {"status": "confirmed", "travellers": ["Alex Sample"], "trip": "Seattle",
+                 "checks": [], "sync": "off"}}
+  ]
+}

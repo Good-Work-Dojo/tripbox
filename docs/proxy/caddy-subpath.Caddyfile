@@ -1,0 +1,17 @@
+# TRIPBOX_BASE_URL=https://example.com/tripbox
+# Caddy in front of tripbox under a path of a site it already serves. Caddy gets and renews the
+# certificate for the site by itself. "web:8110" is tripbox's page when Caddy is a service in the
+# same compose project; for a Caddy on the host, write 127.0.0.1:8110 instead.
+# The path is handed on as it came (no handle_path, no strip_prefix): tripbox answers under it.
+# The rest of the site goes in the last handle: Caddy runs a try_files, rewrite or redir before
+# any handle, so one of the site's outside it would change tripbox's paths too.
+example.com {
+	@tripbox path /tripbox /tripbox/*
+	handle @tripbox {
+		reverse_proxy web:8110
+	}
+
+	handle {
+		# the site's own directives go here, as before
+	}
+}

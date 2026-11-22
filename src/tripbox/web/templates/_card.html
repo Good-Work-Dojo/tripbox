@@ -1,0 +1,14 @@
+{# SPDX-License-Identifier: AGPL-3.0-only -#}
+{# Additional terms: see NOTICE -#}
+<li>
+  <a class="card {{ 'cancelled' if c.trip.cancelled }}" href="{{ base }}/trips/{{ c.trip.id }}">
+    <div class="cover tile tile-{{ c.trip.id % 8 }}"><span>{{ c.trip.title[:1]|upper }}</span></div>
+    <div class="card-body">
+      <div class="card-title">{{ c.trip.title }}{% if c.trip.cancelled %} <span class="chip chip-red">Cancelled</span>{% endif %}{% if c.to_check %} <span class="chip chip-amber">{{ c.to_check }} to check</span>{% endif %}</div>
+      <div class="card-dates">{{ c.range }}</div>
+      {% if c.counts or c.people %}<div class="card-meta">{{ c.counts }}{% if c.people %} · {{ c.people }}{% endif %}</div>{% endif %}
+      {% if c.next %}<div class="card-next">{{ c.next }}</div>{% endif %}
+    </div>
+    <span class="chev" aria-hidden="true">›</span>
+  </a>
+</li>

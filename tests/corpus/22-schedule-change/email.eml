@@ -1,0 +1,53 @@
+Return-Path: <alex+caf_=trips=example.com@example.com>
+X-Forwarded-To: trips@example.com
+X-Forwarded-For: alex@example.com trips@example.com
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@alaskaair.com;
+       spf=pass smtp.mailfrom="alex+caf_=trips=example.com@example.com";
+       dmarc=pass header.from=alaskaair.com
+From: Alaska Airlines <no-reply@alaskaair.com>
+To: alex@example.com
+Subject: New times for your flight: XZS975
+Date: Wed, 02 Jun 2027 12:45:53 -0500
+Message-ID: <change.xzs975.n3w7r@mta.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+Alaska Airlines
+
+Your flight times have changed
+
+Hello Alex,
+
+We have updated the schedule for one of the flights on your trip.
+Everyone on this confirmation is booked on the new times shown below.
+
+Confirmation code: XZS975
+
+Travelers
+Alex Sample
+Sam Sample
+Robin Sample
+Jamie Sample
+
+Updated flight
+Sunday, June 20, 2027
+Flight AS 9228
+Depart: Seattle (SEA) 3:10 PM (was 1:45 PM)
+Arrive: Minneapolis (MSP) 8:30 PM (was 7:05 PM)
+
+What you can do
+- If the new times work for you, there is nothing to do. Your seats
+  stay the same wherever the aircraft allows.
+- If they do not, choose another flight at no extra charge, or ask for
+  a refund, at https://www.example.com/
+
+Need help?
+Call us at 206-555-0161, any time of day, and have your confirmation
+code ready.
+
+Thank you for flying with us.
+
+This email was sent to alex@example.com. Please do not reply to this
+message.
