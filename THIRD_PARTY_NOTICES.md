@@ -21,8 +21,13 @@ own code never includes any of it.
 - **What the static build bundles.** The build KDE publishes is one static binary. KDE's scripts for it at the
   `v26.04.3` tag build Qt 6.10.2 (static), OpenSSL 3.6.1 and iso-codes 4.18.0, and its CI configuration names
   KDE Frameworks (`ki18n`, `kcontacts`, `kcalendarcore`, `kcodecs`, `kmime`), `kpkpass` and `zxing-cpp`. The
-  archive holds the binary and its translation catalogues (`share/locale`) and no licence texts. The licence of
-  each bundled library is its own project's; they are not verified here, so this file does not restate them.
+  archive holds the binary and its translation catalogues (`share/locale`) and no licence texts. As each project
+  states its own licence: Qt 6 is offered under `LGPL-3.0-only` (as well as commercially and under the GPL);
+  OpenSSL 3 and zxing-cpp under `Apache-2.0`; iso-codes under `LGPL-2.1-or-later`; and the KDE Frameworks named
+  and `kpkpass` mostly under `LGPL-2.0-or-later`, with some files under `LGPL-2.1` or `LGPL-3.0` terms. Each
+  project's own source is the authority for its files. `LICENSES/LGPL-3.0-only.txt` (which carries the GPL text
+  it builds on), `LICENSES/LGPL-2.1-or-later.txt` and `LICENSES/Apache-2.0.txt` here are those licences' texts,
+  from the SPDX License List (v3.27.0).
 - **Version.** On amd64 the image carries KDE's build, 26.04.3 (a download pinned by its SHA-256 in the
   `Dockerfile`). KDE publishes it for x86_64 only, so on arm64 the image carries Debian 13's `libkitinerary-bin`,
   24.12.3-1, which links the system's own libraries. The build argument `KITINERARY_SOURCE`
@@ -31,6 +36,12 @@ own code never includes any of it.
   amd64 build); Debian's source package is `kitinerary`, version 24.12.3-1 (<https://packages.debian.org/trixie/libkitinerary-bin>
   names it and links its copyright file). Anyone who receives the image should be able to fetch either from
   there; that Debian's source page serves the package's source was not verified.
+- **Written offer of the source.** For at least three years after the last image that carries a given build of
+  `kitinerary-extractor` is published, the tripbox maintainers will give anyone who asks a copy of the complete
+  corresponding source of that build and of the libraries it bundles, as a download or on a medium customarily
+  used for software interchange, for no more than the cost of providing it. To ask, open an issue at
+  <https://github.com/Good-Work-Dojo/tripbox/issues> titled "Source request: kitinerary-extractor" and name the
+  image tag. The same source is published by its own projects at the places listed under **Source**.
 
 ## Public Sans
 
