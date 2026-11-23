@@ -185,7 +185,7 @@ def test_every_route_begins_with_a_reserved_segment():
         app = starlette_of(create_app(settings_in(mode), lambda: Ledger.memory()))
         first = set(first_segments(app.routes))
         assert "" in first, mode  # the list, at the base itself
-        assert {"trips", "items", "static", "feed"} <= first, mode
+        assert {"trips", "items", "static", "feed", "covers"} <= first, mode
         assert first - {""} <= set(RESERVED_SEGMENTS), mode
     assert len(RESERVED_SEGMENTS) == len(set(RESERVED_SEGMENTS))
 

@@ -83,14 +83,24 @@ class CoverStore:
 
     # ------------------------------------------------------------------ reading
     def get(self, trip_id: int) -> Cover | None:
-        row = self.repo.get(trip_id)
+        """The trip's cover, read without its images."""
+        row = self.repo.about(trip_id)
         return _cover(row) if row else None
+
+    def all(self) -> dict[int, Cover]:
+        """Every trip's cover by trip, read in one pass without the images (the list's cards)."""
+        return {row["trip_id"]: _cover(row) for row in self.repo.all_for_lookup()}
 
     def image(self, digest: str, size: Literal["large", "small"]) -> bytes | None:
         row = self.repo.by_digest(digest)
         if row is None or row["state"] != "ready":
             return None
         return row[size]
+
+    def shown_image(self, digest: str, size: Literal["large", "small"]) -> bytes | None:
+        """The image the page serves under `digest`: a ready cover's, of a trip that is not
+        deleted (Recently deleted keeps tiles), else None."""
+        return self.repo.shown_image(digest, size)
 
     def same_place_ready(self, place: str, exclude: int | None = None) -> Cover | None:
         """A ready Wikimedia cover of another trip with the same place (the lowest trip), so a

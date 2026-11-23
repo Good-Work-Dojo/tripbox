@@ -533,6 +533,7 @@ RESERVED_SEGMENTS = (
     "trips",
     "items",
     "links",
+    "covers",
 )
 
 

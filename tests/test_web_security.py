@@ -23,6 +23,7 @@ from starlette.routing import Mount, Route, Router
 from test_passwords import FAKE, cheap_hash
 from test_web_auth import ACCESS, PROXY, SIGNED, STRANGERS, Keys
 from test_web_auth import PUBLIC as ADDRESS
+from test_web_covers import ready as cover_of
 from test_web_views import seed_trip
 
 from tripbox import cli, uploads, util
@@ -31,7 +32,7 @@ from tripbox.ledger import Ledger
 from tripbox.trips import ical, shares
 from tripbox.web import auth, views
 from tripbox.web.app import PUBLIC, create_app
-from tripbox.web.middleware import LIMIT, SECURITY_HEADERS, LoginRequired
+from tripbox.web.middleware import COVER_KEPT, LIMIT, SECURITY_HEADERS, LoginRequired
 from tripbox.web.urls import Urls
 
 # Every login the page offers, with the settings it needs beside TRIPBOX_AUTH: each test of the
@@ -179,6 +180,7 @@ def test_no_private_route_answers_without_a_login_at_any_base_or_spelling(
         "kind": "hotel",
         "token": token,
         "link_id": link.id,
+        "file": f"{cover_of(ctx, trip.id)}.jpg",
     }
     routes = private_mount(c.app).routes
     assert len(routes) > 20
@@ -405,12 +407,14 @@ def test_the_security_headers_are_these_and_no_others():
     }
 
 
-def guarded(r, *, static: bool = False) -> None:
-    """Each security header once, with its value; `Cache-Control: no-store` unless `static`."""
+def guarded(r, *, static: bool = False, photo: bool = False) -> None:
+    """Each security header once, with its value; `Cache-Control: no-store` unless `static`
+    (none) or a `photo` given (kept a year, by this browser alone)."""
     for name, value in SECURITY_HEADERS.items():
         assert r.headers.get_list(name) == [value], (r.request.url.path, r.status_code, name)
     store = r.headers.get_list("cache-control")
-    assert store == ([] if static else ["no-store"]), (r.request.url.path, r.status_code)
+    kept = [] if static else [COVER_KEPT] if photo else ["no-store"]
+    assert store == kept, (r.request.url.path, r.status_code)
 
 
 def test_every_kind_of_response_carries_the_security_headers(tmp_path, monkeypatch, base, login):
@@ -419,8 +423,11 @@ def test_every_kind_of_response_carries_the_security_headers(tmp_path, monkeypat
     signed = Page(c.app, base, headers=login.signed_in(), raise_server_exceptions=False)
     same = {"Sec-Fetch-Site": "same-origin"}
     token = ical.feed_token(ctx.ledger)
+    photo = f"/covers/{cover_of(ctx, trip.id)}-s.jpg"
     answers = {
         "a page": signed.get("/"),
+        "a photo nobody is signed in for": c.get(photo),
+        "a photo no cover holds": signed.get("/covers/" + "0" * 64 + ".jpg"),
         "a redirect": signed.post(
             f"/trips/{trip.id}/notes", data={"notes": "x"}, headers=same, follow_redirects=False
         ),
@@ -450,6 +457,8 @@ def test_every_kind_of_response_carries_the_security_headers(tmp_path, monkeypat
         answers["a sign-out"] = c.post("/logout", headers=same, follow_redirects=False)
     expected = {
         "a page": 200,
+        "a photo nobody is signed in for": 401,
+        "a photo no cover holds": 404,
         "a redirect": 303,
         "the 404 page": 404,
         "a path no route takes": 404,
@@ -477,6 +486,9 @@ def test_every_kind_of_response_carries_the_security_headers(tmp_path, monkeypat
     static = c.get("/static/app.css")
     assert static.status_code == 200
     guarded(static, static=True)
+    given = signed.get(photo)
+    assert given.status_code == 200 and given.headers["content-type"] == "image/jpeg"
+    guarded(given, photo=True)
 
     def broken():
         raise RuntimeError("S3CRET-DETAIL of the failure")

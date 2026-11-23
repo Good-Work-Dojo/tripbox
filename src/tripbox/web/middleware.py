@@ -7,6 +7,7 @@ refuses a body past its limit; `SameOrigin` refuses a cross-site form post. Insi
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
 from urllib.parse import unquote_to_bytes
@@ -55,20 +56,28 @@ SHARED_HEADERS = {
 # The service worker's script: never kept stale (`no-cache`), so a browser asks for it again
 # whenever it checks for a new release
 WORKER = "/sw.js"
+# A cover photo's address: its picture's SHA-256, `-s` for the small one. A photo never changes
+# under its name, so the browser keeps one it was given (COVER_KEPT), and only for this user.
+COVER = re.compile(r"/covers/([0-9a-f]{64})(-s)?\.jpg")
+COVER_KEPT = "private, max-age=31536000, immutable"
 # The most of a request's body the page reads, unless its path has a limit of its own
 LIMIT = 65_536
 
 
-def security_headers(path: str) -> dict[str, str]:
-    """What every response to `path` (written from `/`) carries: SECURITY_HEADERS, SHARED_HEADERS
-    in their place under SHARED, and, unless it is a static file's, `Cache-Control`: `no-cache`
-    for the service worker's script (WORKER), `no-store` for every other."""
+def security_headers(path: str, status: int = 200) -> dict[str, str]:
+    """What every response to `path` (written from `/`) with `status` carries: SECURITY_HEADERS,
+    SHARED_HEADERS in their place under SHARED, and, unless it is a static file's,
+    `Cache-Control`: `no-cache` for the service worker's script (WORKER), COVER_KEPT for a cover
+    photo given (a 200 at a COVER address: a refusal there, the login's challenge or a 404, is
+    never kept), `no-store` for every other."""
     if path.startswith("/static/"):
         return dict(SECURITY_HEADERS)
     if path.startswith(SHARED):
         return {**SHARED_HEADERS, "Cache-Control": "no-store"}
     if path == WORKER:
         return {**SECURITY_HEADERS, "Cache-Control": "no-cache"}
+    if status == 200 and COVER.fullmatch(path):
+        return {**SECURITY_HEADERS, "Cache-Control": COVER_KEPT}
     return {**SECURITY_HEADERS, "Cache-Control": "no-store"}
 
 
@@ -111,7 +120,7 @@ class BasePath:
                 # never kept; under the shared prefix, with the shared page's own headers
                 inner = path[len(self.base) :] if self.base and path.startswith(under) else path
                 asked = inner if inner.startswith(SHARED) else ""
-                gone = Response(status_code=404, headers=security_headers(asked))
+                gone = Response(status_code=404, headers=security_headers(asked, 404))
                 await gone(scope, receive, send)
             else:
                 await WebSocketClose(code=1008)(scope, receive, send)
@@ -120,7 +129,7 @@ class BasePath:
             if scope["type"] == "http":
                 query = scope.get("query_string", b"").decode("latin-1")
                 where = self.base + "/" + (f"?{query}" if query else "")
-                headers = security_headers(self.base)
+                headers = security_headers(self.base, 307)
                 await RedirectResponse(where, 307, headers)(scope, receive, send)
                 return
         if self.base and path.startswith(under) and raw.startswith(under.encode()):
@@ -131,8 +140,8 @@ class BasePath:
 class Headers:
     """Sets `security_headers` on every response of the app, whatever answered it (a page, a
     refusal, a static file, the 500 handler), replacing any of the same name, so each is sent
-    once. The values are the path's: under SHARED its own (SHARED_HEADERS), which no view needs
-    to set and none can loosen."""
+    once. The values are the path's and the status's: under SHARED its own (SHARED_HEADERS),
+    which no view needs to set and none can loosen."""
 
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
@@ -141,13 +150,12 @@ class Headers:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
-        extra = security_headers(scope["path"])
 
         async def guarded(message: Message) -> None:
             if message["type"] == "http.response.start":
                 message.setdefault("headers", [])
                 headers = MutableHeaders(scope=message)
-                for name, value in extra.items():
+                for name, value in security_headers(scope["path"], message["status"]).items():
                     headers[name] = value
             await send(message)
 

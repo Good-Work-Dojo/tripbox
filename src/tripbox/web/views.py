@@ -33,6 +33,7 @@ from tripbox.trips.store import DRY_RUN_KV, Trip, TripItem, TripStore, editable_
 from tripbox.util import parse_iso, today_local
 from tripbox.validate import checks
 from tripbox.web import card as statuscard
+from tripbox.web.middleware import COVER
 from tripbox.web.urls import Urls
 
 log = logging.getLogger("tripbox.web")
@@ -732,6 +733,21 @@ def trip_ics(request: Request) -> Response:
             media_type="text/calendar; charset=utf-8",
             headers={"Content-Disposition": f'inline; filename="{slug}.ics"'},
         )
+
+
+def cover_image(request: Request) -> Response:
+    """A cover photo by its file name (`middleware.COVER`: the picture's SHA-256, `-s` for the
+    small size), the worker's JPEG as the ledger holds it, never decoded here: only a ready
+    cover's, of a trip that is not deleted. Any other name, and one no shown cover holds, is the
+    404 page. `Headers` gives the photo its long `Cache-Control`, and nothing else under it."""
+    named = COVER.fullmatch("/covers/" + request.path_params["file"])
+    if named is None:
+        raise HTTPException(404, "no such photo")
+    with _ctx(request) as c:
+        data = c.store.covers.shown_image(named[1], "small" if named[2] else "large")
+    if data is None:
+        raise HTTPException(404, "no such photo")
+    return Response(data, media_type="image/jpeg")
 
 
 def feed(request: Request) -> Response:

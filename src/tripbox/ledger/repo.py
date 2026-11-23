@@ -870,6 +870,24 @@ class Covers:
     def get(self, trip_id: int) -> sqlite3.Row | None:
         return self.c.execute("SELECT * FROM covers WHERE trip_id=?", (trip_id,)).fetchone()
 
+    def about(self, trip_id: int) -> sqlite3.Row | None:
+        """The trip's row without its images."""
+        return self.c.execute(
+            f"SELECT {self.LOOKUP} FROM covers WHERE trip_id=?", (trip_id,)
+        ).fetchone()
+
+    def shown_image(self, digest: str, size: str) -> bytes | None:
+        """The `large` or `small` image of a ready cover made from that picture whose trip is not
+        deleted, or None."""
+        column = {"large": "large", "small": "small"}[size]
+        row = self.c.execute(
+            f"SELECT c.{column} FROM covers c JOIN trips t ON t.id = c.trip_id"
+            " WHERE c.digest=? AND c.state='ready' AND t.deleted_at IS NULL"
+            " ORDER BY c.trip_id LIMIT 1",
+            (digest,),
+        ).fetchone()
+        return row[0] if row else None
+
     def by_digest(self, digest: str) -> sqlite3.Row | None:
         """A cover made from the same picture (lowest trip first), or None."""
         return self.c.execute(

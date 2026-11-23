@@ -53,6 +53,8 @@ PRIVATE: list[BaseRoute] = [
     # after the two above, which the same pattern would otherwise take
     Route("/add/{kind}", views.add_by_hand, methods=["GET", "POST"], name="add_by_hand"),
     Route("/uploads/{token}", views.upload_status, name="upload_status"),
+    # a cover photo, by its file name (`middleware.COVER`: any other name is the 404 page)
+    Route("/covers/{file}", views.cover_image, name="cover_image"),
     Route("/trips/{trip_id:int}", views.trip, name="trip"),
     Route("/trips/{trip_id:int}/share", views.share, name="share"),
     Route("/trips/{trip_id:int}/text", views.trip_text, name="trip_text"),
@@ -111,7 +113,7 @@ def _not_found(request: Request, exc: HTTPException) -> Response:
 def _server_error(request: Request, exc: Exception) -> Response:
     """What a request that broke the page gets: one plain sentence, never the error, with the
     security headers itself (it is sent from outside the app's other handlers)."""
-    headers = security_headers(request.scope.get("path", ""))
+    headers = security_headers(request.scope.get("path", ""), 500)
     return PlainTextResponse("Something went wrong.", status_code=500, headers=headers)
 
 
