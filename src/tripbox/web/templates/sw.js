@@ -16,6 +16,7 @@ const KEEP = "X-Tripbox-Offline";
 const SAVED = "X-Tripbox-Saved";
 const WAIT_MS = 3000; // how long a page waits for the network before its saved copy
 const MOST = 60; // pages kept; the least recently stored goes first
+const MOST_COVERS = 120; // cover photos kept besides; the least recently stored goes first
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // a store whose newest copy is older is emptied
 const NO_COPY =
   "You are offline and this page has no saved copy. Pages you open while connected are kept for next time.";
@@ -25,6 +26,7 @@ const NOT_SAVED =
 const UNTOUCHED = ["/login", "/logout", "/sw.js", "/manifest.webmanifest"];
 const UNTOUCHED_UNDER = ["/s/", "/feed/"];
 const TRIP = /^\/trips\/[0-9]+$/;
+const COVER = /^\/covers\/[0-9a-f]{64}(-s)?\.jpg$/;
 // What every saved copy needs to show as itself (its stylesheet, its script and its font), at
 // the addresses the pages ask for them, written from the base. The page that registers this
 // worker loads them before the worker answers anything, so they are kept here at install: a
@@ -119,11 +121,22 @@ async function keep(key, r) {
   const body = await r.arrayBuffer();
   const store = await caches.open(PAGES);
   await store.put(key, new Response(body, { status: 200, headers }));
-  const keys = await store.keys();
-  if (keys.length <= MOST) return;
+  await trim(store, MOST, (k) => !isCover(k));
+}
+
+// Whether a stored request is a cover photo's.
+function isCover(key) {
+  const path = local(new URL(key.url));
+  return path !== null && COVER.test(path);
+}
+
+// Of the stored requests `of` names, all but the `most` newest are deleted.
+async function trim(store, most, of) {
+  const keys = (await store.keys()).filter(of);
+  if (keys.length <= most) return;
   const dated = await Promise.all(keys.map(async (k) => [k, await savedAt(store, k)]));
   dated.sort((a, b) => a[1] - b[1]);
-  for (const [k] of dated.slice(0, dated.length - MOST)) await store.delete(k);
+  for (const [k] of dated.slice(0, dated.length - most)) await store.delete(k);
 }
 
 async function savedAt(store, key) {
@@ -197,6 +210,44 @@ async function change(asked) {
   return r;
 }
 
+// A cover photo: from the pages store, else the network. Only a 200 image/jpeg of this origin,
+// not redirected, is stored, dated like a page; a 401 or a 403 empties the store as `change`
+// does. A store that cannot be read or written changes no answer; offline with no copy is no
+// image.
+async function cover(request, url) {
+  const key = url.origin + url.pathname;
+  let store = null;
+  try {
+    store = await caches.open(PAGES);
+    const kept = await store.match(key);
+    if (kept) return kept;
+  } catch (e) {
+    store = null;
+  }
+  let r;
+  try {
+    r = await fetch(request);
+  } catch (e) {
+    return Response.error();
+  }
+  if (r.status === 401 || r.status === 403) {
+    await caches.delete(PAGES).catch(() => null);
+  } else if (
+    store && r.status === 200 && !redirected(r) && r.url.startsWith(self.location.origin + "/") &&
+    r.headers.get("Content-Type") === "image/jpeg"
+  ) {
+    await keepCover(store, key, r.clone()).catch(() => null);
+  }
+  return r;
+}
+
+async function keepCover(store, key, r) {
+  const headers = new Headers(r.headers);
+  headers.set(SAVED, new Date().toISOString());
+  await store.put(key, new Response(await r.arrayBuffer(), { status: 200, headers }));
+  await trim(store, MOST_COVERS, (k) => isCover(k));
+}
+
 // A static file: from its store, else the network (a 200 is stored); a store that cannot be
 // read or written changes no answer.
 async function file(request) {
@@ -230,6 +281,8 @@ self.addEventListener("fetch", (event) => {
   }
   if (path.startsWith("/static/")) {
     event.respondWith(file(asked));
+  } else if (url.search === "" && COVER.test(path)) {
+    event.respondWith(cover(asked, url));
   } else if (path === "/" || TRIP.test(path)) {
     event.respondWith(page(event, url));
   } else if (asked.mode === "navigate") {

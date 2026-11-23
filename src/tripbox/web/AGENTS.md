@@ -2,17 +2,14 @@
 
 The page's facts; the hard rules are the repository's `AGENTS.md`.
 
-- The page runs in its own container, given only `config.KEYS` with `web=True`, its only secrets
-  its login pair, `config.PAGE_SECRETS` (`tests/test_compose.py` pins it, refusing an
-  `env_file` on the service or a value interpolating another name): nothing that reaches the
+- The page runs in its own container with only `config.KEYS` with `web=True`, its only secrets
+  its login pair, `config.PAGE_SECRETS` (`tests/test_compose.py` pins it: no `env_file`, no value interpolating another name): nothing that reaches the
   mailbox, the model, AirTrail, AeroAPI or a notifier channel; it loads no `tripbox.notify`.
 - Its address is `TRIPBOX_BASE_URL`, its path's first segment none of `RESERVED_SEGMENTS`.
   `middleware.BasePath` answers a path with a control character by a bare 404, sends the bare
   base to `<base>/`, strips the base off a path under it and passes any other as is (a stripping
-  proxy): routes are written from `/`. Every link and redirect comes from `urls.Urls` (redirects
-  are paths), never the request; a notice links only while the setting is set (`link_base`).
-  Page tests take the `base` fixture (`tests/conftest.py`) and clients from
-  `tests/helpers/web.py`, sending from its `PEER`.
+  proxy): routes are written from `/`. Every link and redirect (a path) comes from `urls.Urls`, never the request; a notice links only while the setting is set (`link_base`).
+  Page tests use the `base` fixture and `tests/helpers/web.py` clients (from `PEER`).
 - A route is public only when `app.PUBLIC` names it (a login's own routes too); every other is
   in `app.PRIVATE`, in the private mount (`Mount("")`, last), whose one middleware,
   `LoginRequired`, asks the `auth.Authenticator` (TRIPBOX_AUTH's) and puts the user in
@@ -23,8 +20,7 @@ The page's facts; the hard rules are the repository's `AGENTS.md`.
   other creds end); good under 30 days unseen and 180 old, `seen_at` rewritten hourly (a refused
   write keeps the session). Cookie names (`__Host-` at an https root) and `Secure` follow the base
   URL alone, path `urls.cookie_path`. `Throttle`: 10 wrong in 900 s close a bucket, a known
-  device's (`devices`) or everyone else's, never an address; admission, scrypt and count in one
-  lock, off the loop. Sign-out ends the row; the device cookie outlives it. Signed out, a form
+  device's (`devices`) or everyone else's, never an address; admission, scrypt and count in one lock, off the loop. Sign-out ends the row; the device cookie outlives it. Signed out, a form
   gets `ended.html`.
 - Wrappers, outermost first: `BasePath`, `Headers` (`SECURITY_HEADERS` on every response,
   `no-store` but on `/static/` and a cover's 200 (`COVER_KEPT`)), `BodyLimit` (64 KiB,
@@ -39,12 +35,10 @@ The page's facts; the hard rules are the repository's `AGENTS.md`.
   Host but localhost, 127.0.0.1 or [::1] (any port), public routes too.
 - The page takes a booking to read (`/add`: pasted text, an `.eml` or a PDF) and only stores it
   in the ledger's `uploads` waiting list for the worker: `tripbox.uploads` (no pipeline import;
-  `pipeline.run` takes `looks_like_email` from it) tells the kind by the bytes alone, never the
-  name; an upload route counts the body as it arrives and refuses it past 10 MB before the form
+  `pipeline.run` takes `looks_like_email` from it) tells the kind by the bytes alone; an upload route counts the body as it arrives and refuses it past 10 MB before the form
   is parsed; the same bytes are one upload, unless it ended with nothing filed
   (`uploads.DEAD_ENDS`: then taken again under its token); at most 20 wait. A status page,
-  named by the row's random token (never its id), shows its cleaned name and state, never the
-  body.
+  named by the row's random token (never its id), shows its cleaned name and state, no body.
 - Covers: `/covers/upload?trip=<id>` (trip checked first; body limit `COVER_LIMIT`) keeps a
   JPEG, PNG or WebP by its bytes (`coversniff`) for the worker; `/covers/<sha256>[-s].jpg`: a
   ready cover of a trip not deleted, never on a shared page or Recently deleted; a credit links
@@ -59,16 +53,14 @@ The page's facts; the hard rules are the repository's `AGENTS.md`.
   hashes every static file. Text colours keep 4.5:1 (`test_web_style.py`).
 - A page names only what the install has: `views.KEPT` names the flight log only while one is
   kept, the list links it only with `TRIPBOX_AIRTRAIL_PUBLIC_URL` set, a photo lookup (and
-  Wikipedia) only with `TRIPBOX_COVERS=wikimedia`. A stay's or a car's second line is
-  `item-N-end`. Browser checks: `tools/verify/screens/checks.py`.
-- A ledger with no trip, no booking and nothing deleted is a first run: the list says `No trips
+  Wikipedia) only with `TRIPBOX_COVERS=wikimedia`. A stay's or car's second line is `item-N-end`. Browser checks: `tools/verify/screens/checks.py`.
+- No trip, booking or deleted trip is a first run: the list says `No trips
   yet`, what to do and `Add a booking`, then the status card (`card.status_card`, `_status.html`)
   from the worker's record alone (`tripbox.status`: codes and counts, never an error's text; a
   code that is no word shows as `error`); a row needing a look has the class `status-look`.
   Past a first run, while no worker is live the list starts by saying so. The record's `mailbox`
   shows on private pages alone, never in a log. The card's labels are the one
-  exception to `test_no_page_names_what_the_install_does_not_have` (a row names its feature to
-  say it is off).
+  exception to `test_no_page_names_what_the_install_does_not_have` (a row names its feature as off).
 - Settings (`settings_page`, private; posts redirect by `views._go`): the status card,
   the display choices, the feed's address (`/settings/feed` makes a new one, the old a bare
   404), shared links, signing out per login (`/settings/sessions`: password only, ends every
@@ -86,10 +78,9 @@ The page's facts; the hard rules are the repository's `AGENTS.md`.
   `shared.METHODS`) depend on no token. Under it `security_headers` gives `SHARED_HEADERS`
   (`script-src 'none'`, `no-referrer`). It writes nothing and logs nothing of a token.
 - `export.py` (`tripbox demo export`) writes the page as static files: the real app over a seeded
-  ledger's copy, asked in-process under `EXPORT_BASE`, clock held, each page rewritten by
+  ledger's copy (its covers dropped: tiles only), asked in-process under `EXPORT_BASE`, clock held, each page rewritten by
   `html.parser` (relative or switched-off links, disabled controls, no script, a content policy,
-  the banner, the about line); no template or static file changes for it, and
-  `tools/verify/demo_site_check.py` holds the tree to those rules.
+  the banner, the about line); no template or static file changes for it; `tools/verify/demo_site_check.py` holds the tree to those rules.
 - Saved copies (`TRIPBOX_OFFLINE`; unset: on with `password` or `none`): `/manifest.webmanifest`
   and `/sw.js` are `PUBLIC`; `sw.js` (`sw_off.js` while off: deletes the stores,
   unregisters) is `no-cache`, registered by `app.js` from `<base>/sw.js`, scope `<base>/`. It
@@ -97,10 +88,11 @@ The page's facts; the hard rules are the repository's `AGENTS.md`.
   or a trip), never by path, and never answers `/login`, `/logout`, `/s/`, `/feed/`. `app.js`
   asks again for the list or trip in view (a GET of the path) once a worker controls it and once
   `?f=` leaves the address (the registering load and an address with a query are not kept). The
-  network's answer is released at once, the store written beside it; only a page with a saved
-  copy falls back to it after 3 s. At install it keeps `views.worker`'s `files` (versioned
+  network's answer is released at once, the store written beside it; a saved copy answers only after 3 s. At install it keeps `views.worker`'s `files` (versioned
   stylesheet and script, fonts): the registering load never passes through it. Stores are
   `tripbox<base>:` + `static:`/`pages:` + `app.state.version`, so a release replaces them. The
   pages store goes on a 401, 403, redirect or unmarked 200 of a kept page, before a sign-out is
-  sent (`app.js`) and on the login page (`clear.js`), not relying on `Clear-Site-Data`. The
-  worker answers a non-GET only with a referrer under `<origin><base>/`.
+  sent (`app.js`) and on the login page (`clear.js`), not relying on `Clear-Site-Data`. A
+  cover (`/covers/<sha256>[-s].jpg`, no query) is cache-first from the pages store (a 200
+  `image/jpeg` only, 120 kept, emptied with the pages). A non-GET is answered only with a
+  referrer under `<origin><base>/`.

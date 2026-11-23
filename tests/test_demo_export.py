@@ -266,3 +266,34 @@ def test_the_export_opens_no_socket(corp, tmp_path, monkeypatch):
     monkeypatch.setattr(socket, "getaddrinfo", refuse)
     done = export.export(corp, tmp_path / "site", TODAY)
     assert done.pages == 9
+
+
+def test_a_demo_ledger_with_a_ready_cover_exports_tiles_only(tmp_path, corp, monkeypatch):
+    """The export keeps the tile whatever the seeded ledger holds: no page names a cover file and
+    no `.cover` holds an image."""
+    from tripbox.ledger import Ledger
+
+    real = demo.seed
+
+    def seeded_with_covers(c, out, today):
+        done = real(c, out, today)
+        led = Ledger.open(next((out / "data").glob("*.db")))
+        try:
+            with led.transaction():
+                for trip_id in [r[0] for r in led.conn.execute("SELECT id FROM trips")]:
+                    led.covers.put(
+                        trip_id, source="owner", state="ready", digest="ab" * 32,
+                        large=b"L", small=b"S",
+                    )
+        finally:
+            led.close()
+        return done
+
+    monkeypatch.setattr(demo, "seed", seeded_with_covers)
+    out = tmp_path / "demo"
+    export.export(corp, out, TODAY)
+    files = tree(out)
+    assert not any(b"/covers/" in b or b"covers/" in b for b in files.values())
+    for name, page in pages_of(files).items():
+        assert "<img" not in page.text, name
+        assert 'class="cover photo' not in page.text and "has-photo" not in page.text, name

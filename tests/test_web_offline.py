@@ -531,3 +531,47 @@ def test_settings_says_how_saved_copies_are_kept_and_removes_them(
             r'<form method="post" action="' + re.escape(c.url(action)) + r'"[^>]*>', html
         )
         assert "data-signout" in form, action
+
+
+def test_a_cover_is_kept_with_the_saved_pages_and_nothing_else_is_taken_for_one(
+    tmp_path, monkeypatch, base
+):
+    """The worker answers a cover (`<base>/covers/<64 hex>[-s].jpg`, a GET with no query) from the
+    pages store, so a sign-out, a 401, a 403 and a new release empty it with the pages; it stores
+    only a 200 image/jpeg of its own origin, never a redirect, and caps covers at 120, leaving the
+    page cap to the pages."""
+    c, _ = password_page(tmp_path, monkeypatch, base)
+    script = c.get("/sw.js").text
+    assert "const COVER = /^\\/covers\\/[0-9a-f]{64}(-s)?\\.jpg$/;" in script
+    assert "const MOST_COVERS = 120;" in script
+    # the pattern admits those names alone; the sign-in and a shared trip stay untouched
+    pattern = re.compile(r"^/covers/[0-9a-f]{64}(-s)?\.jpg$")
+    digest = "ab" * 32
+    assert pattern.match(f"/covers/{digest}.jpg") and pattern.match(f"/covers/{digest}-s.jpg")
+    for other in (
+        "/login", f"/s/{digest}.jpg", f"/s/covers/{digest}.jpg", f"/covers/{digest}.png",
+        f"/covers/{digest}.jpg/", f"/covers/{digest[:-1]}.jpg", f"/covers/{digest}-l.jpg",
+        "/covers/upload", f"/x/covers/{digest}.jpg", f"/covers/{digest.upper()}.jpg",
+    ):
+        assert not pattern.match(other), other
+    handler = script[script.index('self.addEventListener("fetch"'):]
+    assert handler.index("UNTOUCHED") < handler.index("COVER.test(path)")
+    assert handler.index('asked.method !== "GET"') < handler.index("COVER.test(path)")
+    assert handler.index("COVER.test(path)") < handler.index('asked.mode === "navigate"')
+    assert 'url.search === ""' in handler and "event.respondWith(cover(asked, url))" in handler
+    cover = worker_function(script, "cover")
+    assert "caches.open(PAGES)" in cover and "STATIC" not in cover
+    assert cover.index("store.match(") < cover.index("await fetch(request)")
+    assert "r.status === 401 || r.status === 403" in cover
+    assert "await caches.delete(PAGES).catch(() => null);" in cover
+    assert "r.status === 200 && !redirected(r)" in cover
+    assert 'r.url.startsWith(self.location.origin + "/")' in cover
+    assert 'r.headers.get("Content-Type") === "image/jpeg"' in cover
+    assert "SAVED" in worker_function(script, "keepCover")  # dated like a page
+    # a cover offline that was never kept is no answer, and a failing store changes none
+    assert "Response.error()" in cover and ".catch(() => null)" in cover
+    # each kind is capped on its own: a cover never pushes a page out, nor a page a cover
+    keep = worker_function(script, "keep")
+    assert "await trim(store, MOST, (k) => !isCover(k));" in keep
+    kept = worker_function(script, "keepCover")
+    assert "await trim(store, MOST_COVERS, (k) => isCover(k));" in kept

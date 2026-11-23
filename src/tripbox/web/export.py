@@ -321,6 +321,10 @@ def _render(c: corpus.Corpus, seeded: Path, today: dt.date) -> tuple[dict[str, b
                 worker.started_at = noon
                 with ctx.ledger.transaction():
                     worker._write(noon)
+                    # the demo shows tiles only: a cover the seeded ledger holds is dropped from
+                    # this copy before any page is asked for
+                    for row in ctx.ledger.covers.all_for_lookup():
+                        ctx.ledger.covers.delete(row["trip_id"])
             finally:
                 ctx.ledger.close()
             from tripbox.ledger import Ledger
