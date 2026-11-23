@@ -30,10 +30,11 @@ def test_trip_calendar_structure():
     assert lines.count("BEGIN:VEVENT") == 4
     events = ics.split("BEGIN:VEVENT")[1:]
     assert ical.UID_DOMAIN == "tripbox.invalid"
+    flight = st.item_by_key("SY|9304|2027-09-16|MSP")
     out = next(
         e
         for e in events
-        if f"UID:tripbox-SY|9304|2027-09-16|MSP@{ical.UID_DOMAIN}" in e.replace("\r\n ", "")
+        if f"UID:tripbox-item-{flight.id}@{ical.UID_DOMAIN}" in e.replace("\r\n ", "")
     )
     out_lines = unfold(out)
     assert "DTSTART:20270916T152500Z" in out_lines and "DTEND:20270916T175800Z" in out_lines
@@ -129,5 +130,21 @@ def test_feed_omits_removed_items_and_deleted_trips():
     st.remove_item(gone.id)
     feed = ical.feed_ics(st, book=BOOK, home_airports=HOME)
     assert unfold(feed).count("BEGIN:VEVENT") == 2 and gone.item_key not in feed
+    assert f"UID:tripbox-item-{gone.id}@" not in "\n".join(unfold(feed))
     st.delete_trip(trip.id)
     assert "BEGIN:VEVENT" not in ical.feed_ics(st, book=BOOK, home_airports=HOME)
+
+
+def test_a_flights_uid_stays_when_its_day_changes_its_key():
+    st, trip = sample_trip()
+    out = next(ti for ti in st.items(trip.id) if ti.payload.get("pnr") == "QTWZSV")
+
+    def uid():
+        ics = ical.trip_ics(st.get(trip.id), st.items(trip.id), book=BOOK, home_airports=HOME)
+        event = next(e for e in ics.split("BEGIN:VEVENT")[1:] if "QTWZSV" in e.replace("\r\n ", ""))
+        return next(ln for ln in unfold(event) if ln.startswith("UID:"))
+
+    before = uid()
+    moved = st.edit_item(out.id, {"dep_local": "2027-09-17T10:25", "arr_local": "2027-09-17T13:58"})
+    assert moved.id == out.id and moved.item_key != out.item_key
+    assert uid() == before == f"UID:tripbox-item-{out.id}@{ical.UID_DOMAIN}"

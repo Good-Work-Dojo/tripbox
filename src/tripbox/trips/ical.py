@@ -3,7 +3,8 @@
 """iCalendar export: one trip as a download, every trip as a private subscribe feed. Flights and
 cars are timed events in UTC (every client shows local time correctly and no VTIMEZONE blocks
 are needed); hotels are all-day events; cancelled items carry STATUS:CANCELLED so a subscribed
-calendar drops them. Stable UIDs mean edits update in place."""
+calendar drops them. A booking's UID is its row id, never given twice and kept when an edit or a
+later email changes its key, so edits update in place."""
 
 from __future__ import annotations
 
@@ -88,7 +89,7 @@ def event(
     summary = _EMOJI_PREFIX.sub("", text[0]) if ti.kind in ("flight", "train") else None
     lines = [
         "BEGIN:VEVENT",
-        f"UID:tripbox-{ti.item_key}@{UID_DOMAIN}",
+        f"UID:tripbox-item-{ti.id}@{UID_DOMAIN}",
         f"DTSTAMP:{_stamp(ti.updated_at)}",
     ]
     if ti.kind == "flight" and p.get("dep_utc"):
