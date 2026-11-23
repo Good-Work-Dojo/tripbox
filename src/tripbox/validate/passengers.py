@@ -9,6 +9,7 @@ written to AirTrail."""
 from __future__ import annotations
 
 import re
+import unicodedata
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -23,15 +24,19 @@ TITLES = {"MR", "MRS", "MS", "MISS", "DR", "MSTR", "MASTER", "PROF", "JR", "SR",
 
 
 def name_tokens(raw: str) -> list[str]:
-    """'SAMPLE/ALEX QUINN MR' -> ['ALEX', 'QUINN', 'SAMPLE']; titles/suffixes dropped."""
-    s = raw.strip().upper()
+    """'SAMPLE/ALEX QUINN MR' -> ['ALEX', 'QUINN', 'SAMPLE']; titles/suffixes dropped. Letters
+    are folded to ASCII and apostrophes dropped, as tickets print names ('José O'Brien' ->
+    ['JOSE', 'OBRIEN'], as 'OBRIEN/JOSE MR' reads), so a name matches however it is printed."""
+    # upper case first, so that ß is SS; a letter with no ASCII form (a curly apostrophe too) goes
+    s = unicodedata.normalize("NFKD", raw.strip().upper()).encode("ascii", "ignore").decode()
+    s = s.replace("'", "")
     if "/" in s:
         last, first = s.split("/", 1)
         s = f"{first} {last}"
     elif "," in s:
         last, first = s.split(",", 1)
         s = f"{first} {last}"
-    s = re.sub(r"[^A-Z\s'\-]", " ", s)
+    s = re.sub(r"[^A-Z\s\-]", " ", s)
     return [t for t in s.split() if t not in TITLES]
 
 

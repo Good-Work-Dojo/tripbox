@@ -21,6 +21,20 @@ def test_name_tokens_handles_airline_formats():
     assert first_last("Alex") is None
 
 
+def test_accents_and_apostrophes_match_a_ticket_s_plain_spelling():
+    from tripbox.validate.passengers import names_match
+
+    assert name_tokens("Renée O'Brien") == ["RENEE", "OBRIEN"]
+    assert name_tokens("OBRIEN/RENEE MS") == ["RENEE", "OBRIEN"]
+    assert names_match("OBRIEN/JOSE MR", "José O'Brien")
+    assert names_match("O’BRIEN/JOSÉ", "Jose OBrien")
+    assert names_match("SAMPLE/ZOE", "Zoë Sample")
+    assert names_match("Zoë Sample", "Zoe Sample")
+    assert names_match("José Sample", "Jose Sample")  # a hotel prints what the alias does not
+    assert names_match("STRAUSS/ALEX", "Alex Strauß")
+    assert not names_match("SAMPLE/ZOE", "Zoë Example")
+
+
 def test_match_me_guest_other():
     assert BOOK.match("SAMPLE/ALEX QUINN").kind == "me"
     assert BOOK.match("Alex Sample").kind == "me"
