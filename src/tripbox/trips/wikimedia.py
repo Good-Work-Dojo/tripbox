@@ -1,0 +1,183 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Additional terms: see NOTICE
+"""Find a freely licensed photo of a place on Wikipedia and Wikimedia Commons (httpx2).
+
+The page image of the place's English Wikipedia article is looked up on Commons; it is kept only
+when its licence is free (CC0, public domain, CC BY, CC BY-SA), then downloaded with a size cap.
+`None` means nothing usable exists; `Transient` means ask again later. Only the worker imports
+this module: the web container makes no outbound request."""
+
+from __future__ import annotations
+
+import json
+import re
+from dataclasses import dataclass
+from html.parser import HTMLParser
+
+import httpx2
+
+from tripbox import __version__
+
+PROJECT_URL = "https://github.com/Good-Work-Dojo/tripbox"
+TIMEOUT = 10.0
+MAX_BYTES = 10 * 1024 * 1024
+ARTIST_MAX = 120
+WIKIPEDIA_API = "https://en.wikipedia.org/w/api.php"
+COMMONS_API = "https://commons.wikimedia.org/w/api.php"
+FREE_LICENCE = re.compile(r"^(cc0|pd|pd-.*|cc-by-[0-9.]+|cc-by-sa-[0-9.]+)$")
+
+
+class Transient(Exception):
+    """A failure worth retrying later; `code` is short: timeout, http_429, http_5xx, bad_json,
+    network."""
+
+    def __init__(self, code: str) -> None:
+        super().__init__(code)
+        self.code = code
+
+
+@dataclass(frozen=True)
+class Found:
+    data: bytes
+    credit: dict[str, str]  # artist, licence, licence_url, source_url
+
+
+def client(source_url: str = "", *, transport: httpx2.BaseTransport | None = None) -> httpx2.Client:
+    """A client naming tripbox and its source, as Wikimedia asks, with a 10 s timeout."""
+    url = source_url.strip() or PROJECT_URL
+    return httpx2.Client(
+        timeout=TIMEOUT,
+        transport=transport,
+        follow_redirects=True,
+        headers={"User-Agent": f"tripbox/{__version__} (+{url})"},
+    )
+
+
+class _Text(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+
+    def handle_data(self, data: str) -> None:
+        self.parts.append(data)
+
+
+def _plain(html: str) -> str:
+    parser = _Text()
+    parser.feed(html)
+    parser.close()
+    return " ".join("".join(parser.parts).split())
+
+
+def _check(r: httpx2.Response) -> None:
+    if r.status_code == 429:
+        raise Transient("http_429")
+    if r.status_code >= 500:
+        raise Transient("http_5xx")
+
+
+def _api(http: httpx2.Client, url: str, params: dict[str, str]) -> dict:
+    try:
+        r = http.get(url, params=params)
+    except httpx2.TimeoutException as exc:
+        raise Transient("timeout") from exc
+    except httpx2.HTTPError as exc:
+        raise Transient("network") from exc
+    _check(r)
+    if r.status_code >= 400:
+        return {}
+    try:
+        body = json.loads(r.content)
+    except ValueError as exc:
+        raise Transient("bad_json") from exc
+    return body if isinstance(body, dict) else {}
+
+
+def _first_page(body: dict) -> dict:
+    pages = (body.get("query") or {}).get("pages")
+    if isinstance(pages, list) and pages and isinstance(pages[0], dict):
+        return pages[0]
+    return {}
+
+
+def _value(meta: dict, key: str) -> str:
+    entry = meta.get(key)
+    return str(entry.get("value", "")) if isinstance(entry, dict) else ""
+
+
+def _download(http: httpx2.Client, url: str) -> bytes | None:
+    data = bytearray()
+    try:
+        with http.stream("GET", url) as r:
+            _check(r)
+            if r.status_code >= 400:
+                return None
+            for chunk in r.iter_bytes():
+                data += chunk
+                if len(data) > MAX_BYTES:
+                    return None
+    except httpx2.TimeoutException as exc:
+        raise Transient("timeout") from exc
+    except httpx2.HTTPError as exc:
+        raise Transient("network") from exc
+    return bytes(data) or None
+
+
+def find(place: str, *, http: httpx2.Client) -> Found | None:
+    page = _first_page(
+        _api(
+            http,
+            WIKIPEDIA_API,
+            {
+                "action": "query",
+                "format": "json",
+                "formatversion": "2",
+                "titles": place,
+                "redirects": "1",
+                "prop": "pageimages|pageprops",
+                "piprop": "name",
+            },
+        )
+    )
+    name = page.get("pageimage")
+    if page.get("missing") or not isinstance(name, str) or not name:
+        return None
+    if "disambiguation" in (page.get("pageprops") or {}):
+        return None
+
+    file = _first_page(
+        _api(
+            http,
+            COMMONS_API,
+            {
+                "action": "query",
+                "format": "json",
+                "formatversion": "2",
+                "titles": f"File:{name}",
+                "prop": "imageinfo",
+                "iiprop": "url|extmetadata",
+                "iiurlwidth": "1600",
+            },
+        )
+    )
+    infos = file.get("imageinfo")
+    if file.get("missing") or not isinstance(infos, list) or not infos:
+        return None
+    info = infos[0] if isinstance(infos[0], dict) else {}
+    meta = info.get("extmetadata") if isinstance(info.get("extmetadata"), dict) else {}
+    licence = _value(meta, "License").strip().casefold()
+    if not FREE_LICENCE.match(licence) or _value(meta, "NonFree").strip().casefold() == "true":
+        return None
+    url = info.get("thumburl")
+    if not isinstance(url, str) or not url:
+        return None
+
+    artist = _plain(_value(meta, "Artist"))[:ARTIST_MAX].strip() or "Unknown author"
+    credit = {
+        "artist": artist,
+        "licence": _value(meta, "LicenseShortName"),
+        "licence_url": _value(meta, "LicenseUrl"),
+        "source_url": str(info.get("descriptionurl") or ""),
+    }
+    data = _download(http, url)
+    return Found(data, credit) if data else None
