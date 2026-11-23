@@ -312,14 +312,15 @@ def test_two_stays_under_one_itinerary_number_fold_into_one(tmp_ledger_path):
     assert log.requests == []  # a stay never reaches a flight log
 
 
-def test_a_forced_replay_of_an_older_receipt_puts_a_companion_back_but_never_the_owner(
+def test_an_older_receipt_read_after_a_cancellation_puts_back_neither_the_owner_nor_a_companion(
     tmp_ledger_path,
 ):
-    """Only what the owner takes off on the page is remembered, so reading an older receipt
-    again, forced, puts back a traveller a later email took off. No email takes the owner off:
-    one that names the owner cancels the booking, and the receipt read again leaves it
-    cancelled. A companion a later email took off comes back, on the page and in the flight
-    log, until the owner takes them off on the page."""
+    """A receipt sent before a cancellation and read after it (forwarded late, a mail backfill,
+    an upload, a forced replay) puts back nobody the cancellation took off. One that names the
+    owner cancels the booking, and the receipt leaves it cancelled; one that names a companion
+    takes them off, and the receipt leaves them off, on the page and in the flight log. An email
+    sent after the cancellation that names them (a rebooking) puts them back, until the owner
+    takes them off on the page."""
     led = Ledger.open(tmp_ledger_path)
     log = flight_log(led)
     booked = flight([ME, SAM], "9870", "2027-05-31", n=0, code="QZY432")
@@ -338,14 +339,20 @@ def test_a_forced_replay_of_an_older_receipt_puts_a_companion_back_but_never_the
     run(led, sam_off, doc="cancellation", log=log)
     (booking,) = live(led)
     assert booking.passengers == [ME] and held(log) == [("DL9870", "2027-05-31", ["me"], False)]
-    run(led, booked, log=log)  # the first receipt read again, forced: Sam is back
+    sends = len(log.sent)
+    run(led, booked, log=log)  # the first receipt read again: Sam stays off
+    (booking,) = live(led)
+    assert booking.passengers == [ME] and booking.sync_state == "synced"
+    assert held(log) == [("DL9870", "2027-05-31", ["me"], False)] and len(log.sent) == sends
+    rebooked = flight([ME, SAM], "9870", "2027-05-31", n=2, code="QZY432")
+    run(led, rebooked, log=log)  # sent after the cancellation: Sam is back
     (booking,) = live(led)
     assert sorted(booking.passengers) == [ME, SAM] and booking.sync_state == "synced"
     assert held(log) == [("DL9870", "2027-05-31", ["me", SAM], False)]
     # the page: Sam is taken off, which no reading undoes; the flight log follows
     store(led).edit_item(booking.id, {"passengers": [ME]})
     a_pass(led, log)
-    run(led, booked, log=log)
+    run(led, rebooked, log=log)
     (booking,) = live(led)
     assert booking.passengers == [ME] and held(log) == [("DL9870", "2027-05-31", ["me"], False)]
 

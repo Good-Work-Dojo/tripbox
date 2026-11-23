@@ -360,11 +360,13 @@ named puts the flight log right too. In each case the flight log follows what th
   that prints its time makes a booking of its own; one that prints none can join the draft instead.
   Nothing is sent until you put the draft right on the edit form; it is then sent as the leg you
   typed. Add the other leg by hand if an email joined it.
-- **An older email read again** (`replay --force`) brings back a companion a later email took
-  off: the page shows them on the booking and AirTrail names them again. Take them off on the
-  page; that holds through every later reading. Reading every email again in order takes them off
-  once more with the later email, and the note gains a `changed` line each time. No email takes
-  you off a flight: one that cancels your seat cancels the booking.
+- **A companion a partial cancellation took off** stays off whatever email sent before it is read
+  afterwards: the first receipt forwarded late, read by `mail backfill --apply`, uploaded, or read
+  again with `replay --force`. An email sent after the cancellation that names them puts them
+  back, as a rebooking should, and so does a later copy that still lists them: the page shows
+  them on the booking and AirTrail names them again. Take them off on the page; that holds
+  through every later reading. No email takes you off a flight: one that cancels your seat
+  cancels the booking.
 - **Two stays under one itinerary number** in one email fold into one booking.
 
 ## What was run

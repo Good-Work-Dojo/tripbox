@@ -21,6 +21,7 @@ from tripbox.trips.store import (
     TripItem,
     TripStore,
     held_edits,
+    removed_by_email,
 )
 from tripbox.util import now_iso, parse_iso
 from tripbox.validate import checks
@@ -382,11 +383,13 @@ def _held_names(row: TripItem) -> list[str]:
 
 
 def _lacking(item: Item, row: TripItem, book: PassengerBook) -> list[str]:
-    """The travellers `item` names that the booking `row` does not hold yet, and that the owner
-    did not take off it (`store.TAKEN_OFF`): the owner and each companion by the name the book
-    gives them, anyone else as printed; each once."""
+    """The travellers `item` names that the booking `row` does not hold yet, that the owner did
+    not take off it (`store.TAKEN_OFF`) and that no email newer than `item`'s took off it
+    (`store.removed_by_email`): the owner and each companion by the name the book gives them,
+    anyone else as printed; each once."""
     off = row.payload.get(TAKEN_OFF)
     held = people([*_held_names(row), *(off if isinstance(off, list) else [])], book)
+    held |= removed_by_email(row.payload, item.payload.get("email_date"), book)
     out: list[str] = []
     for name in item.passengers:
         who = person(name, book) if name else None

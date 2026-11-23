@@ -189,7 +189,8 @@ are also kept in an AirTrail flight log. One image runs three roles: `web`, `wor
   words: one's all among the other's) wherever both say one, and agrees on at least one of
   the two (`TripStore.typed_in_like`, under any key; the same rule of one), which it fills in
   (`fills_in`). A draft lends no names on its own. Then: add travellers (never one the
-  owner took off), record a change (never from an older copy, nor from a plain booking after
+  owner took off, nor one an email newer than it took off: `store.removed_by_email`), record a
+  change (never from an older copy, nor from a plain booking after
   `payload["change_recorded"]`, nor in what an owner's edit holds against the email:
   `store.held_edits`, `planner._not_held`), or duplicate; a duplicate puts nothing into the
   booking, so it raises no check. With no booking it is filed with its checks (under a draft
@@ -238,7 +239,9 @@ are also kept in an AirTrail flight log. One image runs three roles: `web`, `wor
   re-apply them: a newer email that prints the field wins, an older one never does (the codes
   the owner set too, on the row as in the payload). The travellers an email names still join,
   but nobody the owner took off on the page (`payload["taken_off"]`), whatever the email's
-  date, until the owner adds them again. A booking added by hand has every typed field stamped
+  date, until the owner adds them again, nor anyone a partial cancellation newer than the email
+  took off (`payload["cancelled_names"]`, name → that email's date, written by
+  `TripStore.remove_passengers`). A booking added by hand has every typed field stamped
   so at the entry: an email older than it changes nothing typed. An email that adds no
   traveller and changes nothing of it still fills in what it lacks and prints, its code
   included (`fills_in`, `planner._fills_in`: no change recorded, and the merge takes only the
@@ -255,7 +258,8 @@ are also kept in an AirTrail flight log. One image runs three roles: `web`, `wor
   merge a draft into a booking put away, or a draft holding a flight-log record into another
   booking (`TripStore._refuse_a_merge_the_page_cannot_make`). What else belongs to the
   booking and to no one email survives every merge (`executor.KEPT`: `looked_at`,
-  `owner_edits`, `owner_answer`, `taken_off`, `alt_keys`, `change_recorded`), `raised` is
+  `owner_edits`, `owner_answer`, `taken_off`, `cancelled_names`, `alt_keys`,
+  `change_recorded`), `raised` is
   joined stamp by stamp, the later time winning, and `email_date` stays the latest of the
   emails merged in. A corrected confirmation code becomes an
   alias in `payload["alt_keys"]`, and so does the code an email fills in on a stay or a car

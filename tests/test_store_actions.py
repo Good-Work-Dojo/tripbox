@@ -408,6 +408,7 @@ def test_a_completed_draft_merges_into_the_booking_that_holds_its_key():
     left = {
         "change_recorded": True,
         "cancelled_email_date": t0,
+        "cancelled_names": {"Casey Sample": t0},
         "route_inherited_from": b.id,
         "passengers_inherited_from": b.id,
     }

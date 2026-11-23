@@ -96,13 +96,14 @@ NO_OWNER = "no owner is named in travellers.yaml; add owner: names: first"
 # lacks: its travellers and the names it prints, its seats, and the owner's edits of it.
 JOINED = ("passengers", "seats")
 JOINED_MAPS = ("seat_by_passenger", "owner_edits")
-# What such a draft never brings: the owner's look and the travellers the owner took off it,
-# which were about the draft and not the booking, and what its own emails left on it (a recorded
-# change, a cancellation's date, the bookings its route or its names were taken from). Its
+# What such a draft never brings: the owner's look and the travellers the owner or an email took
+# off it, which were about the draft and not the booking, and what its own emails left on it (a
+# recorded change, a cancellation's date, the bookings its route or its names were taken from). Its
 # `raised` stamps and its keys are joined on their own.
 LEFT_WITH_THE_DRAFT = (
     "looked_at",
     "taken_off",
+    "cancelled_names",
     "change_recorded",
     "cancelled_email_date",
     "route_inherited_from",
@@ -112,6 +113,10 @@ LEFT_WITH_THE_DRAFT = (
 # No email puts one of them back, whatever its date, until the owner adds them again; anyone else
 # an email names still joins.
 TAKEN_OFF = "taken_off"
+# `payload["cancelled_names"]`: the travellers (as named) a partial cancellation took off the
+# booking, each with that email's date. An email older than that puts none of them back (a late
+# copy of the first receipt, say); a newer one (a rebooking) does.
+CANCELLED_NAMES = "cancelled_names"
 LIMITS = {  # server-side caps matching the forms' maxlength
     "title": 80,
     "place": 80,
@@ -324,6 +329,30 @@ def held_edits(payload: Mapping, new: Mapping) -> set[str]:
         if not (newer and new.get(field) not in BLANK):
             held.add(field)
     return held
+
+
+def removed_by_email(
+    payload: Mapping, email_date: object, book: PassengerBook | None
+) -> set[tuple[str, str]]:
+    """The people an email took off the booking (`payload[CANCELLED_NAMES]`) whom an email dated
+    `email_date` does not put back: each one taken off by an email that is not older than it.
+    An email with no date, or one that cannot be read, puts nobody back."""
+    removed = payload.get(CANCELLED_NAMES)
+    if not isinstance(removed, dict) or not removed:
+        return set()
+    try:
+        when = parse_iso(str(email_date)) if email_date else None
+    except ValueError:
+        when = None
+    kept: list[str] = []
+    for name, at in removed.items():
+        try:
+            older = when is not None and parse_iso(str(at)) < when
+        except ValueError:
+            older = False
+        if not older:
+            kept.append(name)
+    return people(kept, book)
 
 
 def _swap_codes(held: str | None, shown: str | None, typed: str | None) -> str | None:
@@ -967,8 +996,12 @@ class TripStore:
         else:
             merged.pop("cancelled_email_date", None)
         kept = self._reapply_owner_edits(old_payload, said, merged)
-        off = self._taken_off(old_payload)
-        if off:  # nobody the owner took off comes back with an email, whatever its date
+        # nobody the owner took off comes back with an email, whatever its date, nor anyone an
+        # email newer than this one took off
+        off = self._taken_off(old_payload) | self._removed_since(
+            old_payload, old_names, item.payload.get("email_date")
+        )
+        if off:
             merged["passengers"] = self._not_taken_off(merged.get("passengers"), off)
         if merged.get("source") == HAND and merged.get("confirmation_code") not in BLANK:
             # a stay or a car typed in with no code keeps its key and answers to the code an
@@ -1041,6 +1074,17 @@ class TripStore:
         names = payload.get(TAKEN_OFF)
         return people(names, self.book) if isinstance(names, list) else set()
 
+    def _removed_since(
+        self, payload: Mapping, names: list[str], email_date: object
+    ) -> set[tuple[str, str]]:
+        """The people an email took off the booking that an email dated `email_date` does not
+        put back (`removed_by_email`), but for anyone the booking holds again (its travellers
+        `names` and the names its payload prints)."""
+        gone = removed_by_email(payload, email_date, self.book)
+        if not gone:
+            return gone
+        return gone - people([*names, *(payload.get("passengers") or [])], self.book)
+
     def _not_taken_off(self, names, off: set[tuple[str, str]]) -> list[str]:
         """`names` without the people of `off` (`passengers.person`)."""
         return [n for n in (names or []) if not (off and person(n, self.book) in off)]
@@ -1089,11 +1133,14 @@ class TripStore:
         key: str,
         names: list[str],
         *,
+        email_date: str | None = None,
         raised: dict | None = None,
         source_message_id: int | None = None,
     ) -> TripItem | None:
-        """A partial cancellation: these travellers leave the booking, the booking stands.
-        `raised` and `source_message_id` are as for `cancel`."""
+        """A partial cancellation: these travellers leave the booking, the booking stands. Each
+        is recorded as taken off as of `email_date` (now when none is given) in
+        payload[CANCELLED_NAMES], so no older email puts them back. `raised` and
+        `source_message_id` are as for `cancel`."""
         with self._tx():
             row = self._find_by_key(key)
             if row is None:
@@ -1101,6 +1148,13 @@ class TripStore:
             gone = {n.upper() for n in names}
             payload = Ledger.trip_items_payload(row)
             self._stamp(payload, raised)
+            removed = payload.get(CANCELLED_NAMES)
+            removed = dict(removed) if isinstance(removed, dict) else {}
+            at = email_date or now_iso()
+            for name in names:
+                removed[name] = at
+            if removed:
+                payload[CANCELLED_NAMES] = removed
             payload["passengers"] = [
                 n for n in (payload.get("passengers") or []) if n.upper() not in gone
             ]
@@ -1708,8 +1762,10 @@ class TripStore:
         it is merged into it, inside settle's transaction. The booking keeps every value it has
         and the draft fills only what it lacks (never a field the owner edited on the booking,
         blank or not, and nothing of LEFT_WITH_THE_DRAFT); their travellers, the names they
-        print, their seats and their confirmation codes are joined; both rows' owner edits are
-        kept (the booking's on a clash), and the owner's "no" about the leg holds; a soft finding
+        print, their seats and their confirmation codes are joined (never a traveller the owner
+        took off the booking, nor one an email newer than the draft's took off it); both rows'
+        owner edits are kept (the booking's on a clash), and the owner's "no" about the leg
+        holds; a soft finding
         the draft's email raised joins the booking's (`raised`, the later time of each), while a
         look at the draft is no look at the booking; and the draft's key and aliases become the
         booking's aliases. The draft's rows in the log of what each message did point at the
@@ -1740,10 +1796,12 @@ class TripStore:
         self._stamp(payload, theirs.get("raised"))
         keys = [*_alt_keys(mine), draft["item_key"], *_alt_keys(theirs)]
         payload["alt_keys"] = [k for k in dict.fromkeys(keys) if k != booking["item_key"]]
-        off = self._taken_off(mine)  # the draft brings back nobody the owner took off
+        names = Ledger.trip_items_passengers(booking)
+        # the draft brings back nobody the owner took off, nor anyone an email newer than the
+        # draft's took off
+        off = self._taken_off(mine) | self._removed_since(mine, names, theirs.get("email_date"))
         if off:
             payload["passengers"] = self._not_taken_off(payload.get("passengers"), off)
-        names = Ledger.trip_items_passengers(booking)
         conf = booking["confirmation"]
         for code in (draft["confirmation"] or "").split(", "):
             conf = _join_codes(conf, code or None)

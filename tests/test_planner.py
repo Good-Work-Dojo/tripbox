@@ -1451,6 +1451,51 @@ def test_a_partial_cancellation_read_twice_leaves_the_booking_as_the_first_readi
         assert bookings(other)[0].status == "cancelled"
 
 
+def test_the_first_receipt_read_after_a_partial_cancellation_puts_nobody_back(tmp_ledger_path):
+    """A partial cancellation takes a companion off; the first receipt, sent before it and read
+    after it (forwarded late, a mail backfill, an upload), is a duplicate: the companion stays
+    off the booking and off the flight log's flight. An older email that changes the flight or
+    adds someone else still does that, without the companion; a newer one (a rebooking) puts
+    the companion back."""
+    led = Ledger.open(tmp_ledger_path)
+    log = flight_log(led)
+    both = ["Alex Sample", "Sam Sample"]
+    run(led, items_for(both), log=log)
+    notice = items_for(["Sam Sample"], msg="<m2>", status="cancelled", email=LATER)
+    p, (o,) = run(led, notice, "cancellation", log=log)
+    assert [(a.kind, a.reason) for a in p.actions] == [("update", "remove_passengers")]
+    (ti,) = bookings(led)
+    assert ti.payload["cancelled_names"] == {"Sam Sample": LATER.isoformat()}
+    assert sent(log) == ["create", "update"]
+    p, (o,) = run(led, items_for(both, msg="<m3>"), log=log)
+    assert [(a.kind, a.reason) for a in p.actions] == [("duplicate", "")]
+    (ti,) = bookings(led)
+    assert ti.passengers == ti.payload["passengers"] == ["Alex Sample"]
+    assert o.sync == "synced" and [aboard(f) for f in log.flights] == [[("me", None)]]
+    assert sent(log) == ["create", "update"]
+    # sent between the receipt and the cancellation: Robin joins, Sam does not
+    between = EMAIL + dt.timedelta(minutes=30)
+    trio = [*both, "Robin Sample"]
+    p, (o,) = run(led, items_for(trio, msg="<m4>", email=between), log=log)
+    assert [(a.kind, a.reason, a.add_passengers) for a in p.actions] == [
+        ("update", "add_passengers", ["Robin Sample"])
+    ]
+    (ti,) = bookings(led)
+    assert ti.passengers == ti.payload["passengers"] == ["Alex Sample", "Robin Sample"]
+    assert ti.payload["cancelled_names"] == {"Sam Sample": LATER.isoformat()}
+    assert [aboard(f) for f in log.flights] == [[("me", None), ("Robin Sample", None)]]
+    # a rebooking sent after the cancellation puts Sam back
+    p, (o,) = run(led, items_for(both, msg="<m5>", email=LATER + dt.timedelta(hours=1)), log=log)
+    assert [(a.kind, a.reason, a.add_passengers) for a in p.actions] == [
+        ("update", "add_passengers", ["Sam Sample"])
+    ]
+    (ti,) = bookings(led)
+    assert ti.passengers == ["Alex Sample", "Robin Sample", "Sam Sample"]
+    assert [aboard(f) for f in log.flights] == [
+        [("me", None), ("Robin Sample", None), ("Sam Sample", None)]
+    ]
+
+
 def test_a_cancellation_naming_the_owner_cancels_only_a_booking_the_owner_is_on(tmp_ledger_path):
     """A companion's or a relative's flight that the owner's own receipt never reached is not
     cancelled because the owner cancelled a seat of their own: on a booking that holds
@@ -2446,6 +2491,7 @@ def test_what_belongs_to_the_booking_survives_a_merge(tmp_ledger_path):
         "owner_answer": "no",
         "alt_keys": ["an-earlier-key"],
         "change_recorded": True,
+        "cancelled_names": {"Casey Sample": t[1]},
     }
     row = st.item(first.trip_item_id)
     led.trip_items.update(row.id, payload={**row.payload, **own})
@@ -2458,6 +2504,7 @@ def test_what_belongs_to_the_booking_survives_a_merge(tmp_ledger_path):
         owner_answer="yes",
         alt_keys=["another-key"],
         change_recorded=False,
+        cancelled_names={"Casey Sample": t[3], "Jamie Sample": t[3]},
     )
     update = Action("update", item, reason="add_passengers", trip_item_id=row.id)
     mid = led.messages.insert(sha256="merge", source="cli", status="archived")
@@ -2471,5 +2518,12 @@ def test_what_belongs_to_the_booking_survives_a_merge(tmp_ledger_path):
         "low_confidence": t[3],
         "date_far": t[3],
     }
-    for key in ("looked_at", "owner_edits", "owner_answer", "alt_keys", "change_recorded"):
+    for key in (
+        "looked_at",
+        "owner_edits",
+        "owner_answer",
+        "alt_keys",
+        "change_recorded",
+        "cancelled_names",
+    ):
         assert after.payload[key] == own[key], key

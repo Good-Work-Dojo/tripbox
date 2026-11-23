@@ -32,7 +32,15 @@ RESULT_OF = {
 }
 # What belongs to the booking and to no one email: a merge leaves each as the booking holds it.
 # (`raised` is the booking's too, and is joined stamp by stamp.)
-KEPT = ("looked_at", "owner_edits", "owner_answer", "taken_off", "alt_keys", "change_recorded")
+KEPT = (
+    "looked_at",
+    "owner_edits",
+    "owner_answer",
+    "taken_off",
+    "cancelled_names",
+    "alt_keys",
+    "change_recorded",
+)
 KEY_TAKEN = "another booking is already filed under the key these details make"
 
 
@@ -111,7 +119,11 @@ class Executor:
             )
         elif a.reason == "remove_passengers":
             ti = self.store.remove_passengers(
-                row.item_key, a.remove_passengers, raised=raised, source_message_id=source
+                row.item_key,
+                a.remove_passengers,
+                email_date=a.item.payload.get("email_date"),
+                raised=raised,
+                source_message_id=source,
             )
         else:
             onto = dataclasses.replace(a.item, key=row.item_key, payload=self._said(a, row))

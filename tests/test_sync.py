@@ -364,6 +364,32 @@ def test_a_record_of_the_same_flight_that_does_not_list_the_keys_user_is_not_ado
         assert not sync.not_listed(airtrail.get_flight(after.airtrail_flight_id), MEMORY_USER_ID)
 
 
+def test_the_first_receipt_read_after_a_partial_cancellation_sends_nothing(tmp_path):
+    """A companion a partial cancellation took off is not put back on the flight log's flight by
+    the first receipt read after it: the flight stays `synced` and no PUT is sent."""
+    from helpers.flightlog import flight_log
+    from test_planner import EMAIL, LATER, items_for
+    from test_planner import run as file_mail
+    from test_planner import store as planner_store
+
+    led = Ledger.open(tmp_path / "ledger.db")
+    log = flight_log(led)
+    both = ["Alex Sample", "Sam Sample"]
+    file_mail(led, items_for(both), log=log)
+    notice = items_for(["Sam Sample"], msg="<m2>", status="cancelled", email=LATER)
+    file_mail(led, notice, "cancellation", log=log)
+    (fid,) = [f["id"] for f in log.flights]
+    puts = [r for r in log.requests if r[0] == "update"]
+    p, (o,) = file_mail(led, items_for(both, msg="<m3>", email=EMAIL), log=None)
+    assert (o.result, o.sync) == ("duplicate", "synced")
+    st = planner_store(led)
+    syncing = Syncer(store=st, ledger=led, book=st.book, client=log, refs=None, dry_run=False)
+    report = syncing.run_pass(now=LATER + dt.timedelta(hours=1))
+    assert report.done == {} and st.item(o.trip_item_id).sync_state == "synced"
+    assert [r for r in log.requests if r[0] == "update"] == puts
+    assert [x["guestName"] for x in log.get_flight(fid)["passengers"] if not x["user"]] == []
+
+
 class StopsAfterCreating(Scripted):
     """Creates the first flight it is sent, then the process stops before the store is told."""
 
