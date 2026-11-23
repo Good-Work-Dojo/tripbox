@@ -13,6 +13,7 @@ from __future__ import annotations
 import re
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -118,6 +119,34 @@ def test_ci_yml_and_ci_sh_run_the_same_stages():
         "TRIPBOX_SMOKE=1 tools/verify/stack_smoke.sh --image tripboxoss:rt"
     assert step(job, "browser")["run"] == \
         "TRIPBOX_SMOKE=1 tools/verify/browser_checks.sh --image tripboxoss:rt"
+
+
+def python_of(root: Path) -> subprocess.CompletedProcess:
+    """ci.sh's lines that read its Python image, run in bash against the Dockerfile in `root`."""
+    gate = (HERE / "ci.sh").read_text("utf-8")
+    start = gate.index('PYTHON="$(')
+    end = gate.index("\n", gate.index("|| {", start))
+    script = f'W={root}\n{gate[start:end]}\nprintf "%s" "$PYTHON"\n'
+    return subprocess.run(["bash", "-c", script], capture_output=True, text=True, check=False)
+
+
+def test_the_gate_reads_its_python_image_from_the_dockerfile(tmp_path):
+    """The checks before the build run in the Dockerfile's own base, tag and digest, so a
+    Dependabot bump of the Dockerfile reaches them too."""
+    gate = (HERE / "ci.sh").read_text("utf-8")
+    assert not re.search(r"python:3\.\d+-slim@sha256", gate), "no second copy of the pin"
+    (line,) = [ln for ln in (ROOT / "Dockerfile").read_text("utf-8").splitlines()
+               if ln.startswith("FROM python:")]
+    r = python_of(ROOT)
+    assert r.returncode == 0, r.stderr
+    assert r.stdout == line.removeprefix("FROM ").removesuffix(" AS runtime")
+    assert re.fullmatch(r"python:3\.\d+-slim@sha256:[0-9a-f]{64}", r.stdout)
+    two = "FROM python:3.14-slim AS runtime\nFROM python:3.15-slim AS runtime\n"
+    for body in ("FROM scratch\n", two):
+        (tmp_path / "Dockerfile").write_text(body)
+        r = python_of(tmp_path)
+        assert r.returncode == 2 and r.stdout == "", body
+        assert "the Dockerfile has no one 'FROM python:… AS runtime' line" in r.stderr
 
 
 def test_the_secret_scan_is_the_same_command_in_both_and_the_image_is_pinned():
@@ -345,6 +374,41 @@ def test_dependabot_watches_the_four_ecosystems_where_their_files_are():
     composes = {"/" + str(p.parent.relative_to(ROOT)) for p in tracked("compose.y*ml")
                 if named_images(p)}
     assert composes == set(ECOSYSTEMS["docker-compose"])
+
+
+def dependabot_ignores(ecosystem: str) -> dict[str, list[str]]:
+    config = yaml.safe_load((ROOT / ".github" / "dependabot.yml").read_text("utf-8"))
+    (update,) = [u for u in config["updates"] if u["package-ecosystem"] == ecosystem]
+    return {i["dependency-name"]: i.get("update-types") for i in update.get("ignore", [])}
+
+
+def test_dependabot_never_moves_the_python_minor_or_major_version():
+    """A new Python is a change by hand (.python-version, ruff's target, the lock's wheels); a
+    new digest of the same tag still comes as a routine update."""
+    assert dependabot_ignores("docker")["python"] == [
+        "version-update:semver-minor", "version-update:semver-major"]
+    for name in ("uv", "docker-compose", "github-actions"):
+        assert "python" not in dependabot_ignores(name), name
+    minor = (ROOT / ".python-version").read_text("utf-8").strip()
+    assert re.search(rf"^FROM python:{re.escape(minor)}-slim@sha256:[0-9a-f]{{64}} AS runtime$",
+                     (ROOT / "Dockerfile").read_text("utf-8"), re.M)
+    target = tomllib.loads((ROOT / "pyproject.toml").read_text("utf-8"))["tool"]["ruff"]
+    assert target["target-version"] == "py" + minor.replace(".", "")
+
+
+def test_dependabot_never_moves_the_screenshot_browsers_version():
+    """Its version is written in three places (test_screens holds them equal), which one
+    Dependabot pull request cannot change together; a new digest of the same tag still comes."""
+    assert dependabot_ignores("docker")["*playwright/python"] == [
+        "version-update:semver-patch", "version-update:semver-minor",
+        "version-update:semver-major"]
+    base = (ROOT / "tools/verify/screens/Dockerfile").read_text("utf-8")
+    assert "FROM mcr.microsoft.com/playwright/python:v" in base
+    pins = (ROOT / "tools/maintainer/README.md").read_text("utf-8")
+    pins = pins[pins.index("### Pins Dependabot cannot see"):]
+    for place in ("tools/verify/screens/Dockerfile", "tools/verify/screens/constraints.txt",
+                  "KITINERARY_VERSION", "KITINERARY_SHA256", "GITLEAKS", "BUILDKIT"):
+        assert place in pins, place
 
 
 # ---------------------------------------------------------------- the release

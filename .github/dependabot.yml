@@ -5,7 +5,9 @@
 # name by tag and digest (the app's and the screenshot browser's), the images the test stacks'
 # compose files name themselves (the throwaway AirTrail and its database, and the one-hostname
 # stack's database; a compose file whose images come from variables has nothing to update), and the
-# workflows' actions, pinned by commit. Each pull request runs the ci workflow like any other.
+# workflows' actions, pinned by commit. Each pull request runs the ci workflow like any other. Two
+# versions are bumped by hand, their digests still coming here: Python's minor and major, and the
+# screenshot browser's (tools/maintainer/README.md, "Pins Dependabot cannot see").
 version: 2
 updates:
   - package-ecosystem: uv
@@ -22,6 +24,17 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    # A new Python minor or major version is a change made by hand: it moves .python-version,
+    # ruff's target-version and the lock's wheels with it. A new digest of the same tag still comes.
+    ignore:
+      - dependency-name: python
+        update-types: [version-update:semver-minor, version-update:semver-major]
+      # The screenshot browser's version is written three times (the FROM tag, the pip pin and
+      # screens/constraints.txt), so a new one is bumped by hand in all three; a new digest of
+      # the same tag still comes.
+      - dependency-name: '*playwright/python'
+        update-types: [version-update:semver-patch, version-update:semver-minor,
+                       version-update:semver-major]
   - package-ecosystem: docker-compose
     directories: [/tools/verify/airtrail, /tools/verify/onehost]
     schedule:

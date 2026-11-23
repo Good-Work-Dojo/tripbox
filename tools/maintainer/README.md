@@ -123,11 +123,23 @@ Exit 0 when everything is done, 1 when a step failed, 2 on a usage error.
 
 ### Pins Dependabot cannot see
 
-Dependabot updates the actions, the base images and the Python packages. Two pins are images
-named in a workflow's or a script's own text, which it does not read, so they age silently: the
-gitleaks image of the secret scan (`GITLEAKS` in `ci.yml` and `tools/verify/ci.sh`, the same
-digest in both) and the BuildKit image of the release builds (`BUILDKIT` in `release.yml`). Look
-at each project's releases now and then, and bump the digest by hand.
+Dependabot updates the actions, the base images and the Python packages. These pins it does not
+read, or is told to leave alone, so they age silently: look at each project's releases now and
+then, and bump them by hand.
+
+- The gitleaks image of the secret scan (`GITLEAKS` in `ci.yml` and `tools/verify/ci.sh`, the same
+  digest in both) and the BuildKit image of the release builds (`BUILDKIT` in `release.yml`):
+  images named in a workflow's or a script's own text.
+- KDE's kitinerary-extractor build (`KITINERARY_VERSION` and `KITINERARY_SHA256` in the
+  `Dockerfile`): a download, not an image. Bump both together, then check the corpus scorecard.
+- Python's minor and major version: Dependabot brings only new digests of `python:3.14-slim`. A
+  new Python moves the `Dockerfile`'s `FROM`, `.python-version` and ruff's `target-version` in
+  `pyproject.toml` together, with `uv.lock` regenerated. `tools/verify/ci.sh` reads its Python
+  image from the `Dockerfile`'s `FROM` line, so it follows on its own.
+- The screenshot browser's Playwright version: Dependabot brings only new digests of its tag. A
+  new version changes three places together: the `FROM` tag in `tools/verify/screens/Dockerfile`,
+  the `playwright==` pin on its `pip install` line, and `playwright==` in
+  `tools/verify/screens/constraints.txt`.
 
 ## adoption-report.sh
 

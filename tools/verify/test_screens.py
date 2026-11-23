@@ -564,6 +564,9 @@ def test_the_stack_publishes_nothing_and_mounts_only_its_own_directory():
     assert lines[2] == (
         f"RUN pip install --no-cache-dir -c /constraints.txt playwright=={m.group(1)}"
     )
+    # and the constraints pin that same version: the three move together, by hand
+    pins = (SCREENS / "constraints.txt").read_text().splitlines()
+    assert f"playwright=={m.group(1)}" in pins
 
 
 def test_the_harness_names_nothing_private():

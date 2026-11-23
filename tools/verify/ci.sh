@@ -53,8 +53,11 @@ set -euo pipefail
 SELF="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")"
 W="$(cd "$(dirname "$SELF")/../.." && pwd -P)"
 IMAGE=tripboxoss:test
-# the Dockerfile's own base, by digest, for the checks that run before the image is built
-PYTHON=python:3.14-slim@sha256:35caba83af2fe6da9a5d922f9b0156f21d1246a48278c58a08bd253303ba42e8
+# the Dockerfile's own base, read from its runtime stage's FROM line (tag and digest), for the
+# checks that run before the image is built
+PYTHON="$(sed -n 's/^FROM \(python:[^ ]*\) AS runtime$/\1/p' "$W/Dockerfile")"
+[ -n "$PYTHON" ] && [ "$(printf '%s\n' "$PYTHON" | wc -l)" -eq 1 ] \
+  || { echo "ci.sh: the Dockerfile has no one 'FROM python:… AS runtime' line to read the Python image from" >&2; exit 2; }
 ANY_USER=12345:54321  # a uid and gid the image has no account for
 GITLEAKS=ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
 cd "$W"
