@@ -80,6 +80,34 @@ def test_subject_cancellation_overrides_booking():
     assert pm.extraction.reservations[0].status == "cancelled"
 
 
+def test_only_a_subject_that_says_it_was_cancelled_makes_a_cancellation():
+    """The subject's word counts when it says the booking was cancelled, never when it merely
+    mentions cancelling (a free-cancellation note, a policy, 'not cancelled')."""
+    said = (
+        "Your trip has been cancelled",
+        "Fwd: Reservation SUT320 canceled",
+        "Ticket canceled - record locator RWV431",
+        "Cancellation confirmed - Example Plaza Hotel",
+        "Fwd: Cancelled: your stay at Example Inn",
+        "Your reservation was canceled",
+        "Booking cancellation confirmation",
+    )
+    mentioned = (
+        "Booking confirmed - free cancellation until 3 May",
+        "Cancellation policy inside: your stay at Example Inn",
+        "Not cancelled: your flight to Boston leaves on time",
+        "Your flight has not been cancelled",
+        "Reservation not cancelled - see the new time",
+        "Your booking at Example Inn (free cancellation)",
+    )
+    for subject, cancelled in [(s, True) for s in said] + [(s, False) for s in mentioned]:
+        pm = parse_message(
+            nm(subject=subject), None, runner=lambda *a: [flight_obj("ALEX SAMPLE", "1A")]
+        )
+        want = "cancellation" if cancelled else "booking"
+        assert pm.extraction.document_type == want, subject
+
+
 def test_no_model_and_incomplete_is_unparsed_not_failed():
     pm = parse_message(nm(), None, runner=lambda *a: [])
     assert pm.parser == "none" and pm.error is None

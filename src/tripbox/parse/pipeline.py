@@ -17,7 +17,19 @@ from tripbox.parse.provider import READ_BY_MODEL, WAITS, ModelError, Provider, U
 
 log = logging.getLogger("tripbox.parse")
 
-CANCEL_SUBJECT = re.compile(r"\b(cancell?ed|cancellation)\b", re.I)
+# A subject that says the booking was cancelled ("has been cancelled", "Reservation X canceled",
+# "Cancellation confirmed", "Cancelled: …"), never one that only mentions cancelling (a free
+# cancellation, a policy) or says it was not.
+CANCEL_SUBJECT = re.compile(
+    r"(?<!\bnot )\b(?:"
+    r"(?:has|have|had|was|were|is|are|been)\s+(?:been\s+)?cancell?ed\b"
+    r"|cancell?ation\s+(?:confirmed|confirmation|notice|receipt)\b"
+    r"|(?:reservation|booking|ticket|flight|trip|stay|order|itinerary|rental|hotel)"
+    r"\s+(?:(?!not\b)[\w#-]+\s+){0,3}cancell?ed\b"
+    r")"
+    r"|^\s*(?:(?:fwd?|re)\s*:\s*)*cancell?ed\b",
+    re.I,
+)
 Runner = Callable[[bytes, str, str | None], list[dict]]
 
 
