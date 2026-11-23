@@ -19,6 +19,8 @@ dependencies = [
     "uvicorn>=0.54,<1",
     "python-multipart>=0.0.32",
     "pyjwt[crypto]>=2.15,<3",
+    # cover photos: decoded and re-encoded in the worker only
+    "pillow>=12,<13",
 ]
 
 [project.scripts]

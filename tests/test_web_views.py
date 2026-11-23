@@ -229,15 +229,15 @@ def test_the_page_loads_no_code_that_files_mail():
     """The page's container reads the ledger, shows it, stores what it is handed to read and
     reads whether a worker runs: nothing that reads mail, asks a model, files a booking, writes
     the flight log, runs the worker or sends a notification is loaded with it, nor a model's
-    SDK, nor the HTTP client the worker calls out with. Of the readers' package it loads the
-    wire schema alone (`tripbox.parse.models`, the plain data shapes the store rebuilds a
-    booking from)."""
+    SDK, nor the HTTP client the worker calls out with, nor the image library (`PIL`). Of the
+    readers' package it loads the wire schema alone (`tripbox.parse.models`, the plain data
+    shapes the store rebuilds a booking from)."""
     shown = (
         "import sys, tripbox.web.app, tripbox.web.views, tripbox.web.login, tripbox.web.card,"
-        " tripbox.trips.format, tripbox.uploads, tripbox.status; "
+        " tripbox.trips.format, tripbox.trips.coversniff, tripbox.uploads, tripbox.status; "
         "print(sorted(m for m in sys.modules if m.startswith(("
         "'tripbox.pipeline', 'tripbox.mail', 'tripbox.parse', 'tripbox.write',"
-        " 'tripbox.worker', 'tripbox.notify', 'anthropic', 'openai', 'httpx2'))))"
+        " 'tripbox.worker', 'tripbox.notify', 'anthropic', 'openai', 'httpx2', 'PIL'))))"
     )
     run = subprocess.run(
         [sys.executable, "-c", shown], capture_output=True, text=True, check=True
