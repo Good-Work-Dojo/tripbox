@@ -47,8 +47,8 @@ are also kept in an AirTrail flight log. One image runs three roles: `web`, `wor
 
 ## Facts about the code (keep them true as the code changes)
 
-- Settings: every setting is a `Key` in `config.KEYS`; a core problem stops commands, a web
-  problem stops `web`, any other invalid feature is left off and logged; a bad value of a
+- Settings: every setting is a `Key` in `config.KEYS`; a core problem stops commands (`backup`
+  and `restore` only a `config.PATH_KEYS` one's), a web problem stops `web`, any other invalid feature is left off and logged; a bad value of a
   `config.DISPLAY_ONLY` key (a link shown) is a problem that turns nothing off; `tripbox doctor`
   lists them. The page listens on `TRIPBOX_LISTEN`, loopback only with no login, as is `web --host`
   outside the image (`TRIPBOX_IN_IMAGE`). In `compose.yaml` `web` passes `--host 0.0.0.0` and

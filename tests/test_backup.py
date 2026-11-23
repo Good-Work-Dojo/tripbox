@@ -248,6 +248,33 @@ def test_a_backup_is_taken_while_the_ledger_is_open_for_writing(install, capsys)
     assert len({k for k in kv if k.startswith("pair-")}) == 2 * len(written)
 
 
+def test_backup_and_restore_stop_only_for_a_folders_setting(install, capsys, monkeypatch):
+    """They read the folders, the ledger and the config folder's bytes alone: a broken
+    travellers file or an unknown home airport, which stop the worker, stop neither."""
+    archive = taken(install, capsys=capsys)
+    broken = b"owner: [Sample\n  travellers: {\n"
+    (install / "config" / "travellers.yaml").write_bytes(broken)
+    monkeypatch.setenv("TRIPBOX_HOME_AIRPORTS", "XQZ")
+    code, out, err = run(capsys, "doctor")
+    assert code == 1, "both are problems that stop the other commands"
+    code, _, err = run(capsys, "poll")
+    assert code == 2 and any(line.startswith("config error: ") for line in err), err
+    out_file = install / "backups" / "while-broken.tar.gz"
+    # each is logged as a warning, never a refusal
+    code, out, err = run(capsys, "backup", "--out", str(out_file))
+    assert code == 0 and not [line for line in err if "config error" in line], err
+    assert read_member(out_file, "config/travellers.yaml") == broken
+    code, out, err = run(capsys, "restore", str(archive))
+    assert code == 0 and not [line for line in err if "config error" in line], err
+    assert out[-1] == NOTHING
+    # a folder's own setting still stops both
+    monkeypatch.setenv("TRIPBOX_BACKUPS_DIR", "relative/backups")
+    for argv in (("backup",), ("restore", str(archive))):
+        code, out, err = run(capsys, *argv)
+        assert code == 2 and out == [], argv
+        assert err[0].startswith("config error: TRIPBOX_BACKUPS_DIR"), err
+
+
 def test_a_backup_with_mail_is_refused_inside_the_data_folder(install, capsys):
     data = install / "data"
     before = state(*(install / n for n in FOLDERS if n != "logs"))

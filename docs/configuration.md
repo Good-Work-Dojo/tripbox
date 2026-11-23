@@ -40,10 +40,11 @@ check `data`, `archive` and `config`: a problem stops it as a settings problem d
 (`config error: …`), in the words `doctor` uses.
 
 What a problem stops depends on its feature. A problem in the core settings stops every command
-except `doctor`. A problem in the web settings stops `tripbox web`. A problem in any other
-feature leaves that feature off, and each problem is logged once at start. A feature that is
-merely unconfigured never stops a command. A bad value for the trusted sender domains trusts no
-forwarded sender.
+except `doctor`, `backup` and `restore` (which only a folder's setting stops, so a backup can be
+taken while the rest is being fixed). A problem in the web settings stops `tripbox web`. A problem
+in any other feature leaves that feature off, and each problem is logged once at start. A feature
+that is merely unconfigured never stops a command. A bad value for the trusted sender domains trusts
+no forwarded sender.
 
 ## Core
 
@@ -283,8 +284,8 @@ nobody and is no problem. `tripbox doctor` shows the travellers row as:
 - a file with an owner: `on` and `owner: N names, companions: M`;
 - a file with a mistake in it: `invalid` and `see the problems below`.
 
-Each of these mistakes is a core problem: it stops every command but `doctor`, which lists it,
-and until it is fixed nobody is the owner.
+Each of these mistakes is a core problem: it stops every command but `doctor` (which lists it),
+`backup` and `restore`, and until it is fixed nobody is the owner.
 
 - The file cannot be read: it is not a regular file of at most 64 KiB (a link whose target is
   missing, a directory, a pipe, a larger file), or tripbox may not read it.
@@ -326,7 +327,7 @@ replaces shipped ones. It is a list of entries:
   unquoted, the entry is a core problem that says so.
 - Any other key, a top level that is not a list, a file that is not valid YAML, or one that is not
   a regular file of at most 64 KiB is a core problem, keyed `airlines.yaml`: it stops every command
-  but `doctor`, which lists it.
+  but `doctor` (which lists it), `backup` and `restore`.
 
 ### `us_states.txt` (optional)
 

@@ -21,6 +21,7 @@ from tripbox.config import (
     KEYS,
     MODEL_KEY_ENV,
     OFFLINE_ENV,
+    PATH_KEYS,
     TELEGRAM_OFF,
     ConfigError,
     FeatureState,
@@ -63,13 +64,20 @@ def _folders(s: Settings, *names: str) -> None:
         raise ConfigError("\n".join(str(p) for p in problems))
 
 
-def _settings(args: argparse.Namespace) -> Settings:
-    """The settings every command but `web` starts with: a core problem stops the command; then
-    the configured zone becomes the process's, the secrets are masked in the logs, and each
-    problem of a feature but core and the page is logged once: one that leaves its feature off,
-    and one of a DISPLAY_ONLY key, whose feature stays on."""
+def _settings(args: argparse.Namespace, *, folders_only: bool = False) -> Settings:
+    """The settings every command but `web` starts with: a core problem stops the command (with
+    `folders_only`, for backup and restore, which read the folders and the ledger alone, only a
+    problem of a folder's setting does, and the other core problems are logged); then the
+    configured zone becomes the process's, the secrets are masked in the logs, and each problem
+    of a feature but core and the page is logged once: one that leaves its feature off, and one
+    of a DISPLAY_ONLY key, whose feature stays on."""
     s = Settings.from_env()
-    _refuse(s, "core")
+    if folders_only:
+        stopping = [p for p in s.stopping("core") if p.key in PATH_KEYS]
+        if stopping:
+            raise ConfigError("\n".join(str(p) for p in stopping))
+    else:
+        _refuse(s, "core")
     if getattr(args, "dry_run", False) and not s.airtrail_dry_run:
         # for this one run; what is configured stays the ledger's note of it (_context)
         s = dataclasses.replace(s, airtrail_dry_run=True)
@@ -82,7 +90,7 @@ def _settings(args: argparse.Namespace) -> Settings:
         name=LOG_NAMES.get(command, "tripbox"),
     )
     for p in s.problems:
-        if p.feature not in ("core", "web"):
+        if p.feature not in ("core", "web") or (folders_only and p.feature == "core"):
             log.warning("config: %s", p)
     return s
 
@@ -1065,7 +1073,7 @@ def cmd_backup(args: argparse.Namespace) -> int:
     folder, and with `--with-mail` every saved email (`backup.backup`)."""
     from tripbox import backup
 
-    s = _settings(args)
+    s = _settings(args, folders_only=True)
     try:
         lines = backup.backup(s, with_mail=args.with_mail, out=args.out)
     except backup.Refused as exc:
@@ -1082,7 +1090,7 @@ def cmd_restore(args: argparse.Namespace) -> int:
     what it would do and changes nothing."""
     from tripbox import backup
 
-    s = _settings(args)
+    s = _settings(args, folders_only=True)
     try:
         backup.restore(s, args.file, apply=args.apply)
     except backup.Refused as exc:
