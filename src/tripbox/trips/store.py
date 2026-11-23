@@ -606,8 +606,29 @@ class TripStore:
         return None if row is None or self._hidden(row) else self._item(row)
 
     def _find_by_key(self, key: str) -> sqlite3.Row | None:
-        """The row for a booking key, by its key or by a corrected-code alias; hidden or not."""
-        return self.led.trip_items.by_key(key) or self.led.trip_items.by_alias(key)
+        """The row for a booking key, by its key or by a corrected-code alias; hidden or not;
+        else a booking filed by tripbox 1.0.0 under its day as printed whose fields now make
+        this key (`_keyed_by_a_printed_day`)."""
+        return (
+            self.led.trip_items.by_key(key)
+            or self.led.trip_items.by_alias(key)
+            or self._keyed_by_a_printed_day(key)
+        )
+
+    def _keyed_by_a_printed_day(self, key: str) -> sqlite3.Row | None:
+        """tripbox 1.0.0 keyed a day by the first ten characters of its value as printed
+        (`lodging|<name>|Mar 13, 20`); its stays and cars keep that key, and a flight or a train
+        keeps it until it is next settled. Such a booking is found by the key its fields make
+        now, so a later email for it is not filed again."""
+        if is_draft(key) or key.count("|") < 2:
+            return None
+        kind = key.split("|", 1)[0]
+        kind = kind if kind in ("lodging", "car", "train") else "flight"
+        for row in self.led.trip_items.keyed_by_a_printed_day(kind):
+            payload = json.loads(row["payload_json"])
+            if real_key(kind, payload, airports=self.airports) == key:
+                return row
+        return None
 
     def _hidden(self, row: sqlite3.Row) -> bool:
         """Removed, or in a deleted trip. A booking with no trip (no date yet) is shown."""

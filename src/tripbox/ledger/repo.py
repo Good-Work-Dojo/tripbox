@@ -456,6 +456,18 @@ class TripItems:
             f"SELECT * FROM trip_items WHERE trip_id=?{cond} ORDER BY start_at, id", (trip_id,)
         ).fetchall()
 
+    def keyed_by_a_printed_day(self, kind: str) -> list[sqlite3.Row]:
+        """The bookings of `kind` whose key's third part (a day, where the key has one) is not
+        written YYYY-MM-DD: keys tripbox 1.0.0 made from a day as it was printed. A code key has
+        no third part and is never among them."""
+        return self.c.execute(
+            "SELECT * FROM trip_items WHERE kind=? AND item_key LIKE '%|%|%'"
+            " AND item_key NOT LIKE 'draft|%'"
+            " AND item_key NOT GLOB '*|*|[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*'"
+            " ORDER BY id",
+            (kind,),
+        ).fetchall()
+
     def by_pnr(self, confirmation: str) -> list[sqlite3.Row]:
         """`confirmation` holds one code or several joined by ', ' (two bookings on one flight).
         Removed rows are not grouping hints."""

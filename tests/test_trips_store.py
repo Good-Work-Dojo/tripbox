@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Additional terms: see NOTICE
 import dataclasses
+import json
 import datetime as dt
 
 import pytest
@@ -1314,3 +1315,23 @@ def test_purge_reads_the_held_clock():
         assert st.purge_deleted() == (0, 0)
     with util.clock_at(held + dt.timedelta(days=30)):
         assert st.purge_deleted() == (1, 1)
+
+
+def test_a_booking_keyed_by_a_day_as_printed_is_found_by_the_key_it_makes_now():
+    # tripbox 1.0.0 keyed a day by the first ten characters printed ("Jun 22, 20"); a stay or a
+    # car keeps its key, so the next email for it, keyed by the date, must still find it
+    st = store()
+    car = car_item(code=None)
+    trip = st.find_or_create(car)
+    filed = st.upsert_item(trip, car)
+    now_key = filed.item_key
+    assert now_key == "car|examplerentacar|2027-06-22|phl"
+    payload = dict(filed.payload, pickup_time="Jun 22, 2027 1:00 PM")
+    st.led.conn.execute(
+        "UPDATE trip_items SET item_key=?, payload_json=? WHERE id=?",
+        ("car|examplerentacar|Jun 22, 20|phl", json.dumps(payload), filed.id),
+    )
+    found = st.find(now_key)
+    assert found is not None and found.id == filed.id
+    assert st.find("car|examplerentacar|2027-06-23|phl") is None
+    assert st.find("lodging|exampleinn|2027-06-22") is None
