@@ -2562,13 +2562,40 @@ def _walk(node: _Node) -> Iterator[_Node]:
 
 
 def _words(value: Any) -> str:
-    """A header's value as its text: unfolded, its encoded words decoded, cut at a bound."""
-    text = re.sub(r"\r?\n[ \t]+", " ", str(value))[:_MAX_HEADER]
+    """A header's value as its text: unfolded, read as a body is (`_header_text`), its encoded
+    words decoded, cut at a bound. Each encoded word is decoded on its own, as a body is
+    (`_decoded`), so one whose bytes are not the charset it names, or whose charset is unknown,
+    reads as well as it can and leaves the words beside it decoded; the white space between two
+    encoded words goes, as RFC 2047 says."""
+    text = _header_text(re.sub(r"\r?\n[ \t]+", " ", str(value))[:_MAX_HEADER])
+    out: list[str] = []
+    at = 0
+    for m in email.header.ecre.finditer(text):
+        between = text[at : m.start()]
+        if not out or between.strip():
+            out.append(between)
+        try:
+            [(data, charset)] = email.header.decode_header(m.group())
+        except Exception:  # noqa: BLE001 - an encoded word that does not decode is read as written
+            out.append(m.group())
+        else:
+            if isinstance(data, bytes):
+                out.append(_decoded(data, charset or "utf-8"))
+            else:
+                out.append(data)
+        at = m.end()
+    out.append(text[at:])
+    return re.sub(r"[\x00-\x1f\x7f]", " ", _as_text("".join(out))).strip()
+
+
+def _header_text(text: str) -> str:
+    """A header's text with the bytes the mail parser kept as they were sent (each a lone
+    surrogate) read as a body's are: as UTF-8, a byte that does not fit read as Windows-1252."""
     try:
-        text = str(email.header.make_header(email.header.decode_header(text)))
-    except Exception:  # noqa: BLE001 - a header that does not decode is read as it is written
-        pass
-    return re.sub(r"[\x00-\x1f\x7f]", " ", _as_text(text)).strip()
+        sent = text.encode("utf-8", "surrogateescape")
+    except UnicodeEncodeError:
+        return text
+    return sent.decode("utf-8", "tripbox-redact-1252")
 
 
 def _as_text(text: str) -> str:
@@ -2744,7 +2771,9 @@ def _dropped(part: email.message.Message) -> int:
 
 
 def _mail_node(msg: email.message.Message, depth: int, left: list[int]) -> _Node:
-    held = msg.items()
+    # as they were sent: `items()` gives a header holding raw 8-bit bytes as a `Header` whose
+    # text has each byte replaced, before `_words` could read it as letters
+    held = list(msg.raw_items())
     headers = [(str(name), str(value)) for name, value in held[:_MAX_HEADERS]]
     more = max(0, len(held) - _MAX_HEADERS)
     body = _part_node(msg, depth, left, own=True)
@@ -2925,7 +2954,7 @@ def _header_addresses(value: str) -> list[tuple[str, str]]:
     """The addresses of an address header as (display name, address): the list is split as it
     was sent and each display name decoded after that, so the comma of a `Last, First` name
     inside an encoded word ends no address."""
-    sent = re.sub(r"\r?\n[ \t]+", " ", str(value))[:_MAX_HEADER]
+    sent = _header_text(re.sub(r"\r?\n[ \t]+", " ", str(value))[:_MAX_HEADER])
     return [(_words(name), _as_text(address)) for name, address in _addresses(_as_text(sent))]
 
 

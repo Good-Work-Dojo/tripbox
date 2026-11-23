@@ -165,6 +165,47 @@ def test_a_display_name_is_decoded_after_its_address_list_is_split():
     assert email.message_from_string(out)["To"] == "[NAME-1] <[EMAIL-2]>, [NAME-2] <[EMAIL-3]>"
 
 
+def test_a_header_sent_as_raw_bytes_reads_as_its_letters():
+    """A header written as raw UTF-8, as mail sent with SMTPUTF8 and many forwards carry it, or
+    as Windows-1252, reads as the letters it is, as a body does, so a known name in it goes."""
+    r = Redactor(Known(names=("Robin Sämple",)))
+    for name in ("Robin Sämple".encode(), b"Robin S\xe4mple"):
+        raw = (
+            b"From: Alaska Airlines <noreply@air.example>\n"
+            b"To: " + name + b" <robin@example.net>\n"
+            b"Subject: Your trip, " + name + " - Zürich\n".encode() + b"\n"
+            b"Dear " + name + b", your trip.\n"
+        )
+        shown = r.email(raw)
+        assert "Robin" not in shown and "mple" not in shown and "�" not in shown, name
+        head = email.message_from_string(shown)
+        assert head["To"].startswith("[NAME-1] <[EMAIL-"), name
+        assert head["Subject"] == "Your trip, [NAME-1] - Zürich", name
+        assert redact.harvest(raw) == ("Robin Sämple",), name
+
+
+def test_an_encoded_word_that_does_not_decode_leaves_the_others_decoded():
+    """Each encoded word of a header is decoded on its own: one whose bytes are not the charset
+    it names (Latin-1 called UTF-8), or whose charset is unknown, reads as well as it can, and
+    the words beside it are still decoded, so a name or a code in them goes."""
+    name = base64.b64encode("Robin Sämple".encode()).decode()
+    code = base64.b64encode(b"XZS975").decode()
+    robin = base64.b64encode(b"Robin").decode()
+    raw = (
+        "From: Alaska Airlines <noreply@air.example>\n"
+        f"To: =?utf-8?b?{robin}?= =?utf-8?q?_S=E4mple?= <robin@example.net>\n"
+        f"Subject: Fwd: =?utf-8?b?{name}?= at =?utf-8?q?caf=E9?=, ref =?utf-8?b?{code}?=;"
+        " =?x-unknown?q?all_set?=\n\nHello\n"
+    ).encode()
+    assert redact.harvest(raw) == ("Robin Sämple",)
+    shown = Redactor(Known(names=("Robin Sämple",))).email(raw)
+    for kept in (name, code, robin, "Robin", "mple", "XZS975", "=?"):
+        assert kept not in shown, kept
+    head = email.message_from_string(shown)
+    assert head["Subject"] == "Fwd: [NAME-1] at café, ref [REF-1]; all set"
+    assert head["To"].startswith("[NAME-1] <[EMAIL-")
+
+
 def test_a_reference_a_label_names_goes_up_to_forty_characters():
     named = (
         ("Booking reference: GYGA1B2C3D4E5", "GYGA1B2C3D4E5"),
