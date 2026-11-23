@@ -132,7 +132,7 @@ def test_a_backup_holds_the_ledger_and_config_and_mail_only_when_asked(install, 
     archive = default_archive(install)
     assert (code, err) == (0, [])
     assert out == [
-        "backup: ledger version 1, 7 trips, 22 bookings",
+        "backup: ledger version 2, 7 trips, 22 bookings",
         "backup: 2 config files; saved emails are not in it (--with-mail adds them)",
         f"backup: wrote {archive} ({archive.stat().st_size:,} bytes)",
     ]
@@ -156,7 +156,7 @@ def test_a_backup_holds_the_ledger_and_config_and_mail_only_when_asked(install, 
         "tripbox": tripbox.__version__,
         "made_at": MADE_AT,
         "ledger": {
-            "version": 1,
+            "version": db.SCHEMA_VERSION,
             "shape": db.SCHEMA_SHAPE,
             "sha256": hashlib.sha256(held).hexdigest(),
             "bytes": len(held),
@@ -180,7 +180,7 @@ def test_a_backup_holds_the_ledger_and_config_and_mail_only_when_asked(install, 
     code, out, err = run(capsys, "backup", "--with-mail", "--out", str(with_mail))
     assert (code, err) == (0, [])
     assert out == [
-        "backup: ledger version 1, 7 trips, 22 bookings",
+        "backup: ledger version 2, 7 trips, 22 bookings",
         f"backup: 2 config files, {len(saved)} emails",
         f"backup: wrote {with_mail} ({with_mail.stat().st_size:,} bytes)",
     ]
@@ -380,12 +380,12 @@ def _next_version(m: pytest.MonkeyPatch) -> None:
     """From here this code is the next version's: its schema adds a column to trips, its one
     step adds it, and this version's shape is a released one."""
     schema = _with_a_note(db.SCHEMA)
-    m.setattr(db, "RELEASED_SHAPES", {1: db.SCHEMA_SHAPE})
+    m.setattr(db, "RELEASED_SHAPES", {**db.RELEASED_SHAPES, db.SCHEMA_VERSION: db.SCHEMA_SHAPE})
     m.setattr(db, "SCHEMA", schema)
     shape = hashlib.sha256(re.sub(r"\s+", " ", schema).encode()).hexdigest()[:12]
     m.setattr(db, "SCHEMA_SHAPE", shape)
-    m.setattr(db, "SCHEMA_VERSION", 2)
-    m.setattr(db, "MIGRATIONS", {2: _add_the_note})
+    m.setattr(db, "MIGRATIONS", {**db.MIGRATIONS, db.SCHEMA_VERSION + 1: _add_the_note})
+    m.setattr(db, "SCHEMA_VERSION", db.SCHEMA_VERSION + 1)
 
 
 def _add_the_note(conn) -> None:
@@ -403,10 +403,10 @@ def test_backup_opens_no_ledger_for_writing_and_upgrades_none(install, capsys, m
         m.setattr(Ledger, "open", refused)
         code, out, err = run(capsys, "backup")
     assert (code, err) == (0, [])
-    assert out[0] == "backup: ledger version 1, 7 trips, 22 bookings"
+    assert out[0] == "backup: ledger version 2, 7 trips, 22 bookings"
     assert state(data) == before  # nothing written, copied or made beside it
     manifest = json.loads(read_member(default_archive(install), "MANIFEST.json"))
-    assert manifest["ledger"]["version"] == 1
+    assert manifest["ledger"]["version"] == db.SCHEMA_VERSION
 
 
 # ----------------------------------------------------------------------------- restore
@@ -447,7 +447,7 @@ def test_restore_without_apply_changes_nothing_and_says_what_it_would_do(install
     code, out, err = run(capsys, "restore", str(archive))
     assert (code, err) == (0, [])
     assert out == [
-        f"restore: backup made {MADE_AT} by tripbox {tripbox.__version__}: ledger version 1,"
+        f"restore: backup made {MADE_AT} by tripbox {tripbox.__version__}: ledger version 2,"
         f" 7 trips, 22 bookings, 2 config files, {n} emails",
         "restore: the ledger here holds 7 trips, 22 bookings; it would be kept beside it",
         "restore: config is never written; 1 file differs from the backup's",
@@ -498,7 +498,7 @@ def test_restore_keeps_the_ledger_that_was_there_and_removes_its_wal(install, ca
     assert (code, err) == (0, [])
     assert out == [
         f"restore: the ledger that was here is kept as {kept_as(install)}",
-        "restore: ledger restored: version 1, 7 trips, 22 bookings",
+        "restore: ledger restored: version 2, 7 trips, 22 bookings",
         "restore: 0 emails added, 0 already there, 0 differ and were left",
         f"restore: 3 sign-ins and 1 share link {SIGN_INS}",
         DONE,
@@ -686,7 +686,7 @@ def test_a_backup_from_a_newer_tripbox_is_refused(install, capsys, monkeypatch):
         code, out, err = run(capsys, "restore", str(ahead), *argv)
         assert (code, out) == (2, [])
         assert err == [
-            "restore: this backup's ledger is from a newer tripbox (ledger version 2);"
+            "restore: this backup's ledger is from a newer tripbox (ledger version 3);"
             " upgrade tripbox first"
         ]
         assert in_place(install) == before
@@ -974,7 +974,7 @@ def test_a_name_that_cannot_be_written_is_shown_plain_and_says_what_changed(
     assert code == 2
     assert out == [
         f"restore: the ledger that was here is kept as {kept_as(install)}",
-        "restore: ledger restored: version 1, 7 trips, 22 bookings",
+        "restore: ledger restored: version 2, 7 trips, 22 bookings",
     ]
     assert err == [
         f"restore: the ledger is restored, but archive/{gone} could not be written; run restore"
@@ -1006,7 +1006,7 @@ def test_what_a_ledger_moved_away_left_beside_it_is_kept(install, capsys):
         f" {aside[end]}"
         for end in left
     ]
-    assert out[len(left)] == "restore: ledger restored: version 1, 7 trips, 22 bookings"
+    assert out[len(left)] == "restore: ledger restored: version 2, 7 trips, 22 bookings"
     assert not any(data.joinpath(f"ledger.db{end}").exists() for end in left)
     assert {end: p.read_bytes() for end, p in aside.items()} == left
     # put back beside the ledger moved away, they still hold what it wrote
@@ -1091,28 +1091,28 @@ def test_a_backup_put_back_is_the_same_ledger(install, capsys, seeded):
     assert dump(install, seeded) != before
     code, out, err = run(capsys, "restore", str(default_archive(install)), "--apply")
     assert (code, err) == (0, [])
-    assert out[1] == "restore: ledger restored: version 1, 7 trips, 22 bookings"
+    assert out[1] == "restore: ledger restored: version 2, 7 trips, 22 bookings"
     assert dump(install, seeded) == before
 
 
 def test_an_older_ledger_put_back_is_upgraded_on_the_next_start(install, capsys, monkeypatch):
     ledger = install / "data" / "ledger.db"
-    archive = taken(install, capsys=capsys)  # a ledger of version 1
+    archive = taken(install, capsys=capsys)  # a ledger of version 2
     with monkeypatch.context() as m:
         _next_version(m)  # then this code is the next version's
         Ledger.open(ledger).close()
         code, out, err = run(capsys, "restore", str(archive), "--apply")
         assert (code, err) == (0, [])
-        assert out[1] == "restore: ledger restored: version 1, 7 trips, 22 bookings"
+        assert out[1] == "restore: ledger restored: version 2, 7 trips, 22 bookings"
         assert not [line for line in out if "sign-ins" in line]  # an older ledger's own
         assert out[-1] == DONE
         con = sqlite3.connect(f"file:{ledger}?mode=ro&immutable=1", uri=True)
-        try:  # put back as it was made: of version 1
-            assert con.execute("SELECT v FROM schema_version").fetchone() == (1,)
+        try:  # put back as it was made: of version 2
+            assert con.execute("SELECT v FROM schema_version").fetchone() == (2,)
         finally:
             con.close()
         with Ledger.open(ledger) as led:
-            assert led.version() == 2
+            assert led.version() == 3
             assert "synthetic_note" in {r[1] for r in led.conn.execute("PRAGMA table_info(trips)")}
             assert len(led.trips.all()) == 7
 
@@ -1256,7 +1256,7 @@ def test_a_killed_runs_leftovers_are_swept_after_an_hour_and_never_sooner(instal
     code, out, err = run(capsys, "backup")
     assert (code, err) == (0, [])
     assert out[0] == "backup: removed 2 leftovers of an earlier run"
-    assert out[1] == "backup: ledger version 1, 7 trips, 22 bookings"
+    assert out[1] == "backup: ledger version 2, 7 trips, 22 bookings"
     assert not any(p.exists() for p in old) and all(p.exists() for p in (*young, *others))
     archive = default_archive(install)
 

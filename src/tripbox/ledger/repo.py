@@ -837,3 +837,81 @@ class Uploads:
             "SELECT COUNT(*) FROM uploads WHERE state IN ('waiting', 'processing')"
         ).fetchone()
         return int(row[0])
+
+
+class Covers:
+    """The cover photo of a trip: at most one row, keyed by the trip. This is the only writer of
+    `covers`; a row goes with its trip (ON DELETE CASCADE)."""
+
+    FIELDS = frozenset(
+        {
+            "source",
+            "state",
+            "place",
+            "digest",
+            "large",
+            "small",
+            "upload",
+            "credit_json",
+            "error",
+            "attempts",
+            "retry_after",
+        }
+    )
+    # every column but the images: what a pass over all covers reads without loading them
+    LOOKUP = (
+        "trip_id, source, state, place, digest, credit_json, error, attempts, retry_after,"
+        " created_at, updated_at"
+    )
+
+    def __init__(self, conn: sqlite3.Connection) -> None:
+        self.c = conn
+
+    def get(self, trip_id: int) -> sqlite3.Row | None:
+        return self.c.execute("SELECT * FROM covers WHERE trip_id=?", (trip_id,)).fetchone()
+
+    def by_digest(self, digest: str) -> sqlite3.Row | None:
+        """A cover made from the same picture (lowest trip first), or None."""
+        return self.c.execute(
+            "SELECT * FROM covers WHERE digest=? ORDER BY trip_id LIMIT 1", (digest,)
+        ).fetchone()
+
+    def put(self, trip_id: int, **fields: Any) -> None:
+        """Make the trip's row, or change the fields given on the one it has (`created_at` is
+        kept, `updated_at` is stamped). A new row needs `source` and `state`."""
+        unknown = set(fields) - self.FIELDS
+        if unknown:
+            raise ValueError(f"not cover fields: {sorted(unknown)}")
+        ts = now_iso()
+        sets = ", ".join(f"{k}=?" for k in (*fields, "updated_at"))
+        cur = self.c.execute(
+            f"UPDATE covers SET {sets} WHERE trip_id=?", [*fields.values(), ts, trip_id]
+        )
+        if cur.rowcount:
+            return
+        cols = ["trip_id", *fields, "created_at", "updated_at"]
+        self.c.execute(
+            f"INSERT INTO covers({', '.join(cols)}) VALUES ({', '.join('?' * len(cols))})",
+            [trip_id, *fields.values(), ts, ts],
+        )
+
+    def delete(self, trip_id: int) -> None:
+        self.c.execute("DELETE FROM covers WHERE trip_id=?", (trip_id,))
+
+    def move(self, src_trip_id: int, dst_trip_id: int) -> None:
+        """The source trip's cover becomes the destination's, which has none."""
+        self.c.execute(
+            "UPDATE covers SET trip_id=?, updated_at=? WHERE trip_id=?",
+            (dst_trip_id, now_iso(), src_trip_id),
+        )
+
+    def pending_upload(self) -> sqlite3.Row | None:
+        """The oldest owner's upload the worker has not yet made into a cover."""
+        return self.c.execute(
+            "SELECT * FROM covers WHERE source='owner' AND state='pending'"
+            " ORDER BY created_at, trip_id LIMIT 1"
+        ).fetchone()
+
+    def all_for_lookup(self) -> list[sqlite3.Row]:
+        """Every cover without its images, by trip."""
+        return self.c.execute(f"SELECT {self.LOOKUP} FROM covers ORDER BY trip_id").fetchall()

@@ -21,6 +21,9 @@ from tripbox.ledger import Ledger, db
 from tripbox.trips.store import TripStore
 from tripbox.validate import checks
 
+CURRENT = db.SCHEMA_VERSION  # the version this code writes
+NEXT = CURRENT + 1  # the synthetic version the upgrade tests invent beyond it
+
 OUTDATED = (
     "this ledger was written by an earlier development version of tripbox and this version"
     " cannot read it; move the file away and start again with an empty one"
@@ -29,7 +32,7 @@ OUTDATED = (
 
 def test_open_creates_schema_and_is_idempotent(tmp_ledger_path):
     with Ledger.open(tmp_ledger_path) as led:
-        assert led.version() == 1
+        assert led.version() == CURRENT
         tables = {
             r[0] for r in led.conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
@@ -43,7 +46,7 @@ def test_open_creates_schema_and_is_idempotent(tmp_ledger_path):
         } <= tables
         assert "review_queue" not in tables
     with Ledger.open(tmp_ledger_path) as led:
-        assert led.version() == 1
+        assert led.version() == CURRENT
         assert led.conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0] == 1
 
 
@@ -263,6 +266,10 @@ EXPECTED_COLUMNS = {
     "sessions": "token_hash cred created_at seen_at",
     "devices": "id_hash created_at seen_at",
     "share_links": "id trip_id token token_hash shows created_at revoked_at",
+    "covers": (
+        "trip_id source state place digest large small upload credit_json error attempts"
+        " retry_after created_at updated_at"
+    ),
 }
 EXPECTED_INDEXES = {
     "messages_mid",
@@ -273,6 +280,7 @@ EXPECTED_INDEXES = {
     "trip_items_trip",
     "trip_items_sync",
     "share_links_trip",
+    "covers_digest",
 }
 
 
@@ -295,17 +303,17 @@ def _shape(led):
     return cols, idx
 
 
-def test_fresh_ledger_is_schema_v1(tmp_ledger_path):
+def test_fresh_ledger_is_the_current_schema(tmp_ledger_path):
     expected = {t: c.split() for t, c in EXPECTED_COLUMNS.items()}
     with Ledger.open(tmp_ledger_path) as led:
-        assert led.version() == 1
+        assert led.version() == CURRENT == 2
         assert _shape(led) == (expected, EXPECTED_INDEXES)
     with Ledger.memory() as led:
-        assert led.version() == 1
+        assert led.version() == CURRENT
         assert _shape(led) == (expected, EXPECTED_INDEXES)
 
 
-def _seed_v1(path) -> None:
+def _seed_current(path) -> None:
     with Ledger.open(path) as led:
         mid = led.messages.insert(sha256="s1", source="cli", status="processed")
         led.items.add(
@@ -355,11 +363,12 @@ def _add_the_note(conn) -> None:
 
 @pytest.fixture
 def next_schema(monkeypatch, tmp_ledger_path):
-    """A v1 file with rows (`_seed_v1`); then this code is the next version's: its schema adds
-    a column with an index to trips (SCHEMA, SCHEMA_SHAPE), and v1's shape is a released one."""
-    _seed_v1(tmp_ledger_path)
+    """A file of this version with rows (`_seed_current`); then this code is the next version's: its
+    schema adds a column with an index to trips (SCHEMA, SCHEMA_SHAPE), and this version's shape
+    is a released one."""
+    _seed_current(tmp_ledger_path)
     schema = _with_a_note(db.SCHEMA)
-    monkeypatch.setattr(db, "RELEASED_SHAPES", {1: db.SCHEMA_SHAPE})
+    monkeypatch.setattr(db, "RELEASED_SHAPES", {**db.RELEASED_SHAPES, CURRENT: db.SCHEMA_SHAPE})
     monkeypatch.setattr(db, "SCHEMA", schema)
     monkeypatch.setattr(db, "SCHEMA_SHAPE", _digest(schema))
     return schema
@@ -375,8 +384,8 @@ def next_version(monkeypatch, next_schema):
         calls.append(conn.execute("PRAGMA foreign_keys").fetchone()[0])
         _add_the_note(conn)
 
-    monkeypatch.setattr(db, "SCHEMA_VERSION", 2)
-    monkeypatch.setattr(db, "MIGRATIONS", {2: step})
+    monkeypatch.setattr(db, "SCHEMA_VERSION", NEXT)
+    monkeypatch.setattr(db, "MIGRATIONS", {**db.MIGRATIONS, NEXT: step})
     return calls
 
 
@@ -386,7 +395,7 @@ def _trip_columns(led):
 
 def test_a_next_version_migration_runs_once_and_keeps_rows(tmp_ledger_path, next_version):
     with Ledger.open(tmp_ledger_path) as led:
-        assert led.version() == 2
+        assert led.version() == NEXT
         assert "synthetic_note" in _trip_columns(led)
         assert led.trips.get(10)["title"] == "Lisbon"
         assert len(led.trip_items.by_trip(10)) == 1
@@ -394,7 +403,7 @@ def test_a_next_version_migration_runs_once_and_keeps_rows(tmp_ledger_path, next
         assert led.conn.execute("PRAGMA foreign_keys").fetchone()[0] == 1
         assert led.kv.get("schema_shape") == db.SCHEMA_SHAPE
     with Ledger.open(tmp_ledger_path) as led:
-        assert led.version() == 2
+        assert led.version() == NEXT
     assert next_version == [0]  # one call, with foreign keys off
 
 
@@ -416,7 +425,7 @@ def test_three_openers_racing_an_upgrade_leave_one_copy(
     def opener():
         try:
             with Ledger.open(tmp_ledger_path) as led:
-                assert led.version() == 2
+                assert led.version() == NEXT
         except BaseException as exc:  # noqa: BLE001
             errors.append(exc)
 
@@ -428,7 +437,7 @@ def test_three_openers_racing_an_upgrade_leave_one_copy(
     assert errors == []
     assert len(next_version) == 1
     with Ledger.open(tmp_ledger_path) as led:
-        assert led.version() == 2
+        assert led.version() == NEXT
     assert len(_copies(tmp_ledger_path)) == 1
 
 
@@ -439,25 +448,27 @@ def test_a_failing_migration_leaves_the_ledger_as_it_was(
         conn.execute("ALTER TABLE trips ADD COLUMN synthetic_note TEXT")
         raise RuntimeError("boom")
 
-    monkeypatch.setattr(db, "MIGRATIONS", {2: boom})
+    monkeypatch.setattr(db, "MIGRATIONS", {**db.MIGRATIONS, NEXT: boom})
     with pytest.raises(RuntimeError, match="boom"):
         Ledger.open(tmp_ledger_path)
     con = sqlite3.connect(tmp_ledger_path)
     try:
-        assert con.execute("SELECT v FROM schema_version").fetchone()[0] == 1
+        assert con.execute("SELECT v FROM schema_version").fetchone()[0] == CURRENT
         assert "synthetic_note" not in {r[1] for r in con.execute("PRAGMA table_info(trips)")}
     finally:
         con.close()
 
     # a step that leaves a dangling reference fails foreign_key_check and rolls back too
     monkeypatch.setattr(
-        db, "MIGRATIONS", {2: lambda conn: conn.execute("UPDATE trip_items SET trip_id=999")}
+        db,
+        "MIGRATIONS",
+        {**db.MIGRATIONS, NEXT: lambda conn: conn.execute("UPDATE trip_items SET trip_id=999")},
     )
     with pytest.raises(sqlite3.IntegrityError, match="foreign_key_check"):
         Ledger.open(tmp_ledger_path)
     con = sqlite3.connect(tmp_ledger_path)
     try:
-        assert con.execute("SELECT v FROM schema_version").fetchone()[0] == 1
+        assert con.execute("SELECT v FROM schema_version").fetchone()[0] == CURRENT
         assert con.execute("SELECT trip_id FROM trip_items").fetchone()[0] == 10
     finally:
         con.close()
@@ -468,12 +479,12 @@ def test_a_step_that_commits_is_refused(monkeypatch, tmp_ledger_path, next_versi
         conn.execute("ALTER TABLE trips ADD COLUMN synthetic_note TEXT")
         conn.execute("COMMIT")
 
-    monkeypatch.setattr(db, "MIGRATIONS", {2: committing})
+    monkeypatch.setattr(db, "MIGRATIONS", {**db.MIGRATIONS, NEXT: committing})
     with pytest.raises(RuntimeError, match="transaction"):
         Ledger.open(tmp_ledger_path)
     con = sqlite3.connect(tmp_ledger_path)
     try:
-        assert con.execute("SELECT v FROM schema_version").fetchone()[0] == 1
+        assert con.execute("SELECT v FROM schema_version").fetchone()[0] == CURRENT
     finally:
         con.close()
 
@@ -486,7 +497,7 @@ def test_three_openers_race_a_brand_new_file(tmp_ledger_path):
         try:
             barrier.wait(timeout=10)
             with Ledger.open(tmp_ledger_path) as led:
-                assert led.version() == 1
+                assert led.version() == CURRENT
         except BaseException as exc:  # noqa: BLE001
             errors.append(exc)
 
@@ -498,14 +509,14 @@ def test_three_openers_race_a_brand_new_file(tmp_ledger_path):
     assert errors == []
     with Ledger.open(tmp_ledger_path) as led:
         assert led.conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0] == 1
-        assert led.version() == 1
+        assert led.version() == CURRENT
 
 
 def test_a_failed_open_releases_the_file(monkeypatch, tmp_ledger_path, next_version):
     def boom(conn):
         raise RuntimeError("boom")
 
-    monkeypatch.setattr(db, "MIGRATIONS", {2: boom})
+    monkeypatch.setattr(db, "MIGRATIONS", {**db.MIGRATIONS, NEXT: boom})
     with pytest.raises(RuntimeError, match="boom"):
         Ledger.open(tmp_ledger_path)
     con = sqlite3.connect(tmp_ledger_path, isolation_level=None, timeout=0)
@@ -598,10 +609,13 @@ def test_the_sync_columns_take_only_their_words():
             led.trip_items.update(iid, **{column: word})
     with pytest.raises(sqlite3.IntegrityError, match="NOT NULL constraint failed"):
         led.trip_items.update(iid, sync_state=None)
-    # the schema lists exactly these words, no more and no fewer
+    # the schema lists exactly these words, no more and no fewer (the covers table's own `state`
+    # would shadow uploads'; its words are pinned by `test_covers_take_only_their_words`)
     listed = {
         column: tuple(re.findall(r"'(\w+)'", words))
-        for column, words in re.findall(r"CHECK \((\w+) IN \(([^)]*)\)\)", db.SCHEMA)
+        for column, words in re.findall(
+            r"CHECK \((\w+) IN \(([^)]*)\)\)", db.SCHEMA.split("-- covers:")[0]
+        )
     }
     assert listed == {
         "outcome": ("filed", "updated", "duplicate", "ignored", "failed"),
@@ -728,7 +742,7 @@ def test_a_new_ledger_carries_its_shape_and_opens_again(tmp_path, monkeypatch):
     with Ledger.open(path) as led:
         assert led.kv.get("schema_shape") == db.SCHEMA_SHAPE
     with Ledger.open(path) as led:
-        assert led.version() == 1 and led.kv.get("schema_shape") == db.SCHEMA_SHAPE
+        assert led.version() == CURRENT and led.kv.get("schema_shape") == db.SCHEMA_SHAPE
 
     # three openers racing on a new file, each opening it again and again, leave one version row
     # and one shape row, and none of them is refused, even when the shape row takes a while to
@@ -769,7 +783,7 @@ def test_a_new_ledger_carries_its_shape_and_opens_again(tmp_path, monkeypatch):
         assert errors == []
         con = sqlite3.connect(fresh)
         try:
-            assert con.execute("SELECT v FROM schema_version").fetchall() == [(1,)]
+            assert con.execute("SELECT v FROM schema_version").fetchall() == [(CURRENT,)]
             shapes = con.execute("SELECT v FROM kv WHERE k='schema_shape'").fetchall()
             assert shapes == [(db.SCHEMA_SHAPE,)]
         finally:
@@ -777,13 +791,15 @@ def test_a_new_ledger_carries_its_shape_and_opens_again(tmp_path, monkeypatch):
     monkeypatch.setattr(Ledger, "migrate", real_migrate)
 
     # a migration step writes the shape with the version, whatever the step did to kv
-    monkeypatch.setattr(db, "RELEASED_SHAPES", {1: db.SCHEMA_SHAPE})
-    monkeypatch.setattr(db, "SCHEMA_VERSION", 2)
+    monkeypatch.setattr(db, "RELEASED_SHAPES", {**db.RELEASED_SHAPES, CURRENT: db.SCHEMA_SHAPE})
+    monkeypatch.setattr(db, "SCHEMA_VERSION", NEXT)
     monkeypatch.setattr(
-        db, "MIGRATIONS", {2: lambda conn: conn.execute("DELETE FROM kv WHERE k='schema_shape'")}
+        db,
+        "MIGRATIONS",
+        {**db.MIGRATIONS, NEXT: lambda conn: conn.execute("DELETE FROM kv WHERE k='schema_shape'")},
     )
     with Ledger.open(path) as led:
-        assert led.version() == 2 and led.kv.get("schema_shape") == db.SCHEMA_SHAPE
+        assert led.version() == NEXT and led.kv.get("schema_shape") == db.SCHEMA_SHAPE
 
 
 def _spy_on_reads_alone(monkeypatch, directory) -> list:
@@ -961,7 +977,7 @@ def test_a_ledger_is_copied_beside_itself_before_its_first_upgrade_step(
     monkeypatch, tmp_ledger_path, next_schema, caplog
 ):
     at = dt.datetime.now(dt.UTC).replace(microsecond=0)
-    name = f"ledger-before-v2-{at.strftime('%Y%m%dT%H%M%SZ')}.db"
+    name = f"ledger-before-v{NEXT}-{at.strftime('%Y%m%dT%H%M%SZ')}.db"
     copy = tmp_ledger_path.with_name(name)
     seen_in_step = []
 
@@ -970,28 +986,30 @@ def test_a_ledger_is_copied_beside_itself_before_its_first_upgrade_step(
         seen_in_step.append((_copies(tmp_ledger_path), _version_of(copy)))
         _add_the_note(conn)
 
-    monkeypatch.setattr(db, "SCHEMA_VERSION", 2)
-    monkeypatch.setattr(db, "MIGRATIONS", {2: step})
+    monkeypatch.setattr(db, "SCHEMA_VERSION", NEXT)
+    monkeypatch.setattr(db, "MIGRATIONS", {**db.MIGRATIONS, NEXT: step})
     caplog.set_level(logging.INFO, logger="tripbox")
     with util.clock_at(at), Ledger.open(tmp_ledger_path) as led:
-        assert led.version() == 2 and led.trips.get(10)["title"] == "Lisbon"
-    assert seen_in_step == [([copy], 1)]
+        assert led.version() == NEXT and led.trips.get(10)["title"] == "Lisbon"
+    assert seen_in_step == [([copy], CURRENT)]
     assert stat.S_IMODE(copy.stat().st_mode) == 0o600
     assert [p.name for p in tmp_ledger_path.parent.iterdir() if p.suffix == ".part"] == []
     with Ledger.memory():
         pass
-    # the copy is the ledger as it was: version 1, its rows, no column of version 2
+    # the copy is the ledger as it was: its version, its rows, no column of the next
     con = sqlite3.connect(copy)
     try:
         assert con.execute("SELECT v FROM kv WHERE k='schema_shape'").fetchone()[0] == (
-            db.RELEASED_SHAPES[1]
+            db.RELEASED_SHAPES[CURRENT]
         )
         assert con.execute("SELECT title FROM trips WHERE id=10").fetchone()[0] == "Lisbon"
         assert "synthetic_note" not in {r[1] for r in con.execute("PRAGMA table_info(trips)")}
     finally:
         con.close()
     said = [r.getMessage() for r in caplog.records if r.name.startswith("tripbox.ledger")]
-    assert said == [f"the ledger is upgraded from version 1 to 2; a copy is kept as {name}"]
+    assert said == [
+        f"the ledger is upgraded from version {CURRENT} to {NEXT}; a copy is kept as {name}"
+    ]
     # opened again, it is of this version: nothing more is copied
     with Ledger.open(tmp_ledger_path):
         pass
@@ -1031,7 +1049,7 @@ def test_an_upgrade_whose_copy_cannot_be_written_changes_nothing(
         Ledger.open(tmp_ledger_path)
     assert str(refused.value) == NOT_COPIED
     assert next_version == []  # the step never ran
-    assert _version_of(tmp_ledger_path) == 1 and files() == before
+    assert _version_of(tmp_ledger_path) == CURRENT and files() == before
     assert sorted(p.name for p in tmp_path.iterdir() if p.name.endswith(".part")) == []
     # as a command says it
     _settings_for(monkeypatch, tmp_path, tmp_path)
@@ -1039,7 +1057,7 @@ def test_an_upgrade_whose_copy_cannot_be_written_changes_nothing(
         assert cli.main(["upcoming"]) == 2
     said = capsys.readouterr()
     assert said.err.splitlines() == [f"ledger: {NOT_COPIED}"] and said.out == ""
-    assert _version_of(tmp_ledger_path) == 1 and next_version == []
+    assert _version_of(tmp_ledger_path) == CURRENT and next_version == []
 
 
 def test_a_step_that_adds_an_indexed_column_ends_in_a_new_ledgers_shape(
@@ -1047,7 +1065,7 @@ def test_a_step_that_adds_an_indexed_column_ends_in_a_new_ledgers_shape(
 ):
     with Ledger.open(tmp_ledger_path) as led:
         upgraded = _shape(led)
-        assert led.version() == 2 and led.kv.get("schema_shape") == db.SCHEMA_SHAPE
+        assert led.version() == NEXT and led.kv.get("schema_shape") == db.SCHEMA_SHAPE
     with Ledger.open(tmp_path / "new" / "ledger.db") as led:
         assert _shape(led) == upgraded
         assert "trips_note" in upgraded[1] and "synthetic_note" in upgraded[0]["trips"]
@@ -1059,14 +1077,14 @@ def test_a_step_that_forgets_what_the_schema_adds_changes_nothing(
     def no_index(conn):
         conn.execute("ALTER TABLE trips ADD COLUMN synthetic_note TEXT")
 
-    monkeypatch.setattr(db, "SCHEMA_VERSION", 2)
-    monkeypatch.setattr(db, "MIGRATIONS", {2: no_index})
-    wrong = "^migration to v2 does not end in this version's schema$"
+    monkeypatch.setattr(db, "SCHEMA_VERSION", NEXT)
+    monkeypatch.setattr(db, "MIGRATIONS", {**db.MIGRATIONS, NEXT: no_index})
+    wrong = f"^migration to v{NEXT} does not end in this version's schema$"
     with pytest.raises(RuntimeError, match=wrong):
         Ledger.open(tmp_ledger_path)
     con = sqlite3.connect(tmp_ledger_path)
     try:
-        assert con.execute("SELECT v FROM schema_version").fetchone()[0] == 1
+        assert con.execute("SELECT v FROM schema_version").fetchone()[0] == CURRENT
         assert "synthetic_note" not in {r[1] for r in con.execute("PRAGMA table_info(trips)")}
     finally:
         con.close()
@@ -1092,10 +1110,10 @@ def test_a_rebuilt_table_keeps_its_id_sequence(monkeypatch, tmp_ledger_path, nex
         conn.execute("CREATE INDEX trips_dates ON trips(start_date, end_date)")
         conn.execute("CREATE INDEX trips_note ON trips(synthetic_note)")
 
-    monkeypatch.setattr(db, "SCHEMA_VERSION", 2)
-    monkeypatch.setattr(db, "MIGRATIONS", {2: rebuild})
+    monkeypatch.setattr(db, "SCHEMA_VERSION", NEXT)
+    monkeypatch.setattr(db, "MIGRATIONS", {**db.MIGRATIONS, NEXT: rebuild})
     with Ledger.open(tmp_ledger_path) as led:
-        assert led.version() == 2 and "synthetic_note" in _trip_columns(led)
+        assert led.version() == NEXT and "synthetic_note" in _trip_columns(led)
         assert led.trips.get(10)["title"] == "Lisbon" and len(led.trip_items.by_trip(10)) == 1
         assert led.conn.execute("PRAGMA foreign_key_check").fetchall() == []
         given = led.conn.execute("SELECT seq FROM sqlite_sequence WHERE name='trips'").fetchone()
@@ -1108,16 +1126,16 @@ def test_a_rebuilt_table_keeps_its_id_sequence(monkeypatch, tmp_ledger_path, nex
 def test_a_ledger_from_a_newer_version_is_refused_untouched(
     monkeypatch, tmp_path, tmp_ledger_path, capsys
 ):
-    _seed_v1(tmp_ledger_path)
+    _seed_current(tmp_ledger_path)
     con = sqlite3.connect(tmp_ledger_path)
-    con.execute("UPDATE schema_version SET v=2")
+    con.execute(f"UPDATE schema_version SET v={NEXT}")
     con.commit()
     con.close()
     before = _state(tmp_path)
     assert list(before) == ["ledger.db"]
     with pytest.raises(db.OutdatedLedger) as refused:
         Ledger.open(tmp_ledger_path)
-    newer = NEWER.format(v=2, max=1)
+    newer = NEWER.format(v=NEXT, max=CURRENT)
     assert str(refused.value) == newer
     assert _state(tmp_path) == before
     _settings_for(monkeypatch, tmp_path, tmp_path)
@@ -1134,7 +1152,7 @@ def test_an_older_ledger_that_states_no_released_shape_is_refused(
     with, and only when a step leads to every version after it; else it is refused untouched."""
     before = _state(tmp_path)
     released = dict(db.RELEASED_SHAPES)
-    for shapes, steps in (({}, None), ({1: "0" * 12}, None), (released, {})):
+    for shapes, steps in (({}, None), ({CURRENT: "0" * 12}, None), (released, {})):
         monkeypatch.setattr(db, "RELEASED_SHAPES", shapes)
         if steps is not None:
             monkeypatch.setattr(db, "MIGRATIONS", steps)
@@ -1155,10 +1173,10 @@ def test_a_step_that_fails_at_every_start_leaves_one_copy(
         _add_the_note(conn)
         raise RuntimeError("boom")
 
-    monkeypatch.setattr(db, "SCHEMA_VERSION", 2)
-    monkeypatch.setattr(db, "MIGRATIONS", {2: failing})
+    monkeypatch.setattr(db, "SCHEMA_VERSION", NEXT)
+    monkeypatch.setattr(db, "MIGRATIONS", {**db.MIGRATIONS, NEXT: failing})
     at = dt.datetime.now(dt.UTC).replace(microsecond=0)
-    killed = tmp_ledger_path.with_name("ledger-before-v2-20000101T000000Z.db.part")
+    killed = tmp_ledger_path.with_name(f"ledger-before-v{NEXT}-20000101T000000Z.db.part")
     left = [killed, *(killed.with_name(killed.name + end) for end in ("-wal", "-shm", "-journal"))]
     for p in left:
         p.write_bytes(b"half a copy")
@@ -1166,8 +1184,8 @@ def test_a_step_that_fails_at_every_start_leaves_one_copy(
         with util.clock_at(at + dt.timedelta(minutes=minutes)), pytest.raises(RuntimeError):
             Ledger.open(tmp_ledger_path)
     (first,) = _copies(tmp_ledger_path)
-    assert first.name == f"ledger-before-v2-{at.strftime('%Y%m%dT%H%M%SZ')}.db"
-    assert [p for p in left if p.exists()] == [] and _version_of(tmp_ledger_path) == 1
+    assert first.name == f"ledger-before-v{NEXT}-{at.strftime('%Y%m%dT%H%M%SZ')}.db"
+    assert [p for p in left if p.exists()] == [] and _version_of(tmp_ledger_path) == CURRENT
     con = sqlite3.connect(tmp_ledger_path)
     with con:
         con.execute("INSERT INTO kv(k, v) VALUES ('changed', '1')")
@@ -1187,8 +1205,8 @@ def test_an_earlier_copy_this_user_cannot_read_is_not_the_same(
         _add_the_note(conn)
         raise RuntimeError("boom")
 
-    monkeypatch.setattr(db, "SCHEMA_VERSION", 2)
-    monkeypatch.setattr(db, "MIGRATIONS", {2: failing})
+    monkeypatch.setattr(db, "SCHEMA_VERSION", NEXT)
+    monkeypatch.setattr(db, "MIGRATIONS", {**db.MIGRATIONS, NEXT: failing})
     at = dt.datetime.now(dt.UTC).replace(microsecond=0)
     with util.clock_at(at), pytest.raises(RuntimeError, match="boom"):
         Ledger.open(tmp_ledger_path)
@@ -1201,7 +1219,7 @@ def test_an_earlier_copy_this_user_cannot_read_is_not_the_same(
     with util.clock_at(at + dt.timedelta(minutes=1)), pytest.raises(RuntimeError, match="boom"):
         Ledger.open(tmp_ledger_path)
     assert len(_copies(tmp_ledger_path)) == 2 and first.exists()
-    assert _version_of(tmp_ledger_path) == 1
+    assert _version_of(tmp_ledger_path) == CURRENT
 
 
 def _with_a_tag(schema: str) -> str:
@@ -1217,12 +1235,12 @@ def test_a_ledger_two_versions_behind_survives_a_step_that_fails_once(
     """Two steps, each committed alone: one that is not the last states the shape its version
     was released with, so a ledger left between them (the later step failed, or another role
     opens it meanwhile) is an older ledger to upgrade, never one refused for good."""
-    v2 = next_schema
-    v3 = _with_a_tag(v2)
-    monkeypatch.setattr(db, "RELEASED_SHAPES", {**db.RELEASED_SHAPES, 2: _digest(v2)})
-    monkeypatch.setattr(db, "SCHEMA", v3)
-    monkeypatch.setattr(db, "SCHEMA_SHAPE", _digest(v3))
-    monkeypatch.setattr(db, "SCHEMA_VERSION", 3)
+    v_next = next_schema
+    v_last = _with_a_tag(v_next)
+    monkeypatch.setattr(db, "RELEASED_SHAPES", {**db.RELEASED_SHAPES, NEXT: _digest(v_next)})
+    monkeypatch.setattr(db, "SCHEMA", v_last)
+    monkeypatch.setattr(db, "SCHEMA_SHAPE", _digest(v_last))
+    monkeypatch.setattr(db, "SCHEMA_VERSION", NEXT + 1)
     between: list = []
     failures = [RuntimeError("boom")]
 
@@ -1237,22 +1255,24 @@ def test_a_ledger_two_versions_behind_survives_a_step_that_fails_once(
         if failures:
             raise failures.pop()
 
-    monkeypatch.setattr(db, "MIGRATIONS", {2: _add_the_note, 3: tag})
+    monkeypatch.setattr(db, "MIGRATIONS", {**db.MIGRATIONS, NEXT: _add_the_note, NEXT + 1: tag})
     with pytest.raises(RuntimeError, match="boom"):
         Ledger.open(tmp_ledger_path)
     con = sqlite3.connect(tmp_ledger_path)
     try:
-        assert db._stated_version(con) == 2
-        assert con.execute("SELECT v FROM kv WHERE k='schema_shape'").fetchone()[0] == _digest(v2)
+        assert db._stated_version(con) == NEXT
+        assert con.execute("SELECT v FROM kv WHERE k='schema_shape'").fetchone()[0] == _digest(
+            v_next
+        )
     finally:
         con.close()
     with Ledger.open(tmp_ledger_path) as led:
-        assert led.version() == 3 and led.kv.get("schema_shape") == db.SCHEMA_SHAPE
+        assert led.version() == NEXT + 1 and led.kv.get("schema_shape") == db.SCHEMA_SHAPE
         assert {"synthetic_note", "synthetic_tag"} <= _trip_columns(led)
         assert led.trips.get(10)["title"] == "Lisbon" and len(led.trip_items.by_trip(10)) == 1
-    assert between == [2, 2]
+    assert between == [NEXT, NEXT]
     # the copy made at each try states the version it was made at
-    assert sorted(_version_of(c) for c in _copies(tmp_ledger_path)) == [1, 2]
+    assert sorted(_version_of(c) for c in _copies(tmp_ledger_path)) == [CURRENT, NEXT]
 
 
 def test_a_step_short_of_this_version_without_a_released_shape_is_refused(monkeypatch):
@@ -1261,7 +1281,7 @@ def test_a_step_short_of_this_version_without_a_released_shape_is_refused(monkey
     db._each_step_is_released()  # as imported
     monkeypatch.setattr(db, "SCHEMA_VERSION", 3)
     monkeypatch.setattr(db, "RELEASED_SHAPES", {1: "0" * 12})
-    monkeypatch.setattr(db, "MIGRATIONS", {2: _add_the_note, 3: _add_the_note})
+    monkeypatch.setattr(db, "MIGRATIONS", {**db.MIGRATIONS, NEXT: _add_the_note, 3: _add_the_note})
     with pytest.raises(RuntimeError, match="^the step to v2 has no released shape$"):
         db._each_step_is_released()
     monkeypatch.setattr(db, "RELEASED_SHAPES", {1: "0" * 12, 2: "1" * 12})
@@ -1319,3 +1339,172 @@ def test_the_released_v1_schema_is_not_edited_in_place():
     else:
         assert db.RELEASED_SHAPES.get(1) == released_v1
         assert 2 in db.MIGRATIONS
+
+
+V1_SCHEMA = Path(__file__).parent / "data" / "ledger_v1_schema.sql"
+
+
+def _make_v1(path) -> None:
+    """A ledger as version 1 wrote it: the released SCHEMA text (a frozen copy, so this does not
+    follow db.py), stamped with the version and shape it was released with, holding rows."""
+    text = V1_SCHEMA.read_text()
+    assert _digest(text) == "10bd0c645b14"
+    conn = sqlite3.connect(path, isolation_level=None)
+    conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("PRAGMA foreign_keys=ON")
+        conn.executescript(text)
+        conn.execute("INSERT INTO schema_version(v) VALUES (1)")
+        conn.execute("INSERT INTO kv(k, v) VALUES ('schema_shape', '10bd0c645b14')")
+        conn.execute("INSERT INTO kv(k, v) VALUES ('last_uid', '41')")
+        mid = conn.execute(
+            "INSERT INTO messages(sha256, source, status, created_at)"
+            " VALUES ('s1', 'cli', 'processed', '2031-03-01T00:00:00+00:00')"
+        ).lastrowid
+        conn.execute(
+            "INSERT INTO trips(id, title, place, start_date, end_date, created_at, updated_at)"
+            " VALUES (10, 'Lisbon', 'Lisbon, Portugal', '2031-03-14', '2031-03-21',"
+            " '2031-03-01T00:00:00+00:00', '2031-03-01T00:00:00+00:00')"
+        )
+        conn.execute(
+            "INSERT INTO trip_items(trip_id, item_key, kind, status, start_at, payload_json,"
+            " passengers_json, source_message_id, created_at, updated_at)"
+            " VALUES (10,"
+            " 'ZZ|9001|2031-03-14|STL', 'flight', 'confirmed', '2031-03-14T09:30', '{}', '[]', ?,"
+            " '2031-03-01T00:00:00+00:00',"
+            " '2031-03-01T00:00:00+00:00')",
+            (mid,),
+        )
+        conn.execute(
+            "INSERT INTO share_links(trip_id, token, token_hash, shows, created_at)"
+            " VALUES (10, 't', 'h', '[]', '2031-03-01T00:00:00+00:00')"
+        )
+    finally:
+        conn.close()
+
+
+def _rows_of(path) -> dict:
+    con = sqlite3.connect(path)
+    try:
+        return {
+            t: con.execute(f"SELECT * FROM {t} ORDER BY 1").fetchall()
+            for t in ("kv", "messages", "trips", "trip_items", "share_links")
+        }
+    finally:
+        con.close()
+
+
+def test_a_released_v1_ledger_upgrades_to_v2_and_keeps_every_row(tmp_ledger_path):
+    _make_v1(tmp_ledger_path)
+    before = _rows_of(tmp_ledger_path)
+    at = dt.datetime.now(dt.UTC).replace(microsecond=0)
+    with util.clock_at(at), Ledger.open(tmp_ledger_path) as led:
+        assert led.version() == 2 and led.kv.get("schema_shape") == db.SCHEMA_SHAPE
+        assert led.covers.all_for_lookup() == []
+        expected = {t: c.split() for t, c in EXPECTED_COLUMNS.items()}
+        assert _shape(led) == (expected, EXPECTED_INDEXES)
+    after = _rows_of(tmp_ledger_path)
+    shape = {r[0]: r[1] for r in before["kv"]}["schema_shape"]
+    assert shape == "10bd0c645b14"
+    for table in ("messages", "trips", "trip_items", "share_links"):
+        assert after[table] == before[table]
+    assert {k: v for k, v in after["kv"] if k != "schema_shape"} == {
+        k: v for k, v in before["kv"] if k != "schema_shape"
+    }
+    # the file as version 1 left it is kept beside the ledger
+    (copy,) = _copies(tmp_ledger_path)
+    assert copy.name == f"ledger-before-v2-{at.strftime('%Y%m%dT%H%M%SZ')}.db"
+    assert _version_of(copy) == 1 and _rows_of(copy) == before
+    cc = sqlite3.connect(copy)
+    try:
+        assert cc.execute("SELECT name FROM sqlite_master WHERE name='covers'").fetchall() == []
+    finally:
+        cc.close()
+
+
+def test_deleting_a_trip_takes_its_cover(tmp_ledger_path):
+    with Ledger.open(tmp_ledger_path) as led:
+        led.trips.insert(
+            title="A", place=None, start_date="2027-05-01", end_date="2027-05-02", id=1
+        )
+        led.trips.insert(
+            title="B", place=None, start_date="2027-06-01", end_date="2027-06-02", id=2
+        )
+        led.covers.put(1, source="owner", state="ready", large=b"L", small=b"S")
+        led.covers.put(2, source="wikimedia", state="none")
+        led.trips.delete(1)
+        assert led.covers.get(1) is None and led.covers.get(2) is not None
+        assert led.conn.execute("PRAGMA foreign_key_check").fetchall() == []
+
+
+def test_covers_round_trip(tmp_ledger_path):
+    with Ledger.open(tmp_ledger_path) as led:
+        for n in (1, 2, 3):
+            led.trips.insert(
+                title=f"T{n}", place=None, start_date="2027-05-01", end_date="2027-05-02", id=n
+            )
+        assert led.covers.get(1) is None and led.covers.by_digest("d1") is None
+        with util.clock_at(dt.datetime(2027, 5, 1, 8, tzinfo=dt.UTC)):
+            led.covers.put(1, source="owner", state="pending", upload=b"raw", digest="d1")
+        with util.clock_at(dt.datetime(2027, 5, 1, 9, tzinfo=dt.UTC)):
+            led.covers.put(2, source="owner", state="pending", upload=b"raw2", digest="d2")
+        row = led.covers.get(1)
+        assert (row["source"], row["state"], row["upload"], row["attempts"]) == (
+            "owner",
+            "pending",
+            b"raw",
+            0,
+        )
+        assert row["created_at"] == row["updated_at"] == "2027-05-01T08:00:00+00:00"
+        assert led.covers.by_digest("d2")["trip_id"] == 2
+        assert led.covers.pending_upload()["trip_id"] == 1  # the oldest
+        # an upsert changes the fields given, keeps the rest and created_at, stamps updated_at
+        with util.clock_at(dt.datetime(2027, 5, 1, 10, tzinfo=dt.UTC)):
+            led.covers.put(1, state="ready", large=b"L", small=b"S", upload=None)
+        row = led.covers.get(1)
+        assert (row["state"], row["digest"], row["large"], row["upload"]) == (
+            "ready",
+            "d1",
+            b"L",
+            None,
+        )
+        assert row["created_at"] == "2027-05-01T08:00:00+00:00"
+        assert row["updated_at"] == "2027-05-01T10:00:00+00:00"
+        assert led.covers.pending_upload()["trip_id"] == 2
+        led.covers.put(3, source="wikimedia", state="pending")  # not an owner's upload
+        led.covers.put(2, state="failed")
+        assert led.covers.pending_upload() is None
+        # all_for_lookup carries no image
+        looked = led.covers.all_for_lookup()
+        assert [r["trip_id"] for r in looked] == [1, 2, 3]
+        assert "large" not in looked[0].keys() and "upload" not in looked[0].keys()
+        # move
+        led.covers.delete(3)
+        led.covers.move(2, 3)
+        assert led.covers.get(2) is None and led.covers.get(3)["digest"] == "d2"
+        led.covers.delete(3)
+        assert led.covers.get(3) is None
+        with pytest.raises(ValueError):
+            led.covers.put(1, bogus=1)
+        with pytest.raises(sqlite3.IntegrityError):
+            led.covers.put(1, source="elsewhere")
+
+
+def test_covers_take_only_their_words():
+    with Ledger.memory() as led:
+        led.trips.insert(
+            title="A", place=None, start_date="2027-05-01", end_date="2027-05-02", id=1
+        )
+        for fields in (
+            {"source": "owner", "state": "ready"},
+            {"source": "removed", "state": "none"},
+        ):
+            led.covers.put(1, **fields)
+        for fields in (
+            {"source": "flickr", "state": "ready"},
+            {"source": "owner", "state": "done"},
+        ):
+            with pytest.raises(sqlite3.IntegrityError, match="CHECK constraint failed"):
+                led.covers.put(1, **fields)
+        with pytest.raises(sqlite3.IntegrityError, match="FOREIGN KEY constraint failed"):
+            led.covers.put(2, source="owner", state="ready")

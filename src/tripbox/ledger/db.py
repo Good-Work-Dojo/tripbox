@@ -22,7 +22,22 @@ from tripbox.log import FILE_ONLY
 
 log = logging.getLogger("tripbox.ledger")
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+
+
+def _add_covers(conn: sqlite3.Connection) -> None:
+    """Version 2: the covers table, empty."""
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS covers("
+        " trip_id INTEGER PRIMARY KEY REFERENCES trips(id) ON DELETE CASCADE,"
+        " source TEXT NOT NULL CHECK (source IN ('owner','wikimedia','removed')),"
+        " state TEXT NOT NULL CHECK (state IN ('pending','ready','none','failed')),"
+        " place TEXT, digest TEXT, large BLOB, small BLOB, upload BLOB, credit_json TEXT,"
+        " error TEXT, attempts INTEGER NOT NULL DEFAULT 0, retry_after TEXT,"
+        " created_at TEXT NOT NULL, updated_at TEXT NOT NULL)"
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS covers_digest ON covers(digest)")
+
 
 # Steps keyed by the version they produce; each takes the open connection and runs inside one
 # transaction with foreign keys off (see Ledger._apply). A step uses `conn.execute` only and never
@@ -30,14 +45,14 @@ SCHEMA_VERSION = 1
 # step non-atomic and releases the write lock a waiting opener needs held. SCHEMA never runs on a
 # ledger of an older version: the steps make everything the new version adds, and the last one
 # commits only if the ledger then has a new ledger's tables, columns and indexes. A table is
-# rebuilt with `rebuild_table`. Empty until the first schema change after release.
-MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {}
+# rebuilt with `rebuild_table`.
+MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {2: _add_covers}
 
 # The shape (SCHEMA_SHAPE) each released version's ledger states, by its version: a ledger of an
 # older version is upgraded only from the shape that version was released with. A step to a
 # version short of this one stamps that version's entry, so every such step needs one
 # (`_each_step_is_released`, at import).
-RELEASED_SHAPES: dict[int, str] = {}
+RELEASED_SHAPES: dict[int, str] = {1: "10bd0c645b14"}
 
 
 def _each_step_is_released() -> None:
@@ -228,9 +243,32 @@ CREATE TABLE IF NOT EXISTS share_links(
   revoked_at TEXT
 );
 CREATE INDEX IF NOT EXISTS share_links_trip ON share_links(trip_id);
+-- covers: the cover photo of a trip, one row at most. source is where it came from (owner: an
+-- upload, wikimedia: found by the worker, removed: the owner took it off and none is looked for);
+-- state is pending (waiting for the worker), ready (large and small are set), none (nothing
+-- found; retry_after says when to look again) or failed (error and attempts say why).
+-- upload holds an owner's file until the worker has made the two JPEGs; credit_json the
+-- attribution a found photo carries. A trip that goes for good takes its cover with it.
+CREATE TABLE IF NOT EXISTS covers(
+  trip_id INTEGER PRIMARY KEY REFERENCES trips(id) ON DELETE CASCADE,
+  source TEXT NOT NULL CHECK (source IN ('owner','wikimedia','removed')),
+  state TEXT NOT NULL CHECK (state IN ('pending','ready','none','failed')),
+  place TEXT,
+  digest TEXT,
+  large BLOB,
+  small BLOB,
+  upload BLOB,
+  credit_json TEXT,
+  error TEXT,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  retry_after TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS covers_digest ON covers(digest);
 """
 
-# What SCHEMA says, white space aside. Version 1 is released, so an in-place edit of SCHEMA is
+# What SCHEMA says, white space aside. Version 1 is released, so an in-place edit of its text is
 # refused by a test and a change goes through a migration. The version alone cannot tell a ledger
 # made before an edit: every ledger states the shape it was written with (`kv` row
 # `schema_shape`), and one stating another shape than its version's (this one's, or an older
@@ -550,6 +588,7 @@ class Ledger:
         self.sessions = repo.Sessions(conn)
         self.devices = repo.Devices(conn)
         self.shares = repo.Shares(conn)
+        self.covers = repo.Covers(conn)
 
     @classmethod
     def open(cls, path: Path | str) -> Ledger:
