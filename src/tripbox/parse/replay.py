@@ -27,9 +27,9 @@ log = logging.getLogger("tripbox.replay")
 
 WIRE_SCHEMA_VERSION: int = 1
 # The errors a replay raises, each a ModelError of kind `invalid` whose text is one of these: no
-# stored answer, one that cannot be read, one that does not fit the wire schema. The rehearsal
-# counts such a message as failed, whatever the pipeline made of kitinerary's partial reading, and
-# reports it with the problem code each maps to.
+# stored answer, one that cannot be read, one that does not fit the wire schema. The pipeline
+# fails such a message, filing nothing kitinerary read of it in part; the rehearsal counts it as
+# failed and reports it with the problem code each maps to.
 NO_ANSWER = "no recorded answer"
 UNREADABLE = "recorded answer unreadable"
 OFF_SCHEMA = f"recorded answer does not fit wire schema {WIRE_SCHEMA_VERSION}"

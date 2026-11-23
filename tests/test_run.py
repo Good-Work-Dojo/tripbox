@@ -433,6 +433,82 @@ def test_a_refused_or_cut_short_answer_fails_the_message_once_and_is_not_asked_a
             assert asked.calls == 2, kind
 
 
+def part_read(monkeypatch) -> None:
+    """The structured-data extractor reads a flight of every email in part: no departure time,
+    so the model is asked."""
+    obj = flight_obj("SAMPLE/ALEX QUINN", "14A")
+    del obj["reservationFor"]["departureTime"]
+    monkeypatch.setattr(pl.kitinerary, "run_extractor", lambda data, suffix, context: [obj])
+
+
+def test_an_email_read_in_part_waits_for_the_model_as_one_read_not_at_all(
+    tmp_path, monkeypatch
+):
+    """The extractor read the email only in part and the model, over its cap, cannot read the
+    rest: the part read is not filed; the message waits, told once, and once the cap allows the
+    next poll reads it with the model."""
+    entry = read_by_the_model()[0]
+    at = corpus.sent(entry)
+    with pipeline(tmp_path, monkeypatch, TRIPBOX_LLM_MONTHLY_BUDGET_USD="1.00") as (
+        ctx,
+        asked,
+        told,
+    ):
+        part_read(monkeypatch)
+        inbox = FakeInbox(messages={7: entry.raw}).new_to(ctx.ledger)
+        with util.clock_at(at):
+            spend(ctx, 1.00)
+            summary = runmod.poll(ctx, inbox)
+        assert summary.counts == {"waiting": 1} and inbox.copies == [] and asked.calls == 0
+        (row,) = ctx.ledger.messages.by_status("waiting")
+        assert row["error"] == "over_budget"
+        assert ctx.ledger.items.by_message(row["id"]) == [] and ctx.trips.all_trips() == []
+        assert told.of("budget_reached") == [MONTH.format(budget="1.00")]
+        assert told.of("filed") == []
+        capped(ctx, asked, TRIPBOX_LLM_MONTHLY_BUDGET_USD="2.00")
+        with util.clock_at(at + dt.timedelta(minutes=5)):
+            runmod.poll(ctx, inbox)
+        row = ctx.ledger.messages.get(row["id"])
+        assert (row["status"], row["parser"], row["error"]) == ("processed", "haiku", None)
+        assert asked.calls == 1
+
+
+def test_an_email_read_in_part_waits_while_no_model_is_set_up_or_one_is_down(
+    tmp_path, monkeypatch
+):
+    entry = read_by_the_model()[0]
+    at = corpus.sent(entry)
+    with pipeline(tmp_path / "none", monkeypatch, model=False) as (ctx, asked, told):
+        part_read(monkeypatch)
+        with util.clock_at(at):
+            res = runmod.process_raw(ctx, entry.raw, source="imap", uid=1)
+        assert (res.status, res.wait_reason, res.outcomes) == ("waiting", "no_model", [])
+        assert ctx.trips.all_trips() == [] and told.notices == []
+    with pipeline(tmp_path / "down", monkeypatch) as (ctx, asked, told):
+        part_read(monkeypatch)
+        asked.fails = ModelError("unavailable", "no connection", word="unreachable")
+        with util.clock_at(at):
+            res = runmod.process_raw(ctx, entry.raw, source="imap", uid=1)
+        assert (res.status, res.wait_reason, res.outcomes) == ("waiting", "model_down", [])
+        assert ctx.trips.all_trips() == [] and len(told.of("failure")) == 1
+
+
+def test_an_email_read_in_part_fails_when_the_model_s_answer_is_no_use(tmp_path, monkeypatch):
+    entry = read_by_the_model()[0]
+    at = corpus.sent(entry)
+    for kind in ("refused", "truncated", "invalid"):
+        with pipeline(tmp_path / kind, monkeypatch) as (ctx, asked, told):
+            part_read(monkeypatch)
+            asked.fails = ModelError(kind, f"the answer was {kind}")
+            with util.clock_at(at):
+                res = runmod.process_raw(ctx, entry.raw, source="imap", uid=1)
+            assert (res.status, res.label, res.outcomes) == ("failed", "tripbox/failed", []), kind
+            assert ctx.trips.all_trips() == [], kind
+            row = ctx.ledger.messages.get(res.message_row_id)
+            assert row["error"] == f"the answer was {kind}", kind
+            assert len(told.of("failure")) == 1 and told.of("filed") == [], kind
+
+
 def test_noise_without_reservations_is_ignored_quietly(tmp_path, monkeypatch):
     ctx, tg = make_ctx(tmp_path, monkeypatch, [])
     ctx.model = ReadsNothing()  # a model read it and found nothing: finished, not waiting

@@ -775,8 +775,8 @@ def test_recording_dates_a_forward_in_the_configured_zone(env, monkeypatch):
 
 def test_a_fixture_without_its_recorded_answer_fails_the_rehearsal(env, monkeypatch):
     """kitinerary reads part of the second email, so the pipeline asks the replay, which has no
-    answer: the pipeline files kitinerary's partial reading, marked to check, and the rehearsal
-    still counts the email as failed, since nothing tested it."""
+    answer: the pipeline fails the message, filing nothing of kitinerary's partial reading, and
+    the rehearsal counts the email as failed, since nothing tested it."""
     fixtures = env / "fixtures"
     fixtures.mkdir()
     answered = email(subject="Booking one", message_id="<zz1@example.com>")
@@ -802,7 +802,7 @@ def test_a_fixture_without_its_recorded_answer_fails_the_rehearsal(env, monkeypa
     assert second["items"] == [] and second["problems"] == ["no_recorded_answer"]
     led = sqlite3.connect(env / "data" / "ledger.db")
     statuses = [r[0] for r in led.execute("SELECT status FROM messages ORDER BY id")]
-    assert statuses == ["processed", "processed"]  # what the pipeline itself made of it
+    assert statuses == ["processed", "failed"]  # what the pipeline itself made of it
 
 
 @pytest.mark.parametrize(
@@ -816,8 +816,8 @@ def test_a_fixture_without_its_recorded_answer_fails_the_rehearsal(env, monkeypa
     ids=["unreadable", "off-schema", "not-json"],
 )
 def test_a_recorded_answer_that_cannot_be_used_fails_the_rehearsal(env, monkeypatch, spoil, code):
-    """As with no answer at all: kitinerary's partial reading of the second email is filed,
-    marked to check, but the replay tested nothing, so the email fails the rehearsal."""
+    """As with no answer at all: nothing of kitinerary's partial reading of the second email is
+    filed, and the replay tested nothing, so the email fails the rehearsal."""
     fixtures = env / "fixtures"
     fixtures.mkdir()
     answered = email(subject="Booking one", message_id="<zz1@example.com>")

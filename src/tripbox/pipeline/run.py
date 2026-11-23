@@ -100,9 +100,9 @@ ATTACHED_GIVEN_UP = (
     f"an email attached to it could not be filed after {MAX_RESUMES} tries, so it is no longer"
     " tried; add its booking by hand"
 )
-# Why a message nothing read is `waiting` (its `error`): no model is built, the model's cap is
-# reached, or the model cannot be reached. It is unlabelled in the mailbox, and the resume pass
-# of every poll reads it again once the reason is gone (`resume_waiting`).
+# Why a message no reader read whole is `waiting` (its `error`): no model is built, the model's
+# cap is reached, or the model cannot be reached. It is unlabelled in the mailbox, and the resume
+# pass of every poll reads it again once the reason is gone (`resume_waiting`).
 WAIT_REASONS = ("no_model", "over_budget", "model_down")
 # The period the last notice that the cap is reached was sent for (`budget.Budget.period`), and
 # when the model was last found unreachable, until it answers again: each is told once.
@@ -375,9 +375,10 @@ def _alert(ctx: Context, notify: bool, subject: str, error: str) -> None:
 
 
 def _wait_reason(ctx: Context, parsed: ParsedMessage) -> str | None:
-    """Why a message nothing read waits (WAIT_REASONS), or None when it does not: the model's
-    cap is reached or the model cannot be reached (`provider.WAITS`), or no model is built.
-    Any other failure of the model fails the message."""
+    """Why a message no reader read whole (the extractor read nothing of it, or only part)
+    waits (WAIT_REASONS), or None when it does not: the model's cap is reached or the model
+    cannot be reached (`provider.WAITS`), or no model is built. Any other failure of the model
+    fails the message."""
     if parsed.parser != "none":
         return None
     if parsed.error_kind == "over_budget":
@@ -840,11 +841,13 @@ def _process(
                 led.kv.set(KV_MODEL_ALERTED, "")
         ex = parsed.extraction
         real = [r for r in ex.reservations if r.kind != "other"]
-        if not real:
+        # no reader read it whole (`parser` none: the extractor read nothing, or only part of
+        # it, and the model gave no answer): what the extractor read in part is never filed
+        if parsed.parser == "none":
             reason = _wait_reason(ctx, parsed)
             if reason is not None:
-                # nothing read it, and only the model can: the message is not finished unread
-                # but waits, unlabelled, until the resume pass finds the reason gone
+                # only the model can read it: the message is not finished but waits,
+                # unlabelled, until the resume pass finds the reason gone
                 led.messages.update(row_id, status="waiting", error=reason)
                 log.info("message #%s waits (%s): '%s'", row_id, reason, shown(nm.subject))
                 if notify:
@@ -852,6 +855,7 @@ def _process(
                 return MessageResult(
                     row_id, "waiting", None, parsed=parsed, normalized=nm, wait_reason=reason
                 )
+        if not real or parsed.parser == "none":
             if parsed.parser == "none" and parsed.error:
                 led.messages.finish(
                     row_id,

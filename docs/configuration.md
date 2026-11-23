@@ -79,8 +79,9 @@ day before its last good poll, and knows what it has read already by its content
 
 On when `TRIPBOX_LLM_API_KEY` is set, unless `TRIPBOX_LLM_PROVIDER` is `none`, which keeps it off
 whatever else is set. With `openai` it is on when `TRIPBOX_LLM_MODEL` is set and a key, an address
-(`TRIPBOX_LLM_BASE_URL`) or both are; less is a problem. Without it only emails that carry
-structured data are read. Any other email waits: it is kept, its mailbox copy gets no label and
+(`TRIPBOX_LLM_BASE_URL`) or both are; less is a problem. Without it only emails whose
+structured data the extractor reads whole are read. Any other email, one it reads only in part
+included, waits: it is kept, its mailbox copy gets no label and
 nothing is sent about it, and `tripbox ingest` and `tripbox replay` print `waiting.` and why, such
 as `waiting. No model is set up, so it waits until one is.`, for it. The first poll once a model
 is set up reads it.

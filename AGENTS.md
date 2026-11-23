@@ -120,8 +120,8 @@ are also kept in an AirTrail flight log. One image runs three roles: `web`, `wor
   → the booking in the trip store. A model's answer is stored with its message
   (`messages.answer_json`, before the demo's date shift): a replay reads it back
   (`run.StoredAnswer`), `replay --reread` asks again. A message is read again
-  only when forced, never finished (`archived`), `failed` or `waiting` (nothing read it and the
-  model cannot now: `run.WAIT_REASONS`; a poll that reads the mailbox, or has none, reads it
+  only when forced, never finished (`archived`), `failed` or `waiting` (no reader read it whole,
+  nothing of a part kitinerary read is filed, and the model cannot now: `run.WAIT_REASONS`; a poll that reads the mailbox, or has none, reads it
   (`run.resume_waiting`), oldest first, until one waits again; all then wait for its reason), or
   when the owner hands in bytes the sender check rejected as mail (the row's source then becomes the
   owner's). The check (`TRIPBOX_MAIL_TRUST`) is `gmail` (an allowed From bound by Gmail's
