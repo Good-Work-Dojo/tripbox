@@ -119,8 +119,9 @@ Exit 0 when everything is done, 1 when a step failed, 2 on a usage error.
 
 ### Cutting a release after the first
 
-1. Add a `## [X.Y.Z]` section to `CHANGELOG.md` and set `version` in `pyproject.toml` to the same
-   number; both land on the default branch through a pull request.
+1. Add a `## [X.Y.Z] - YYYY-MM-DD` section to `CHANGELOG.md` (the day it is released) and set
+   `version` in `pyproject.toml` to the same number; both land on the default branch through a
+   pull request.
 2. Run `tools/maintainer/post-publish.sh --version vX.Y.Z --expect-sha <the merge commit>`
    (add `--dry-run` first to see what it would do): every switch is already as wanted, so it
    creates the release with `gh release create vX.Y.Z --target <sha>` (with `--latest=false` for a

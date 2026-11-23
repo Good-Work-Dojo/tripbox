@@ -5,8 +5,11 @@ file (and every `#anchor` at a heading), every setting named is a setting, every
 command is one the program has, every address is an example, loopback or a public project named
 here with its reason, and prose fits 100 columns."""
 
+import datetime as dt
 import ipaddress
 import re
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -277,3 +280,32 @@ ROADMAP_LINES = (
 def test_the_roadmap_holds_every_line(phrase):
     text = " ".join((ROOT / "docs" / "ROADMAP.md").read_text(encoding="utf-8").lower().split())
     assert phrase in text
+
+
+# ----------------------------------------------------------------------------- the changelog
+def test_every_release_in_the_changelog_is_dated_and_still_read_by_the_release_tools(tmp_path):
+    """Keep a Changelog's heading, `## [X.Y.Z] - YYYY-MM-DD`: the notes release.yml and
+    post-publish.sh publish, and the version post-publish.sh reads, come from it whole."""
+    text = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    headings = [ln for ln in text.splitlines() if ln.startswith("## [")]
+    released = [h for h in headings if h != "## [Unreleased]"]
+    assert released
+    for heading in released:
+        m = re.fullmatch(r"## \[(\d+\.\d+\.\d+)\] - (\d{4}-\d{2}-\d{2})", heading)
+        assert m, heading
+        assert dt.date.fromisoformat(m.group(2)) >= dt.date(2026, 11, 22), heading
+    first = re.fullmatch(r"## \[([^\]]+)\].*", released[0]).group(1)
+    tool = ROOT / "tools" / "verify" / "release_names.py"
+    notes = subprocess.run([sys.executable, "-I", str(tool), "notes", str(ROOT / "CHANGELOG.md"),
+                            f"v{first}"], capture_output=True, text=True, check=False)
+    assert notes.returncode == 0 and notes.stdout.strip(), notes.stderr
+    assert not [ln for ln in notes.stdout.splitlines() if ln.startswith("## ")]
+    # post-publish.sh's own reading of the first versioned section (its `version` command)
+    script = (ROOT / "tools" / "maintainer" / "post-publish.sh").read_text(encoding="utf-8")
+    start = "TOOL=\"$(cat <<'PY'\n"
+    reader = script[script.index(start) + len(start) : script.index("\nPY\n)\"")]
+    (tmp_path / "tool.py").write_text(reader, encoding="utf-8")
+    version = subprocess.run([sys.executable, "-I", str(tmp_path / "tool.py"), "version",
+                              str(ROOT / "CHANGELOG.md")], capture_output=True, text=True,
+                             check=False)
+    assert (version.returncode, version.stdout) == (0, f"v{first}\n"), version.stderr

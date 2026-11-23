@@ -58,7 +58,7 @@ section 4 says how).
 
 ## How a release is cut
 
-Maintainers only. A release is a `## [X.Y.Z]` section in `CHANGELOG.md`, the same number as `version` in
+Maintainers only. A release is a `## [X.Y.Z] - YYYY-MM-DD` section in `CHANGELOG.md`, the same number as `version` in
 `pyproject.toml`, merged through a pull request; then `gh release create vX.Y.Z --target <the merge commit>` (the
 script `tools/maintainer/post-publish.sh` runs it and checks the image and the demo site afterwards, see
 `tools/maintainer/README.md`). The release's notes are the changelog section, and publishing it builds the image for
