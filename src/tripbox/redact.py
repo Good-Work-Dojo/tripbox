@@ -15,7 +15,7 @@ a later rule never reads inside what an earlier one replaced:
 2. addresses of mail, whole, except that the domain of a listed travel sender stays;
 3. links: scheme and host stay, the query and fragment become `?[QUERY]`, and a path segment
    stays only when it is a plain word (any other becomes `[X]`, so an encoded value in a path
-   goes whatever its length);
+   goes whatever its length); a `mailto:` link's query and fragment become `?[QUERY]` too;
 4. booking references a label names (confirmation, record locator, PNR, reservation, booking,
    itinerary and their German, French and Spanish forms): 5 to 40 letters and digits, hyphens
    between a code's groups, which then go wherever they stand; and a code no label names: 5 to
@@ -566,6 +566,13 @@ _EMAIL = re.compile(
 )
 _LINK = re.compile(
     rf"(?:(?:https?|ftp)://|(?<![\w.@/])www\.)(?:{_MARK}|[^\s<>\"'`\\^{{}}|\[\]\ue000-\uf8ff])+",
+    re.I,
+)
+# A `mailto:` link: what it writes to, then its query or fragment (a copy's address, a subject,
+# a body), which goes as an `https` link's does.
+_MAILTO = re.compile(
+    rf"(?<![\w.])(mailto:(?:{_MARK}|[^\s<>\"'`?#-])*)"
+    rf"([?#](?:{_MARK}|[^\s<>\"'`\\^{{}}|\[\]-])*)",
     re.I,
 )
 _HOSTNAME = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9.\-]{0,251}[A-Za-z0-9])?(?::\d{1,5})?")
@@ -1939,7 +1946,20 @@ class Redactor:
 
     def _links(self, work: _Work) -> None:
         """Rule 3: scheme and host stay; the query and the fragment become `?[QUERY]`; a path
-        segment stays only when it is a plain word."""
+        segment stays only when it is a plain word. A `mailto:` link keeps what it writes to,
+        which rule 2 has read, and its query and fragment become `?[QUERY]` too."""
+
+        def mailto(m: re.Match[str]) -> str:
+            query = m.group(2)
+            cut = len(query)
+            while cut > 1 and query[cut - 1] in ".,;:!?)'\"":
+                cut -= 1
+            query, after = query[:cut], query[cut:]
+            if len(query) < 2:
+                return m.group()
+            return m.group(1) + work.mark("link", None, f"?{QUERY}", work.original(query)) + after
+
+        work.s = _MAILTO.sub(mailto, work.s)
 
         def link(m: re.Match[str]) -> str:
             url = m.group()

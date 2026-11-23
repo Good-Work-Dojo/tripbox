@@ -666,6 +666,24 @@ def test_what_a_page_hides_in_a_value_or_puts_in_a_tag_is_still_redacted():
     assert broken == '<a href"https://www.example.com/x?[QUERY]">Manage</a>'
 
 
+def test_a_mailto_link_keeps_no_query():
+    """A `mailto:` link's query (a copy's address written `%40`, a body written `%20`) goes as
+    an `https` link's does; the address it writes to is an address of mail."""
+    r = Redactor(Known(names=("Alex Sample",)))
+    page = r.html(
+        '<a href="mailto:help@air.example?cc=pat.example%40example.net&amp;'
+        'body=Booking%20for%20Pat%20Example%2C%20ref%20kxqzpa">Write</a>'
+    )
+    assert page == '<a href="mailto:[EMAIL-1]?[QUERY]">Write</a>'
+    assert r.text("Questions? mailto:help@air.example?cc=pat.example%40example.net.") == (
+        "Questions? mailto:[EMAIL-1]?[QUERY]."
+    )
+    assert r.text("MAILTO:help@air.example#ref-kxqzpa") == "MAILTO:[EMAIL-1]?[QUERY]"
+    assert r.text("Write to mailto:help@air.example today.") == (
+        "Write to mailto:[EMAIL-1] today."
+    )
+
+
 def nested(depth: int) -> EmailMessage:
     """An email that carries an email that carries an email, `depth` deep; the innermost says
     which one it is."""
