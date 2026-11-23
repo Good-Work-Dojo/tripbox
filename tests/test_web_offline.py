@@ -575,3 +575,11 @@ def test_a_cover_is_kept_with_the_saved_pages_and_nothing_else_is_taken_for_one(
     assert "await trim(store, MOST, (k) => !isCover(k));" in keep
     kept = worker_function(script, "keepCover")
     assert "await trim(store, MOST_COVERS, (k) => isCover(k));" in kept
+
+
+def test_a_cover_never_keeps_a_store_of_stale_pages_alive(tmp_path, monkeypatch, base):
+    """The 30-day age rule reads the newest date among the page copies alone."""
+    c, _ = password_page(tmp_path, monkeypatch, base)
+    copy = worker_function(c.get("/sw.js").text, "savedCopy")
+    assert "if (!isCover(k)) newest = Math.max(newest, await savedAt(store, k));" in copy
+    assert "Date.now() - newest > MAX_AGE_MS" in copy

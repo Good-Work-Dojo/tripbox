@@ -145,12 +145,14 @@ async function savedAt(store, key) {
 }
 
 // The saved copy of `key`, its <html> tag marked with when it was saved; null for none. A store
-// whose newest copy is over MAX_AGE_MS old is emptied first.
+// whose newest page copy (a cover's date never counts) is over MAX_AGE_MS old is emptied first.
 async function savedCopy(key) {
   if (!(await caches.has(PAGES))) return null;
   const store = await caches.open(PAGES);
   let newest = 0;
-  for (const k of await store.keys()) newest = Math.max(newest, await savedAt(store, k));
+  for (const k of await store.keys()) {
+    if (!isCover(k)) newest = Math.max(newest, await savedAt(store, k));
+  }
   if (Date.now() - newest > MAX_AGE_MS) {
     await caches.delete(PAGES);
     return null;

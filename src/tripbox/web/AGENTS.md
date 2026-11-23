@@ -1,6 +1,6 @@
 # AGENTS.md — the trips page (`src/tripbox/web/`)
 
-The page's facts; the hard rules are the repository's `AGENTS.md`.
+The page's facts; hard rules: the repository's `AGENTS.md`.
 
 - The page runs in its own container with only `config.KEYS` with `web=True`, its only secrets
   its login pair, `config.PAGE_SECRETS` (`tests/test_compose.py` pins it: no `env_file`, no value interpolating another name): nothing that reaches the
@@ -43,7 +43,7 @@ The page's facts; the hard rules are the repository's `AGENTS.md`.
   JPEG, PNG or WebP by its bytes (`coversniff`) for the worker; `/covers/<sha256>[-s].jpg`: a
   ready cover of a trip not deleted, never on a shared page or Recently deleted; a credit links
   only http(s).
-- A booking typed in by hand (`/add/{flight,hotel,car,train}`: the edit form, its Trip field's
+- A hand-typed booking (`/add/{flight,hotel,car,train}`: the edit form, its Trip field's
   first choice leaving it to the dates) goes straight to `TripStore.add_by_hand`: no model, no
   message row, `payload["source"]` `hand`, its real key or a draft key of its own; a booking
   answering to that real key refuses it, as does a form with nothing but its travellers.
@@ -79,8 +79,7 @@ The page's facts; the hard rules are the repository's `AGENTS.md`.
   (`script-src 'none'`, `no-referrer`). It writes nothing and logs nothing of a token.
 - `export.py` (`tripbox demo export`) writes the page as static files: the real app over a seeded
   ledger's copy (its covers dropped: tiles only), asked in-process under `EXPORT_BASE`, clock held, each page rewritten by
-  `html.parser` (relative or switched-off links, disabled controls, no script, a content policy,
-  the banner, the about line); no template or static file changes for it; `tools/verify/demo_site_check.py` holds the tree to those rules.
+  `html.parser` (relative or switched-off links, disabled controls, no script, a content policy, banner, about line); no template or static file changes for it; `tools/verify/demo_site_check.py` holds the tree to those rules.
 - Saved copies (`TRIPBOX_OFFLINE`; unset: on with `password` or `none`): `/manifest.webmanifest`
   and `/sw.js` are `PUBLIC`; `sw.js` (`sw_off.js` while off: deletes the stores,
   unregisters) is `no-cache`, registered by `app.js` from `<base>/sw.js`, scope `<base>/`. It
@@ -88,11 +87,10 @@ The page's facts; the hard rules are the repository's `AGENTS.md`.
   or a trip), never by path, and never answers `/login`, `/logout`, `/s/`, `/feed/`. `app.js`
   asks again for the list or trip in view (a GET of the path) once a worker controls it and once
   `?f=` leaves the address (the registering load and an address with a query are not kept). The
-  network's answer is released at once, the store written beside it; a saved copy answers only after 3 s. At install it keeps `views.worker`'s `files` (versioned
+  network's answer is released at once, the store written beside it; only a page with a saved copy falls back to it after 3 s. At install it keeps `views.worker`'s `files` (versioned
   stylesheet and script, fonts): the registering load never passes through it. Stores are
   `tripbox<base>:` + `static:`/`pages:` + `app.state.version`, so a release replaces them. The
   pages store goes on a 401, 403, redirect or unmarked 200 of a kept page, before a sign-out is
-  sent (`app.js`) and on the login page (`clear.js`), not relying on `Clear-Site-Data`. A
-  cover (`/covers/<sha256>[-s].jpg`, no query) is cache-first from the pages store (a 200
-  `image/jpeg` only, 120 kept, emptied with the pages). A non-GET is answered only with a
+  sent (`app.js`) and on the login page (`clear.js`), not on `Clear-Site-Data`. A
+  cover (`/covers/<sha256>[-s].jpg`, no query) is cache-first from the pages store (200 `image/jpeg` only, 120 kept, emptied with the pages). A non-GET is answered only with a
   referrer under `<origin><base>/`.
