@@ -31,7 +31,8 @@ trust mode, `TRIPBOX_MAIL_TRUST`.
   server's headers say nothing a Gmail check can use.
 
 Who is vouched for, once a message has passed: whatever an allowed sender sent or forwarded by
-hand is. What a Gmail filter forwarded is vouched for only when its original sender's domain is on
+hand is, the emails attached to it included, on every later reading of each of them too. What a
+Gmail filter forwarded is vouched for only when its original sender's domain is on
 the list of airline and booking-site domains (`TRIPBOX_MAIL_TRUSTED_SENDER_DOMAINS`, replaced
 whole when you set it; the shipped list is part of the package) and passes that domain's own
 check. The list governs filter forwards alone.

@@ -1247,6 +1247,42 @@ def test_an_attached_emails_waiting_row_read_on_its_own_after_a_switch_is_still_
         assert origins == [runmod.ORIGIN_UNAUTHENTICATED] * 2
 
 
+def test_an_email_the_owner_attached_stays_theirs_when_its_waiting_row_is_read_alone(
+    monkeypatch,
+):
+    """In `gmail` mode the owner's authenticated message carries a note and a receipt from a
+    sender no list vouches for: the owner vouches for it, and it waits for a model. The resume
+    pass reads its row on its own, and its flight is still the owner's: no check, and sent to
+    the flight log."""
+    from test_filed import SENDER, filing, owners_flight
+
+    entry, flight = owners_flight()
+    sent = corpus.sent(entry)
+    note = make_eml(from_=SENDER, subject="A note", date=sent, text="the receipt is below")
+    receipt = make_eml(
+        from_="bookings@unknown-sender.example", subject="Receipt", date=sent, text=entry.name
+    )
+    outer = make_eml(
+        from_=SENDER, subject="Fwd: two", date=sent, text="see attached", headers=AR, rfc822=note
+    )
+    outer.add_attachment(receipt)
+    read_once_a_model_is_set(monkeypatch, [flight], noise="A note")
+    with filing() as ctx:
+        res = runmod.process_raw(gmail_mode(ctx), outer.as_bytes(), source="imap", uid=1)
+        assert (res.status, [c.status for c in res.children]) == ("ignored", ["waiting"])
+        attached = res.children[0].message_row_id
+        assert ctx.ledger.messages.get(attached)["origin_ok"] == runmod.ORIGIN_OWNERS
+        ctx.model = object()  # a model is set up
+        assert runmod.resume_waiting(ctx) == 1  # the receipt's row alone
+        (ti,) = booked(ctx, attached)
+        assert (ti.checks, ti.sync_state) == ((), "synced")
+        assert ctx.ledger.messages.get(attached)["origin_ok"] == runmod.ORIGIN_OWNERS
+        # read again by force, on its own, it is still the owner's
+        raw = Path(ctx.ledger.messages.get(attached)["archive_path"]).read_bytes()
+        again = runmod.process_raw(ctx, raw, source="replay", force=True)
+        assert [o.checks for o in again.outcomes] == [()]
+
+
 def test_a_failed_mailbox_message_replayed_after_a_switch_to_gmail_is_still_nobodys(monkeypatch):
     """A forged owner's message `mailbox` mode accepted fails on its first reading. Replayed
     after a switch to `gmail`, it is not asked the check again and is still nobody's: the

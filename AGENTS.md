@@ -136,7 +136,8 @@ are also kept in an AirTrail flight log. One image runs three roles: `web`, `wor
   `run.MAX_RESUMES`th try fails it, told once). Mail once accepted is not checked again;
   `messages.origin_ok` keeps whether that acceptance was
   authenticated or the owner's (`run.ORIGIN_*`): if so, the sender is worked out from the headers on
-  every reading; if not, it is nobody's in either mode until the owner hands the bytes in (a
+  every reading, but an attached email the owner vouched for (`ORIGIN_OWNERS`) is theirs on every
+  reading, its row read on its own too; if not, it is nobody's in either mode until the owner hands the bytes in (a
   finished row is skipped unless forced). A handed-in row with no sender (`from_addr` NULL; an email
   reading records one) was read and is replayed as pasted text.
   An email set aside for an earlier delivery (same Message-ID) names it

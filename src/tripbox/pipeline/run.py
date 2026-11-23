@@ -71,12 +71,13 @@ log = logging.getLogger("tripbox.run")
 # when the email names none).
 HANDED_IN = ("telegram", "cli", "upload")
 # What `messages.origin_ok` keeps of the sender check's verdict: rejected; accepted with Gmail's
-# authentication, or the owner's own (handed in, or attached to an authenticated message of
-# theirs); or accepted with nothing authenticated (`mailbox` mode, or an email attached to such
-# a message). A later reading asks the check of neither acceptance again; the sender of one
-# accepted unauthenticated is nobody's on every reading, in either mode, until the owner hands
-# the bytes in.
-ORIGIN_REJECTED, ORIGIN_ACCEPTED, ORIGIN_UNAUTHENTICATED = 0, 1, 2
+# authentication, or handed in by the owner; accepted with nothing authenticated (`mailbox` mode,
+# or an email attached to such a message); or the owner's by their vouching: an email attached to
+# their own authenticated message, whatever its own From says. A later reading asks the check of
+# no acceptance again; the sender of one accepted unauthenticated is nobody's on every reading, in
+# either mode, until the owner hands the bytes in; one the owner vouched for is theirs on every
+# reading, its row read on its own too.
+ORIGIN_REJECTED, ORIGIN_ACCEPTED, ORIGIN_UNAUTHENTICATED, ORIGIN_OWNERS = 0, 1, 2, 3
 # A second delivery of an email (same Message-ID) is skipped when the first one reached one of
 # these; a copy that was rejected or failed is processed again. A message read again after it
 # reached one keeps its findings dated as its first reading dated them.
@@ -505,6 +506,9 @@ def _file_raw(
     # nothing of who sent them, which the headers tell on every reading, unless nothing
     # authenticated that acceptance
     accepted = existing is not None and bool(existing["origin_ok"])
+    # an email the owner vouched for when it came attached to their message stays theirs
+    if existing is not None and existing["origin_ok"] == ORIGIN_OWNERS:
+        trusted = True
     # what the sender check rejected as mail, the owner now hands in as their own: it is read
     rejected_once = own and existing is not None and existing["status"] == "rejected"
     if existing is not None and not (_needs_reprocess(existing, force) or rejected_once):
@@ -591,9 +595,13 @@ def _file_raw(
             from_addr=nm.from_addr,
             email_date=nm.email_date.isoformat() if nm.email_date else None,
             origin_ok=(
-                (ORIGIN_ACCEPTED if vouched else ORIGIN_UNAUTHENTICATED)
-                if nm.origin_ok
-                else ORIGIN_REJECTED
+                ORIGIN_REJECTED
+                if not nm.origin_ok
+                else ORIGIN_OWNERS
+                if trusted and not own
+                else ORIGIN_ACCEPTED
+                if vouched
+                else ORIGIN_UNAUTHENTICATED
             ),
         )
         if not nm.origin_ok:
