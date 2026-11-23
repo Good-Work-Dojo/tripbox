@@ -76,7 +76,7 @@ def html_tag(html: str) -> str:
 
 
 def scripts(html: str) -> list[str]:
-    return re.findall(r"<script\b[^>]*>", html)
+    return re.findall(r"<script\b[^>]*>", html, re.I)
 
 
 def marked(r) -> bool:

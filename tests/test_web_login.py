@@ -700,7 +700,7 @@ def test_a_form_posted_after_the_sign_in_ended_gets_a_page_that_links_the_login(
         assert [unescape(h) for h in links] == [want], referer
         assert "typed and lost" not in html
         assert "<style" not in html and " style=" not in html
-        scripts = re.findall(r"<script\b([^>]*)>", html)
+        scripts = re.findall(r"<script\b([^>]*)>", html, re.I)
         assert len(scripts) == 1, scripts
         assert re.fullmatch(rf' src="{c.url("/static/clear.js")}\?v=[0-9a-f]+" defer', scripts[0])
     assert ctx.trips.get(trip.id).notes is None

@@ -474,7 +474,7 @@ def test_the_new_pages_keep_the_content_security_policy(tmp_path, base):
         assert r.status_code == 200, path
         csp = r.headers.get("content-security-policy", "")
         assert "script-src 'self'" in csp and "form-action 'self'" in csp, path
-        (script,) = re.findall(r"<script\b[^>]*>", r.text)
+        (script,) = re.findall(r"<script\b[^>]*>", r.text, re.I)
         assert script.startswith(f'<script src="{c.url("/static/app.js")}?v='), path
         assert " style=" not in r.text and "<style" not in r.text, path
         assert "data-refresh" not in r.text, path  # a reload would drop what was typed

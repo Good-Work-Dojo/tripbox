@@ -1245,12 +1245,10 @@ def read_mail(
     as failed. An error is counted and told, never raised."""
     if isinstance(msg, imapmod.Oversize):
         s = ctx.settings
-        ok, why = header_origin(msg.header, s.allowed_senders, s.require_google_auth)
+        ok, _ = header_origin(msg.header, s.allowed_senders, s.require_google_auth)
         if not ok:
             summary.add("rejected")
-            log.info(
-                "rejected uid=%s, %d bytes, never fetched: %s", msg.uid, msg.size, shown(why)
-            )
+            log.info("rejected uid=%s, %d bytes, never fetched", msg.uid, msg.size)
             if filing:
                 imapmod.label(inbox, msg.uid, imapmod.LABEL_REJECTED)
             return
