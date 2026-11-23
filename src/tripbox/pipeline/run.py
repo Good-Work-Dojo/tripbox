@@ -64,7 +64,6 @@ from tripbox.write.sync import PassReport, Syncer
 
 log = logging.getLogger("tripbox.run")
 
-NOISE_TYPES = ("check_in_or_boarding", "marketing", "receipt_only", "other")
 # Where a message the owner handed in came from: a paste to the bot, `tripbox ingest`, the page.
 # A message whose row names one of these is the owner's own input on every reading: the sender
 # check is never asked of it. Of these rows, one with no sender recorded (`from_addr` NULL) was
