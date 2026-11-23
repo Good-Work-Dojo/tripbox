@@ -299,7 +299,8 @@ def test_share_page_and_text_endpoint(tmp_path, monkeypatch, base):
         ("lodging", "Hotels"),
         ("car", "Cars"),
     ):
-        assert f'data-kind="{kind}">{label}</button>' in html
+        pressed = "true" if kind == "all" else "false"
+        assert f'data-kind="{kind}" aria-pressed="{pressed}">{label}</button>' in html
     assert f'value="{back.id}" data-kind="flight">' in html  # cancelled: not checked
     out = st.item_by_key("SY|9304|2027-09-16|MSP")
     assert f'value="{out.id}" data-kind="flight" checked>' in html
@@ -1307,6 +1308,96 @@ def test_every_control_outside_the_edit_form_has_a_name(tmp_path, monkeypatch, b
         assert len(ids) == len(set(ids)), (name, sorted(i for i in ids if ids.count(i) > 1))
     controls = Tree(pages[f"/trips/{trip.id}"]).nodes
     assert sum(n.tag in ("input", "select", "textarea", "button", "summary") for n in controls) > 20
+
+
+def test_a_trips_tile_letter_is_no_part_of_its_name(tmp_path, monkeypatch, base):
+    """The tile's initial on a trip's card, its page's hero and its row in Recently deleted is
+    decoration: hidden from a screen reader, so a card's link is named by its title first."""
+    c, ctx = client_for(tmp_path, monkeypatch, base=base)
+    trip = seed_trip(ctx)
+    seed_past(ctx, 2)
+    st = ctx.trips
+    st.delete_trip(next(t for t in st.all_trips() if t.id != trip.id).id)
+    seen = 0
+    for path in ("/", f"/trips/{trip.id}", "/deleted"):
+        tree = Tree(c.get(path).text)
+        covers = [n for n in tree.nodes if "cover" in n.attrs.get("class", "").split()]
+        assert covers and all(n.attrs.get("aria-hidden") == "true" for n in covers), path
+        seen += len(covers)
+    assert seen >= 4
+    link = c.url(f"/trips/{trip.id}")
+    card = next(n for n in Tree(c.get("/").text).nodes if n.attrs.get("href") == link)
+    assert trip.title in card.text()
+
+
+def described_by(tree: Tree, node: Node) -> str:
+    """The text of what the node's aria-describedby points at ("" when it points at nothing)."""
+    found = [tree.by_id(i) for i in (node.attrs.get("aria-describedby") or "").split()]
+    return " ".join(n.text() for n in found if n is not None)
+
+
+def test_repeated_controls_say_what_they_act_on(tmp_path, monkeypatch, base):
+    """A control repeated per row says which row it acts on: each booking's ⋯ menu (on a trip
+    and in Unsorted) and each Restore is described by its row's title; the edit form's second
+    field of each pair is named by what it is, not `Time`; the share page's kind chips say
+    which one is pressed, not by colour alone."""
+    c, ctx = client_for(tmp_path, monkeypatch, base=base)
+    trip = seed_trip(ctx)
+    seed_past(ctx, 1)
+    st = ctx.trips
+    st.upsert_item(None, undated_stay(pnr="HOT9"))
+    pages = {p: Tree(c.get(p).text) for p in ("/", f"/trips/{trip.id}")}
+    for path, tree in pages.items():
+        menus = [n for n in tree.nodes if n.attrs.get("aria-label") == "More for this item"]
+        assert menus, path
+        for menu in menus:
+            assert described_by(tree, menu), (path, str(menu))
+        if path != "/":
+            said = [described_by(tree, n) for n in menus]
+            assert len(menus) > 2 and len(set(said)) > 2, said
+    # Recently deleted: one trip and two bookings, each Restore described by its own row
+    st.remove_item(st.item_by_key("car|CAR123").id)
+    st.remove_item(st.item_by_key("lodging|HOTEL1").id)
+    st.delete_trip(next(t for t in st.all_trips() if t.id != trip.id).id)
+    tree = Tree(c.get("/deleted").text)
+    restores = [n for n in tree.nodes if n.tag == "button" and n.text() == "Restore"]
+    said = [described_by(tree, n) for n in restores]
+    assert len(restores) == 3 and all(said) and len(set(said)) == 3, said
+    # the edit form: no two fields named alike, a time named by what it times
+    timed = {
+        "flight": {"departs_time": "Departure time", "arrives_time": "Arrival time"},
+        "lodging": {"check_in_time": "Check-in time", "check_out_time": "Check-out time"},
+        "car": {"pickup_time": "Pick-up time", "dropoff_time": "Drop-off time"},
+        "train": {"departs_time": "Departure time", "arrives_time": "Arrival time"},
+    }
+    for kind, path in (
+        ("flight", "/add/flight"),
+        ("lodging", "/add/hotel"),
+        ("car", "/add/car"),
+        ("train", "/add/train"),
+    ):
+        form = Tree(c.get(path).text)
+        fields = [
+            n
+            for n in form.nodes
+            if n.tag in ("input", "select", "textarea") and n.attrs.get("type") != "hidden"
+        ]
+        names = {n.attrs.get("name"): form.name_of(n) for n in fields}
+        assert {k: names[k] for k in timed[kind]} == timed[kind], kind
+        shown = [form.name_of(n) for n in fields]
+        assert len(shown) == len(set(shown)), (kind, shown)
+        visible = [n for n in form.nodes if n.tag == "span" and n.text() == "Time"]
+        assert len(visible) == 2, kind  # the label a sighted reader sees is unchanged
+    # the share page's chips: pressed or not, in words a screen reader says
+    tree = Tree(c.get(f"/trips/{trip.id}/share").text)
+    chips = [n for n in tree.nodes if "chip-btn" in n.attrs.get("class", "").split()]
+    assert len(chips) > 1
+    assert [(n.attrs.get("data-kind"), n.attrs.get("aria-pressed")) for n in chips] == [
+        (n.attrs.get("data-kind"), "true" if n.attrs.get("data-kind") == "all" else "false")
+        for n in chips
+    ]
+    script = (Path(tripbox.web.__file__).parent / "static" / "app.js").read_text()
+    assert 'setAttribute("aria-pressed"' in script
 
 
 def test_the_trip_sheets_fields_are_named_and_a_toast_is_announced(tmp_path, monkeypatch, base):

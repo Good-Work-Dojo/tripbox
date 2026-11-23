@@ -41,7 +41,7 @@
 </header>
 <main class="page">
   <section class="hero">
-    <div class="cover big tile tile-{{ trip.id % 8 }}"><span>{{ trip.title[:1]|upper }}</span></div>
+    <div class="cover big tile tile-{{ trip.id % 8 }}" aria-hidden="true"><span>{{ trip.title[:1]|upper }}</span></div>
     <div class="hero-text">
       <div class="dates">{{ range }}{% if to_check %} <span class="chip chip-amber">{{ to_check }} to check</span>{% endif %}</div>
       {% if trip.cancelled %}<span class="chip chip-red">Cancelled</span>{% endif %}
@@ -69,7 +69,7 @@
       <div class="time">{% if it.time %}<span class="t">{{ it.time }}</span><span class="tz">{{ it.tz }}</span>{% endif %}</div>
       <div class="rail"><span class="dot">{{ it.icon }}</span></div>
       <div class="content">
-        <div class="primary">{{ it.primary }}{% if it.cancelled %} <span class="chip chip-red">Cancelled</span>{% endif %}{% if it.checks %} <span class="chip chip-amber">To check</span>{% endif %}</div>
+        <div class="primary" id="item-{{ it.id }}{{ '-end' if it.role == 'end' }}-title">{{ it.primary }}{% if it.cancelled %} <span class="chip chip-red">Cancelled</span>{% endif %}{% if it.checks %} <span class="chip chip-amber">To check</span>{% endif %}</div>
         <div class="secondary">{{ it.secondary }}</div>
         {% for ln in it.lines %}
           {% if ln.url %}<a class="line addr" href="{{ ln.url }}" target="_blank" rel="noopener">{{ ln.text }}</a>{% else %}<div class="line">{{ ln.text }}</div>{% endif %}
@@ -84,7 +84,7 @@
         </div>
         {% endif %}
         <details class="item-menu">
-          <summary aria-label="More for this item">⋯</summary>
+          <summary aria-label="More for this item" aria-describedby="item-{{ it.id }}{{ '-end' if it.role == 'end' }}-title">⋯</summary>
           <div class="sheet">
             <a class="btn link" href="{{ base }}/items/{{ it.id }}/edit" data-edit="{{ it.kind }}">Edit details</a>
             <button type="button" class="btn copy" data-copy="{{ it.text }}">Copy this item</button>

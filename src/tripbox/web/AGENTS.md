@@ -59,7 +59,9 @@ The page's facts; the hard rules are the repository's `AGENTS.md`.
   hashes every static file. Text colours keep 4.5:1 on their backgrounds (`test_web_style.py`).
 - A page names only what the install has: the confirmations' `views.KEPT` names the flight log
   only while one is kept, and the list links it only when `TRIPBOX_AIRTRAIL_PUBLIC_URL` is set.
-  A stay's or a car's second line is `item-N-end`. The photograph harness's browser checks are
+  A stay's or a car's second line is `item-N-end`. A control repeated per row is described by
+  its row's title (`aria-describedby`: `item-N[-end]-title`, `trip-N-title`); a tile's letter
+  is `aria-hidden`. The photograph harness's browser checks are
   `tools/verify/screens/checks.py`.
 - A ledger with no trip, no booking and nothing deleted is a first run: the list says `No trips
   yet`, what to do and `Add a booking`, then the status card (`card.status_card`, `_status.html`),

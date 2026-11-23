@@ -17,13 +17,13 @@
   <ul class="cards">
     {% for t in trips %}
     <li class="rc">
-      <div class="cover tile tile-{{ t.trip.id % 8 }}"><span>{{ t.trip.title[:1]|upper }}</span></div>
+      <div class="cover tile tile-{{ t.trip.id % 8 }}" aria-hidden="true"><span>{{ t.trip.title[:1]|upper }}</span></div>
       <div class="rc-body">
-        <div class="card-title">{{ t.trip.title }}</div>
+        <div class="card-title" id="trip-{{ t.trip.id }}-title">{{ t.trip.title }}</div>
         <div class="card-dates">{{ t.range }}</div>
         <div class="card-meta">Deleted {{ t.when }}</div>
       </div>
-      <form method="post" action="{{ base }}/trips/{{ t.trip.id }}/restore"><button type="submit" class="btn">Restore</button></form>
+      <form method="post" action="{{ base }}/trips/{{ t.trip.id }}/restore"><button type="submit" class="btn" aria-describedby="trip-{{ t.trip.id }}-title">Restore</button></form>
     </li>
     {% endfor %}
   </ul>
@@ -34,11 +34,11 @@
     {% for it in items %}
     <li class="rc">
       <div class="rc-body">
-        <div class="card-title">{{ it.line }}</div>
+        <div class="card-title" id="item-{{ it.id }}-title">{{ it.line }}</div>
         <div class="card-dates">{{ it.date }}{% if it.trip %} · from {{ it.trip }}{% endif %}</div>
         <div class="card-meta">Removed {{ it.when }}</div>
       </div>
-      <form method="post" action="{{ base }}/items/{{ it.id }}/restore"><button type="submit" class="btn">Restore</button></form>
+      <form method="post" action="{{ base }}/items/{{ it.id }}/restore"><button type="submit" class="btn" aria-describedby="item-{{ it.id }}-title">Restore</button></form>
     </li>
     {% endfor %}
   </ul>

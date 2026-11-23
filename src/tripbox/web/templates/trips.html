@@ -25,7 +25,7 @@
     <ul class="cards">
       {% for it in unsorted %}
       <li class="booking{{ ' cancelled' if it.cancelled }}" id="item-{{ it.id }}" data-kind="{{ it.kind }}">
-        <div class="primary">{{ it.icon }} {{ it.primary }}{% if it.cancelled %} <span class="chip chip-red">Cancelled</span>{% endif %}{% if it.checks %} <span class="chip chip-amber">To check</span>{% endif %}</div>
+        <div class="primary" id="item-{{ it.id }}-title">{{ it.icon }} {{ it.primary }}{% if it.cancelled %} <span class="chip chip-red">Cancelled</span>{% endif %}{% if it.checks %} <span class="chip chip-amber">To check</span>{% endif %}</div>
         {% if it.secondary %}<div class="secondary">{{ it.secondary }}</div>{% endif %}
         <div class="line">No date yet</div>
         {% for ln in it.lines %}
@@ -43,7 +43,7 @@
         <div class="booking-foot">
           <a class="btn primary" href="{{ base }}/items/{{ it.id }}/edit">Add the date</a>
           <details class="item-menu">
-            <summary aria-label="More for this item">⋯</summary>
+            <summary aria-label="More for this item" aria-describedby="item-{{ it.id }}-title">⋯</summary>
             <div class="sheet">
               <button type="button" class="btn copy" data-copy="{{ it.text }}">Copy this item</button>
               <form method="post" action="{{ base }}/items/{{ it.id }}/status">

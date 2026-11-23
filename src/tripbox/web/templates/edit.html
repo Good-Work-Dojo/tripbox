@@ -5,10 +5,10 @@
     and refusals; adding, it posts no digest and asks which trip the booking goes into. -#}
 {% block title %}{{ heading }} · Trips{% endblock %}
 {% block body %}
-{#- one labelled field; a refusal or a hard check about it marks it and points at its sentence -#}
-{% macro input(label, name, type="text", maxlength=None, code=False, digits=False, placeholder=None) -%}
+{#- one labelled field (`named`: its name, where the label alone does not say what it is); a refusal or a hard check about it marks it and points at its sentence -#}
+{% macro input(label, name, type="text", maxlength=None, code=False, digits=False, placeholder=None, named=None) -%}
 {%- set about = (["edit-error"] if name == refused else []) + (["check-" ~ invalid[name]] if name in invalid else []) -%}
-<label class="field"><span>{{ label }}{% if about %} <span class="flag" aria-hidden="true">⚠</span>{% endif %}</span><input type="{{ type }}" name="{{ name }}" value="{{ f[name] }}"{% if maxlength %} maxlength="{{ maxlength }}"{% endif %}{% if code %} autocapitalize="characters" autocomplete="off" spellcheck="false"{% endif %}{% if digits %} inputmode="numeric"{% endif %}{% if placeholder %} placeholder="{{ placeholder }}"{% endif %}{% if about %} aria-invalid="true" aria-describedby="{{ about|join(' ') }}"{% endif %}></label>
+<label class="field"><span>{{ label }}{% if about %} <span class="flag" aria-hidden="true">⚠</span>{% endif %}</span><input type="{{ type }}" name="{{ name }}" value="{{ f[name] }}"{% if maxlength %} maxlength="{{ maxlength }}"{% endif %}{% if code %} autocapitalize="characters" autocomplete="off" spellcheck="false"{% endif %}{% if digits %} inputmode="numeric"{% endif %}{% if placeholder %} placeholder="{{ placeholder }}"{% endif %}{% if named %} aria-label="{{ named }}"{% endif %}{% if about %} aria-invalid="true" aria-describedby="{{ about|join(' ') }}"{% endif %}></label>
 {%- endmacro %}
 <header class="top">
   <a class="back" href="{{ base }}{{ back }}" aria-label="{{ back_label }}">‹</a>
@@ -51,11 +51,11 @@
     {% endif %}
     <div class="row">
       {{ input("Departs", "departs_date", type="date") }}
-      {{ input("Time", "departs_time", type="time") }}
+      {{ input("Time", "departs_time", type="time", named="Departure time") }}
     </div>
     <div class="row">
       {{ input("Arrives", "arrives_date", type="date") }}
-      {{ input("Time", "arrives_time", type="time") }}
+      {{ input("Time", "arrives_time", type="time", named="Arrival time") }}
     </div>
     <p class="muted small">Times are local to each {{ 'airport' if kind == 'flight' else 'station' }}.</p>
     {{ input("Confirmation code", "confirmation_code", maxlength=40, code=True) }}
@@ -67,23 +67,23 @@
     {{ input("Address", "address", maxlength=200) }}
     <div class="row">
       {{ input("Check-in", "check_in_date", type="date") }}
-      {{ input("Time", "check_in_time", type="time") }}
+      {{ input("Time", "check_in_time", type="time", named="Check-in time") }}
     </div>
     <div class="row">
       {{ input("Check-out", "check_out_date", type="date") }}
-      {{ input("Time", "check_out_time", type="time") }}
+      {{ input("Time", "check_out_time", type="time", named="Check-out time") }}
     </div>
     {% else %}
     {{ input("Company", "provider", maxlength=120) }}
     {{ input("Pick-up location", "pickup_location", maxlength=200) }}
     <div class="row">
       {{ input("Pick-up", "pickup_date", type="date") }}
-      {{ input("Time", "pickup_time", type="time") }}
+      {{ input("Time", "pickup_time", type="time", named="Pick-up time") }}
     </div>
     {{ input("Drop-off location", "dropoff_location", maxlength=200, placeholder="Same as pick-up") }}
     <div class="row">
       {{ input("Drop-off", "dropoff_date", type="date") }}
-      {{ input("Time", "dropoff_time", type="time") }}
+      {{ input("Time", "dropoff_time", type="time", named="Drop-off time") }}
     </div>
     {% endif %}
     <p class="muted small">Leave the time empty for a date-only stay.</p>

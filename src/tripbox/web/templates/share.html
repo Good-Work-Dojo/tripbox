@@ -9,7 +9,7 @@
 </header>
 <main class="page share">
   <div class="chips">
-    {% for kind, label in chips %}<button type="button" class="chip-btn {{ 'on' if kind == 'all' }}" data-kind="{{ kind }}">{{ label }}</button>{% endfor %}
+    {% for kind, label in chips %}<button type="button" class="chip-btn {{ 'on' if kind == 'all' }}" data-kind="{{ kind }}" aria-pressed="{{ 'true' if kind == 'all' else 'false' }}">{{ label }}</button>{% endfor %}
   </div>
   <form id="share-form" data-text-url="{{ base }}/trips/{{ trip.id }}/text">
     {% for d in days %}

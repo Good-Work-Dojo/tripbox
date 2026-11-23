@@ -266,7 +266,10 @@
   $$(".chip-btn").forEach((c) =>
     c.addEventListener("click", () => {
       const kind = c.dataset.kind;
-      $$(".chip-btn").forEach((x) => x.classList.toggle("on", x === c));
+      $$(".chip-btn").forEach((x) => {
+        x.classList.toggle("on", x === c);
+        x.setAttribute("aria-pressed", x === c ? "true" : "false");
+      });
       $$('input[name="items"]', form).forEach((i) => {
         const cancelled = i.closest(".pick").classList.contains("cancelled");
         i.checked = kind === "all" ? !cancelled : i.dataset.kind === kind && !cancelled;
