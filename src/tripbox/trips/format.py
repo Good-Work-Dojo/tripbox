@@ -197,7 +197,8 @@ def identities(names: list[str], book: PassengerBook | None) -> list[tuple[str, 
         elif m is not None and m.kind == "guest":
             key, disp = f"guest:{m.canonical}", m.canonical.split()[0]
         else:
-            key, disp = "other:" + " ".join(toks), " ".join(t.title() for t in (_shown(raw) or toks))
+            shown = _shown(raw) or toks
+            key, disp = "other:" + " ".join(toks), " ".join(t.title() for t in shown)
         seen.setdefault(key, (disp, []))[1].append(raw)
     ordered = sorted(seen.items(), key=lambda kv: 0 if kv[0] == "me" else 1)  # stable
     return [(disp, variants) for _, (disp, variants) in ordered]

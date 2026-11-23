@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Additional terms: see NOTICE
 import dataclasses
-import json
 import datetime as dt
+import json
 
 import pytest
 from helpers.airports import airports

@@ -576,9 +576,10 @@ def run_prepare(tmp_path: Path, event: str, prerelease: str, tag: str = "v1.0.0-
                 **stub: str) -> subprocess.CompletedProcess:
     s = next(s for s in release()["jobs"]["prepare"]["steps"] if s.get("id") == "names")
     bindir = stubs(tmp_path, gh=PREPARE_GH, git=PREPARE_GIT)
-    return run_step(tmp_path, s, bindir, first_release_tree(tmp_path), EVENT=event, GH_TOKEN="sample", TAG=tag,
-                    REPOSITORY="Good-Work-Dojo/tripbox-rc", SOURCE=SOURCE, DISPATCHED=DISPATCHED,
-                    STUB_PRERELEASE=prerelease, STUB_TAG_SHA=TAG_SHA, **stub)
+    return run_step(tmp_path, s, bindir, first_release_tree(tmp_path), EVENT=event,
+                    GH_TOKEN="sample", TAG=tag, REPOSITORY="Good-Work-Dojo/tripbox-rc",
+                    SOURCE=SOURCE, DISPATCHED=DISPATCHED, STUB_PRERELEASE=prerelease,
+                    STUB_TAG_SHA=TAG_SHA, **stub)
 
 
 @pytest.mark.parametrize("event, prerelease, tag, sha, tags, rehearsal", [
