@@ -11,6 +11,7 @@ style set (or the default one) every text reads as it always has: 12-hour, month
 from __future__ import annotations
 
 import datetime as dt
+import re
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -21,7 +22,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from tripbox import lists
 from tripbox.trips import grouping
 from tripbox.trips.store import Trip, TripItem, TripStore
-from tripbox.validate.passengers import name_tokens
+from tripbox.validate.passengers import TITLES, name_tokens
 
 if TYPE_CHECKING:
     from tripbox.trips.display import Display
@@ -166,6 +167,21 @@ def trip_heading(trip: Trip) -> str:
     return f"{trip.title} · {date_range(trip.start_date, trip.end_date)}"
 
 
+def _shown(raw: str) -> list[str]:
+    """A printed name's words as `name_tokens` orders them, keeping its accents and apostrophes
+    ('MUELLER/ZOË MS' -> ['ZOË', 'MUELLER'], "O'BRIEN/JOSE" -> ['JOSE', "O'BRIEN"]) for showing;
+    `name_tokens` folds them, for matching."""
+    s = raw.strip().upper().replace("\u2019", "'")
+    if "/" in s:
+        last, first = s.split("/", 1)
+        s = f"{first} {last}"
+    elif "," in s:
+        last, first = s.split(",", 1)
+        s = f"{first} {last}"
+    s = re.sub(r"[^\w\s'\-]|[\d_]", " ", s)
+    return [t for t in s.split() if t not in TITLES]
+
+
 def identities(names: list[str], book: PassengerBook | None) -> list[tuple[str, list[str]]]:
     """(display name, printed variants) per person: the owner first, then everyone else in printed
     order. The same person printed two ways (SAMPLE/SAM and SAM TAYLOR SAMPLE) is one
@@ -181,7 +197,7 @@ def identities(names: list[str], book: PassengerBook | None) -> list[tuple[str, 
         elif m is not None and m.kind == "guest":
             key, disp = f"guest:{m.canonical}", m.canonical.split()[0]
         else:
-            key, disp = "other:" + " ".join(toks), " ".join(t.title() for t in toks)
+            key, disp = "other:" + " ".join(toks), " ".join(t.title() for t in (_shown(raw) or toks))
         seen.setdefault(key, (disp, []))[1].append(raw)
     ordered = sorted(seen.items(), key=lambda kv: 0 if kv[0] == "me" else 1)  # stable
     return [(disp, variants) for _, (disp, variants) in ordered]

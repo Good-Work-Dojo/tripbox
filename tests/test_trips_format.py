@@ -235,6 +235,14 @@ def test_bare_first_names_from_greetings_are_not_travellers():
     ]
 
 
+def test_a_name_shown_keeps_its_accents_and_apostrophes():
+    # matching folds them ('OBRIEN/RENEE' is the same person); showing keeps them
+    assert fmt.display_names(["O'BRIEN/RENÉE MS", "OBRIEN/RENEE", "Zoë Example"], BOOK) == [
+        "Renée O'Brien",
+        "Zoë Example",
+    ]
+
+
 def test_name_variants_collapse_to_one_person_and_one_seat():
     st, trip = sample_trip()
     ti = st.item_by_key("DL|9246|2027-09-21|PHL")
