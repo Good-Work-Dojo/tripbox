@@ -330,6 +330,40 @@ def test_a_flight_already_in_airtrail_is_adopted_and_nothing_is_sent():
         assert airtrail.sent == [] and airtrail.flights == by_hand, typed
 
 
+def test_a_record_of_the_same_flight_that_does_not_list_the_keys_user_is_not_adopted():
+    """A record of the flight's day, number and origin whose passengers do not include the key's
+    user (a companion's alone, logged by hand, or another user's) is not the owner's: the
+    flight is created, as the backfill would neither file nor link that record."""
+    entry, flight = booking("flight", owners)
+    item = validated(entry, flight)
+    p = item.payload
+    for aboard in (
+        [{"userId": None, "guestName": "Sam Sample"}],
+        [{"userId": "another-user", "guestName": None}],
+    ):
+        led = on()
+        st = trip_store(led)
+        seed(led, the_corpus())
+        airtrail = Scripted(led)
+        theirs = airtrail.create_flight(
+            {
+                "date": p["date_local"],
+                "flightNumber": p["flight_code"],
+                "fromId": ref_id(led, "airport", p["origin"]),
+                "toId": ref_id(led, "airport", p["destination"]),
+                "passengers": aboard,
+            }
+        )
+        held = airtrail.get_flight(theirs)
+        airtrail.requests.clear()
+        ti = st.upsert_item(st.find_or_create(item), item)
+        assert syncer(st, airtrail).run_pass(now=clock(entry)).done == {"create": 1}, aboard
+        after = st.item(ti.id)
+        assert after.sync_state == "synced" and after.airtrail_flight_id != theirs, aboard
+        assert airtrail.get_flight(theirs) == held, aboard
+        assert not sync.not_listed(airtrail.get_flight(after.airtrail_flight_id), MEMORY_USER_ID)
+
+
 class StopsAfterCreating(Scripted):
     """Creates the first flight it is sent, then the process stops before the store is told."""
 
@@ -475,11 +509,14 @@ def test_an_error_on_one_flight_backs_it_off_and_the_pass_goes_on(caplog):
     broken = rows[0].payload["flight_code"]
 
     class Breaks(Scripted):
-        def find_flight(self, *, flight_code, date_local, origin_iata):
+        def find_flight(self, *, flight_code, date_local, origin_iata, user_id=None):
             if flight_code == broken:
                 raise RuntimeError("an error of tripbox's own")
             return super().find_flight(
-                flight_code=flight_code, date_local=date_local, origin_iata=origin_iata
+                flight_code=flight_code,
+                date_local=date_local,
+                origin_iata=origin_iata,
+                user_id=user_id,
             )
 
     airtrail = Breaks(led)

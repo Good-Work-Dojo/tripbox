@@ -47,6 +47,7 @@ from tripbox.write.airtrail import (
     flight_to_input,
     key_report,
     missing_scope,
+    not_listed,
     read_profile,
 )
 from tripbox.write.lifecycle import (
@@ -245,24 +246,6 @@ def _note(first: list[str], note: str, last: str) -> str:
     room = NOTE_MAX - len(head) - len(last) - 2
     body = note[: max(room, 0)]
     return "\n".join(part for part in (head, body, last) if part)[:NOTE_MAX]
-
-
-def _rider(row: object) -> object:
-    """The user id of one passenger row of a record, as AirTrail answers it (`user.id`) or as
-    it is sent (`userId`); None for a guest."""
-    if not isinstance(row, dict):
-        return None
-    user = row.get("user")
-    return user.get("id") if isinstance(user, dict) else row.get("userId")
-
-
-def not_listed(flight: dict, user_id: str) -> bool:
-    """Whether the record lists passengers and `user_id` is none of them: the flight is not that
-    user's there. A record that lists no passenger says nothing of whose it is."""
-    rows = flight.get("passengers")
-    if not isinstance(rows, list) or not rows:
-        return False
-    return all(_rider(row) != user_id for row in rows)
 
 
 def _instant(value: object) -> dt.datetime | None:
@@ -657,14 +640,17 @@ class Syncer:
         return self._update(ti, ti.airtrail_flight_id, desired, now)
 
     def _create(self, ti: TripItem, desired: dict) -> str:
-        """A flight with no flight id: the one the flight log already holds is adopted as it
-        stands; else it is created."""
+        """A flight with no flight id: the one the flight log already holds for the key's user
+        is adopted as it stands; else it is created. A record whose passengers do not list that
+        user (a companion's, or another user's) is not the owner's and is never adopted
+        (`not_listed`, the rule `_off_it` and the backfill read too)."""
         assert self.client is not None and self.refs is not None
         p = ti.payload
         found = self.client.find_flight(
             flight_code=str(p.get("flight_code") or ""),
             date_local=str(p.get("date_local") or ""),
             origin_iata=p.get("origin"),
+            user_id=self.client.user_id(),
         )
         if found is not None:
             self.store.sync_done(ti.id, flight_id=int(found["id"]), told=desired)

@@ -687,6 +687,11 @@ def test_forget_unlinks_every_flight_holds_the_past_and_binds_anew(home):
     # binds the ledger to that user, adopts them and creates nothing
     another = Profile("another user", "apiKey", frozenset(REQUIRED_SCOPES), frozenset(), True)
     home.log.answers_as(another)
+    for f in held_there:  # its records list that user
+        for rider in f["passengers"]:
+            if rider["user"]:
+                rider["user"] = {"id": another.user_id}
+        home.log.by_hand(f["id"], passengers=f["passengers"])
     with util.clock_at(home.noon(today)):
         assert sync(on).done == {"adopt": len(upcoming)}
     assert home.led.kv.get("airtrail_user") == another.user_id

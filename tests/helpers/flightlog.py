@@ -145,11 +145,16 @@ class Scripted(MemoryAirTrail):
         return super().get_json(path, params)
 
     def find_flight(
-        self, *, flight_code: str, date_local: str, origin_iata: str | None
+        self,
+        *,
+        flight_code: str,
+        date_local: str,
+        origin_iata: str | None,
+        user_id: str | None = None,
     ) -> dict | None:
         self._asked("find", flight_code, date_local, origin_iata)
         return super().find_flight(
-            flight_code=flight_code, date_local=date_local, origin_iata=origin_iata
+            flight_code=flight_code, date_local=date_local, origin_iata=origin_iata, user_id=user_id
         )
 
     def create_flight(self, payload: dict) -> int:

@@ -30,7 +30,8 @@ The flight log's facts; the hard rules are the repository's `AGENTS.md`.
 - `write/sync.py`'s `Syncer` reconciles the flight log: for a flight that is due
   (`TripStore.due_for_sync`) it sends only what `checks.desired` holds that differs from `told`,
   looks a flight with no id up before creating it (day, number's digits less leading zeros,
-  origin; a crash after a create adopts it next time),
+  origin; a crash after a create adopts it next time; a record not listing the key's user,
+  `airtrail.not_listed`, is never adopted),
   and unlinks one deleted there (`sync_hold` `deleted`). A flight held out of the reconcile
   (`sync_hold`) stays out when a later email updates its booking. In a dry run a flight's
   request is logged once and a pass takes it again only when what it would be sent for changes

@@ -105,10 +105,12 @@ first in its note (`CANCELLED` and the day), and one that stands again gets `rei
 Before it adds a flight, tripbox looks for it among your own flights in AirTrail: the same local
 day, the same flight number and the same origin. The number is compared by its digits alone, with
 leading zeros dropped, so a flight you typed in under another airline's code (a codeshare), with
-no code, or as `0123` is found too. A flight that is there is taken as it stands and nothing is
-sent. Otherwise tripbox adds it: its day, times and length, its flight number, airports and
-airline, you as a passenger, each companion `travellers.yaml` names as a guest with their seat and
-class, and a note naming the booking (its confirmation code, the email's Message-ID, the day it
+no code, or as `0123` is found too. A flight that is there with you aboard is taken as it stands
+and nothing is sent; one whose passengers do not include you (a companion's alone, or another
+user's that a full-access key reads) is not yours and is left alone. Otherwise tripbox adds it:
+its day, times and length, its flight number, airports and airline, you as a passenger, each
+companion `travellers.yaml` names as a guest with their seat and class, and a note naming the
+booking (its confirmation code, the email's Message-ID, the day it
 was booked and the provider), with an `Also travelling (not logged): …` line for anyone on the
 booking `travellers.yaml` does not name.
 

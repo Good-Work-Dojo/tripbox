@@ -440,11 +440,18 @@ class AirTrailClient:
                 return
 
     def find_flight(
-        self, *, flight_code: str, date_local: str, origin_iata: str | None
+        self,
+        *,
+        flight_code: str,
+        date_local: str,
+        origin_iata: str | None,
+        user_id: str | None = None,
     ) -> dict | None:
         """Match on local date + flight number (+ origin when both sides have it). The number's
         digits are compared with leading zeros dropped, as the sync's record check compares them
-        (`sync._agreeing`), so a number typed there as 0123 is the booking's 123."""
+        (`sync._agreeing`), so a number typed there as 0123 is the booking's 123. Given
+        `user_id`, a record whose passengers do not list that user is passed over (`not_listed`):
+        it is not that user's flight."""
         code = flight_code.upper().replace(" ", "")
         number = _digits(code)
         for f in self.iter_flights(until_date=date_local):
@@ -456,6 +463,8 @@ class AirTrailClient:
                 continue
             f_origin = str(((f.get("from") or {}).get("iata")) or "").upper()
             if origin_iata and f_origin and f_origin != origin_iata.upper():
+                continue
+            if user_id is not None and not_listed(f, user_id):
                 continue
             return f
         return None
@@ -470,6 +479,24 @@ class AirTrailClient:
 
     def update_flight(self, flight_id: int, payload: dict) -> Any:
         return self._request("PUT", f"/api/v1/flights/{flight_id}", json=_sendable(payload))
+
+
+def _rider(row: object) -> object:
+    """The user id of one passenger row of a record, as AirTrail answers it (`user.id`) or as
+    it is sent (`userId`); None for a guest."""
+    if not isinstance(row, dict):
+        return None
+    user = row.get("user")
+    return user.get("id") if isinstance(user, dict) else row.get("userId")
+
+
+def not_listed(flight: dict, user_id: str) -> bool:
+    """Whether the record lists passengers and `user_id` is none of them: the flight is not that
+    user's there. A record that lists no passenger says nothing of whose it is."""
+    rows = flight.get("passengers")
+    if not isinstance(rows, list) or not rows:
+        return False
+    return all(_rider(row) != user_id for row in rows)
 
 
 def _digits(code: str) -> str:
