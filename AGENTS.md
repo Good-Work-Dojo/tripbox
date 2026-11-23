@@ -351,7 +351,8 @@ are also kept in an AirTrail flight log. One image runs three roles: `web`, `wor
   `TRIPBOX_NO_NETWORK` is set, needs no mail, requeues an upload a stopped worker left being
   read (`failed`, `stopped`, once read `uploads.MAX_READINGS` times), with no model makes waiting
   mail wait for one (`run.wait_for_a_model`), and SIGTERM ends it and its children (exit 0) and
-  gives the ledger up (`stopped_at`). Compose's `worker` service runs it.
+  gives the ledger up (`stopped_at`). Compose's `worker` service runs it, given 120 s to stop
+  (`stop_grace_period`), past a model's reading, so it is never killed with its record `busy`.
 - `tripbox mail backfill --since YYYY-MM-DD [--apply]`: mail is read from the first poll on, and
   from the first poll of another host or login (`imap.KV_MAILBOX`) (a new
   UIDVALIDITY: from the day before the last good poll; over 20 MB: only the header is fetched, for

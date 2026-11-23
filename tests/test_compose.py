@@ -77,7 +77,7 @@ SERVICE_KEYS = {
     "web": {*HARDENING, "command", "environment", "volumes", "ports", "tmpfs", "mem_limit",
             "depends_on", "healthcheck"},
     "worker": {*HARDENING, "command", "env_file", "environment", "volumes", "tmpfs", "mem_limit",
-               "healthcheck"},
+               "healthcheck", "stop_grace_period"},
     "bot": {*HARDENING, "profiles", "command", "env_file", "environment", "volumes", "tmpfs",
             "mem_limit", "depends_on", "healthcheck"},
 }
@@ -436,6 +436,15 @@ def test_the_health_checks_are_these():
     assert services["web"]["healthcheck"] == check("web", "30s", "10s", "30s")
     assert services["worker"]["healthcheck"] == check("worker", "30s", "10s", "30s")
     assert services["bot"]["healthcheck"] == check("bot", "2m", "20s", "1m")
+
+
+def test_the_worker_is_given_time_to_finish_a_reading_when_stopped():
+    """SIGTERM lets the worker finish the part it is in (a model's reading of an upload takes up
+    to about a minute) and give the ledger up; Docker's default 10 s would SIGKILL it with its
+    record still `busy`, which keeps a new worker out for `status.BUSY_SECONDS`."""
+    services = model()["services"]
+    assert services["worker"]["stop_grace_period"] == "120s"
+    assert "stop_grace_period" not in services["web"] and "stop_grace_period" not in services["bot"]
 
 
 def test_every_name_the_file_reads_is_a_setting_or_a_compose_name():

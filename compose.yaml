@@ -97,6 +97,9 @@ services:
   worker:
     <<: *hardening
     command: ["python", "-m", "tripbox", "work"]
+    # time to finish a model's reading and give the ledger up when stopped; a worker killed
+    # while busy keeps its replacement out for 15 minutes
+    stop_grace_period: 120s
     env_file: .env
     environment:
       TRIPBOX_DATA_DIR: /app/data
