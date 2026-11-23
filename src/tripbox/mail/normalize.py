@@ -390,6 +390,16 @@ def _google_auth_ok(
     return False, "spf did not bind to the +caf_ forwarding envelope"
 
 
+def header_origin(
+    header: bytes, allowed_senders: tuple[str, ...], require_auth: bool = True
+) -> tuple[bool, str]:
+    """The sender check (`check_origin`) asked of a message's header block alone, for a message
+    whose body is never fetched."""
+    msg = email.message_from_bytes(header, policy=POLICY)
+    assert isinstance(msg, EmailMessage)
+    return check_origin(msg, allowed_senders, require_auth)
+
+
 def _caf_envelope(msg: EmailMessage, allowed: set[str]) -> tuple[str, str] | None:
     """Return (allowed sender, envelope address) when Return-Path is Gmail's +caf_ forward of it."""
     rp = _addr(msg.get("Return-Path"))

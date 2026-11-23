@@ -23,6 +23,7 @@ from tripbox.mail.imap import (
     LABEL_FAILED,
     LABEL_PROCESSED,
     LABEL_REJECTED,
+    MAX_HEADER_BYTES,
     MAX_MESSAGE_BYTES,
     fetch_new,
     label,
@@ -147,19 +148,22 @@ def test_a_changed_uidvalidity_with_no_good_poll_reads_from_now(tmp_path):
 
 
 def test_an_oversize_message_is_never_fetched_and_is_said_once(tmp_path, monkeypatch):
-    """A message over 20 MB is never fetched: it counts as oversize, one notice says so, it is
-    filed as failed, and the cursor moves past it, so no later poll says it again. One at the
-    limit is read."""
-    ctx = reading(tmp_path, monkeypatch)
+    """A message over 20 MB from an allowed sender is never fetched, only its header: it counts
+    as oversize, one notice says so, it is filed as failed, and the cursor moves past it, so no
+    later poll says it again. One at the limit is read."""
+    ctx = reading(
+        tmp_path, monkeypatch, TRIPBOX_MAIL_TRUST="mailbox", TRIPBOX_MAIL_FILING="labels"
+    )
     inbox = FakeInbox()
     runmod.poll(ctx, inbox)
-    big = inbox.deliver(small_message(1))
+    big = inbox.deliver(owners_mail(1))
     inbox.sizes[big] = 25 * 1024 * 1024
     edge = inbox.deliver(small_message(2))
     inbox.sizes[edge] = MAX_MESSAGE_BYTES
     summary = runmod.poll(ctx, inbox)
     assert (summary.fetched, summary.counts) == (1, {"oversize": 1, "rejected": 1})
-    assert inbox.fetched == [edge] and inbox.copies == [(big, LABEL_FAILED), (edge, LABEL_REJECTED)]
+    assert inbox.fetched == [edge] and inbox.headers == [big]
+    assert inbox.copies == [(big, LABEL_FAILED), (edge, LABEL_REJECTED)]
     said = ["tripbox left a message of 25 MB unread: it is over the 20 MB limit."]
     assert ctx.told.of("failure") == said
     assert ctx.ledger.kv.get(KV_LAST_UID) == str(edge)
@@ -168,6 +172,33 @@ def test_an_oversize_message_is_never_fetched_and_is_said_once(tmp_path, monkeyp
     ]
     summary = runmod.poll(ctx, inbox)
     assert (summary.fetched, summary.counts, ctx.told.of("failure")) == (0, {}, said)
+
+
+def test_a_stranger_s_oversize_message_is_rejected_quietly(tmp_path, monkeypatch):
+    """Anyone can send a message over 20 MB: its header alone is fetched, and one from no
+    allowed sender is rejected as any stranger's mail is, telling nobody. In `gmail` mode the
+    owner's address with no Gmail stamp is no allowed sender either."""
+    for trust, sender_mail in (
+        ("gmail", small_message(1)),
+        ("mailbox", small_message(1)),
+        ("gmail", owners_mail(1)),
+    ):
+        ctx = reading(
+            tmp_path / f"{trust}{len(sender_mail)}",
+            monkeypatch,
+            TRIPBOX_MAIL_TRUST=trust,
+            TRIPBOX_MAIL_FILING="labels",
+        )
+        inbox = FakeInbox()
+        runmod.poll(ctx, inbox)
+        big = inbox.deliver(sender_mail)
+        inbox.sizes[big] = 25 * 1024 * 1024
+        summary = runmod.poll(ctx, inbox)
+        assert (summary.fetched, summary.counts) == (0, {"rejected": 1}), trust
+        assert inbox.fetched == [] and inbox.headers == [big], trust
+        assert inbox.copies == [(big, LABEL_REJECTED)], trust
+        assert ctx.told.notices == [], trust
+        assert ctx.ledger.kv.get(KV_LAST_UID) == str(big), trust
 
 
 def test_label_never_raises(tmp_ledger_path):
@@ -222,6 +253,9 @@ class StandInMailBox:
         return ["12", "4", "9"]
 
     def _uid(self, command, uid, what):
+        if what == f"(BODY.PEEK[HEADER]<0.{MAX_HEADER_BYTES}>)":
+            head = b"From: a@example.net\r\nSubject: big\r\n\r\n"
+            return "OK", [(f"3 (UID {uid} BODY[HEADER]<0> {{{len(head)}}}".encode(), head), b")"]
         assert (command, what) == ("FETCH", "(RFC822.SIZE)")
         return "OK", [f"3 (UID {uid} RFC822.SIZE 4567)".encode()]
 
@@ -308,3 +342,4 @@ def test_the_imap_inbox_reads_uidnext_since_and_sizes(monkeypatch):
     assert inbox.uids_since(day) == [4, 9, 12]
     assert server.searched == [f"(SINCE {day.day}-{day:%b}-{day.year})"]
     assert inbox.size(9) == 4567
+    assert inbox.fetch_header(9) == b"From: a@example.net\r\nSubject: big\r\n\r\n"

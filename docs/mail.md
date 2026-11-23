@@ -65,7 +65,8 @@ checked again.
 - When the server renumbers its messages (a new `UIDVALIDITY`), tripbox reads again what arrived
   since the day before its last good poll, and knows what it has read by its content. This
   assumes the server numbers messages in the order they arrive.
-- A message over 20 MB is never fetched. You are told once.
+- A message over 20 MB is never fetched, only its header, for the sender check. You are told once
+  of one from an allowed sender; anyone else's is rejected without a word, as other mail is.
 - Messages are fetched without marking them read, and never deleted.
 - Bounds on one message: header text of 16 KiB (a longer address, authentication or id header
   reads as absent), at most 20 emails attached to it, and at most 20 bookings from one model

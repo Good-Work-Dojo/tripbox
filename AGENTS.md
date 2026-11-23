@@ -353,7 +353,8 @@ are also kept in an AirTrail flight log. One image runs three roles: `web`, `wor
   mail wait for one (`run.wait_for_a_model`), and SIGTERM ends it and its children (exit 0) and
   gives the ledger up (`stopped_at`). Compose's `worker` service runs it.
 - `tripbox mail backfill --since YYYY-MM-DD [--apply]`: mail is read from the first poll on (a new
-  UIDVALIDITY: from the day before the last good poll; over 20 MB: never fetched). It counts the
+  UIDVALIDITY: from the day before the last good poll; over 20 MB: only the header is fetched, for
+  the sender check, and a stranger's is rejected quietly). It counts the
   messages since that day up to the cursor; `--apply` reads them as mail, the cursor untouched.
   Mail off, no day, offline: exit 2.
 - `tripbox airtrail enroll --since YYYY-MM-DD [--apply]` counts the flights held out as `past`

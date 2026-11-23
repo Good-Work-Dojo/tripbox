@@ -28,7 +28,7 @@ from tripbox.ledger import Ledger
 from tripbox.log import redact
 from tripbox.mail import imap as imapmod
 from tripbox.mail.archive import archive, sha256_hex
-from tripbox.mail.normalize import NormalizedMessage, normalize
+from tripbox.mail.normalize import NormalizedMessage, header_origin, normalize
 from tripbox.notify.notifier import Notice, Notifier
 from tripbox.notify.notifier import build as build_notifier
 from tripbox.notify.text import (
@@ -1239,9 +1239,21 @@ def read_mail(
 ) -> None:
     """One message of the mailbox through `process_raw` as mail, counted in `summary`; with
     `filing` its copy goes into the label of what it came to (none while it waits, or when it
-    was skipped). One over the cap was never fetched: it counts as `oversize`, one `failure`
-    notice says so and it is filed as failed. An error is counted and told, never raised."""
+    was skipped). One over the cap was never fetched, only its header: the sender check is asked
+    of it, and one it rejects counts as `rejected` and is filed so, telling nobody, as any
+    stranger's mail; else it counts as `oversize`, one `failure` notice says so and it is filed
+    as failed. An error is counted and told, never raised."""
     if isinstance(msg, imapmod.Oversize):
+        s = ctx.settings
+        ok, why = header_origin(msg.header, s.allowed_senders, s.require_google_auth)
+        if not ok:
+            summary.add("rejected")
+            log.info(
+                "rejected uid=%s, %d bytes, never fetched: %s", msg.uid, msg.size, shown(why)
+            )
+            if filing:
+                imapmod.label(inbox, msg.uid, imapmod.LABEL_REJECTED)
+            return
         summary.add("oversize")
         log.warning("uid %s: %d bytes, over the size limit: left unread", msg.uid, msg.size)
         text = OVERSIZE.format(n=math.ceil(msg.size / MB), limit=imapmod.MAX_MESSAGE_BYTES // MB)

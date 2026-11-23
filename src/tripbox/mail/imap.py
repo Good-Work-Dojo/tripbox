@@ -38,8 +38,11 @@ STARTED_AT_NOW = "mail: starting at now; older mail is read only by tripbox mail
 # Socket timeout for every IMAP round trip. Without one a server that stops answering holds the
 # poll forever, and the worker starts polls one after another — so nothing would poll again.
 IMAP_TIMEOUT = 60.0
-# A message over this many bytes is never fetched: it is said once and the cursor moves past it.
+# A message over this many bytes is never fetched, only its header, for the sender check: one from
+# an allowed sender is said once, a stranger's is rejected quietly, and the cursor moves past it.
 MAX_MESSAGE_BYTES = 20 * 1024 * 1024
+# The most of an oversize message's header that is fetched.
+MAX_HEADER_BYTES = 256 * 1024
 
 
 class Inbox(Protocol):
@@ -49,6 +52,7 @@ class Inbox(Protocol):
     def uids_since(self, day: dt.date) -> list[int]: ...  # arrived on or after `day`, ascending
     def size(self, uid: int) -> int: ...
     def fetch_raw(self, uid: int) -> bytes: ...
+    def fetch_header(self, uid: int) -> bytes: ...  # at most MAX_HEADER_BYTES of it
     def ensure_folders(self, names: tuple[str, ...]) -> None: ...
     def copy_to(self, uid: int, folder: str) -> None: ...
 
@@ -61,10 +65,12 @@ class RawMessage:
 
 @dataclass(frozen=True)
 class Oversize:
-    """A message over MAX_MESSAGE_BYTES, never fetched: its UID and the size the server gives."""
+    """A message over MAX_MESSAGE_BYTES, never fetched: its UID, the size the server gives and
+    its header (at most MAX_HEADER_BYTES), which the sender check reads."""
 
     uid: int
     size: int
+    header: bytes = b""
 
 
 class ImapInbox:
@@ -118,6 +124,17 @@ class ImapInbox:
             if isinstance(part, tuple) and len(part) == 2 and isinstance(part[1], bytes):
                 return part[1]
         raise RuntimeError(f"IMAP fetch returned no body for uid {uid}")
+
+    def fetch_header(self, uid: int) -> bytes:
+        """The message's header block, at most MAX_HEADER_BYTES of it, never its body."""
+        what = f"(BODY.PEEK[HEADER]<0.{MAX_HEADER_BYTES}>)"
+        typ, data = self._mb.client.uid("FETCH", str(uid), what)
+        if typ != "OK" or not data or data[0] is None:
+            raise RuntimeError(f"IMAP header fetch failed for uid {uid}: {typ}")
+        for part in data:
+            if isinstance(part, tuple) and len(part) == 2 and isinstance(part[1], bytes):
+                return part[1]
+        raise RuntimeError(f"IMAP header fetch returned nothing for uid {uid}")
 
     def _on_server(self, label: str, listed: list | None = None) -> str:
         """`label` as this server names the folder: its "/" written as the server's own
@@ -186,11 +203,12 @@ def fetch_new(inbox: Inbox, ledger: Ledger) -> Iterator[RawMessage | Oversize]:
 
 
 def fetch(inbox: Inbox, uids: list[int]) -> Iterator[RawMessage | Oversize]:
-    """Each of `uids` fetched, or an Oversize when the server says it is over the cap."""
+    """Each of `uids` fetched, or an Oversize, its header alone fetched, when the server says it
+    is over the cap."""
     for uid in uids:
         size = inbox.size(uid)
         if size > MAX_MESSAGE_BYTES:
-            yield Oversize(uid=uid, size=size)
+            yield Oversize(uid=uid, size=size, header=inbox.fetch_header(uid))
         else:
             yield RawMessage(uid=uid, raw=inbox.fetch_raw(uid))
 

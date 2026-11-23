@@ -63,7 +63,9 @@ A mailbox is read from the moment tripbox first reads it. Older mail is read onl
 with `--apply` reads them as mail (the same sender check, the same model cap, filed as set
 below). Should the server number its messages anew, tripbox reads again what arrived since the
 day before its last good poll, and knows what it has read already by its content. A message over
-20 MB is never fetched: you are told once, and with labels it is filed under `tripbox/failed`.
+20 MB is never fetched, only its header, for the sender check: of one from an allowed sender you
+are told once, and with labels it is filed under `tripbox/failed`; anyone else's is rejected
+quietly, as other mail is.
 
 | Setting | Default | What it does |
 |---|---|---|

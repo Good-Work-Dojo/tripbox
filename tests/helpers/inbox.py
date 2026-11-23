@@ -11,7 +11,7 @@ import datetime as dt
 from collections.abc import Callable
 
 from tripbox.ledger import Ledger
-from tripbox.mail.imap import KV_LAST_UID, KV_UIDVALIDITY
+from tripbox.mail.imap import KV_LAST_UID, KV_UIDVALIDITY, MAX_HEADER_BYTES
 from tripbox.util import now
 
 Raw = bytes | Callable[[], bytes]
@@ -47,6 +47,7 @@ class FakeInbox:
         self.folders: set[str] = set()
         self.copies: list[tuple[int, str]] = []
         self.fetched: list[int] = []  # every fetch_raw call, by UID
+        self.headers: list[int] = []  # every fetch_header call, by UID
         # every folder call, as made, before it can fail: ("ensure", names) or ("copy", uid, folder)
         self.folder_calls: list[tuple] = []
         self.fail_copy = False
@@ -123,6 +124,14 @@ class FakeInbox:
     def fetch_raw(self, uid: int) -> bytes:
         self.fetched.append(uid)
         return self.raw(uid)
+
+    def fetch_header(self, uid: int) -> bytes:
+        """The message's header block, through its blank line, at most MAX_HEADER_BYTES."""
+        raw = self.raw(uid)
+        self.headers.append(uid)
+        ends = [(i, len(sep)) for sep in (b"\r\n\r\n", b"\n\n") if (i := raw.find(sep)) >= 0]
+        head = raw[: sum(min(ends))] if ends else raw
+        return head[:MAX_HEADER_BYTES]
 
     def ensure_folders(self, names: tuple[str, ...]) -> None:
         self.folder_calls.append(("ensure", names))
