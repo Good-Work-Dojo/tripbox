@@ -52,6 +52,9 @@ KEY_REJECTED_STATUSES = (401, 403)
 # server that answers 402 (Payment Required) says the same.
 NO_CREDIT_CODE = "insufficient_quota"
 NO_CREDIT_STATUS = 402
+# The model named is not one the server knows: mail waits until it is set right, as for a key not
+# taken. Any other refusal of the request is `rejected`.
+UNKNOWN_MODEL_STATUS = 404
 # tripbox check asks once, briefly
 CHECK_TIMEOUT = 30.0
 NO_LISTING = "the model server listed no models"
@@ -123,7 +126,10 @@ class OpenAIProvider:
         try:
             page = self.client.with_options(timeout=CHECK_TIMEOUT, max_retries=0).models.list()
         except (openai.APIStatusError, openai.APIConnectionError) as exc:
-            raise _failure(exc) from None
+            failure = _failure(exc)
+            if failure.word == "unknown_model":  # what is not found is the listing, no model
+                failure = ModelError("rejected", "the model server lists no models (HTTP 404)")
+            raise failure from None
         except Exception:  # an answer the SDK cannot read as a page at all
             raise ModelError("invalid", NO_LISTING, word="no_answer") from None
         data = getattr(page, "data", None)
@@ -208,4 +214,7 @@ def _failure(exc: openai.APIStatusError | openai.APIConnectionError) -> ModelErr
     if status in UNAVAILABLE_STATUSES or status >= 500:
         detail = f"the model server cannot answer now (HTTP {status})"
         return ModelError("unavailable", detail, word="server_error")
-    return ModelError("invalid", f"the model server refused the request (HTTP {status})")
+    if status == UNKNOWN_MODEL_STATUS:
+        detail = f"the model server does not know the model (HTTP {status})"
+        return ModelError("unavailable", detail, word="unknown_model")
+    return ModelError("rejected", f"the model server refused the request (HTTP {status})")

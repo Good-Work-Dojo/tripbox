@@ -299,21 +299,21 @@ FAILURES = [
     (
         "400",
         lambda: Raising(anthropic.BadRequestError("bad", response=answered(400), body=None)),
-        "invalid",
+        "rejected",
         None,
     ),
     (
         "404",
         lambda: Raising(anthropic.NotFoundError("which", response=answered(404), body=None)),
-        "invalid",
-        None,
+        "unavailable",
+        "unknown_model",
     ),
     (
         "422",
         lambda: Raising(
             anthropic.UnprocessableEntityError("odd", response=answered(422), body=None)
         ),
-        "invalid",
+        "rejected",
         None,
     ),
     ("validation error", lambda: Raising(off_schema()), "invalid", None),
@@ -447,6 +447,7 @@ OUTAGES = [
     ("402", "fail", {"status": 402}, "no_credit"),
     ("401", "fail", {"status": 401}, "key_rejected"),
     ("403", "fail", {"status": 403}, "key_rejected"),
+    ("404", "fail", {"status": 404}, "unknown_model"),
 ]
 
 
@@ -502,25 +503,25 @@ def test_openai_schema_rejected_falls_back_to_json_mode_validates_and_remembers(
         assert model.extract(make_nm())[0] == to_extraction(wire)
         asked = [r["body"]["response_format"]["type"] for r in server.requests]
         assert asked == ["json_schema"] + ["json_object"] * 5 and model.json_mode is True
-    # a 400 on the JSON-mode call too: invalid, and nothing is remembered
+    # a 400 on the JSON-mode call too: rejected, and nothing is remembered
     server = FakeModelServer()
     model = OpenAIProvider(SERVED, client=server.client())
     server.reject_schema()
     server.fail(400)
     with pytest.raises(provider.ModelError) as err:
         model.extract_wire(make_nm())
-    assert (err.value.kind, err.value.word) == ("invalid", None)
+    assert (err.value.kind, err.value.word) == ("rejected", None)
     server.answer(wire)
     assert model.extract_wire(make_nm())[0] == wire
     asked = [r["body"]["response_format"]["type"] for r in server.requests]
     assert asked == ["json_schema", "json_object", "json_schema"] and model.json_mode is False
-    # any other refusal of the request is not a rejected schema: invalid, not asked again
+    # any other refusal of the request is not a rejected schema: rejected, not asked again
     server = FakeModelServer()
     model = OpenAIProvider(SERVED, client=server.client())
-    server.fail(404)
+    server.fail(413)
     with pytest.raises(provider.ModelError) as err:
         model.extract_wire(make_nm())
-    assert (err.value.kind, err.value.word, len(server.requests)) == ("invalid", None, 1)
+    assert (err.value.kind, err.value.word, len(server.requests)) == ("rejected", None, 1)
 
 
 KEY_MARK = "S3CRET-KEY-MARK"

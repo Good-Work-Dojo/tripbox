@@ -39,7 +39,10 @@ is marked on the page as **To check**, never trusted. The email is data: the ins
 model say so, but that has not been tried against a real model (see below).
 
 An answer that the model refuses, cuts short, or gives in the wrong shape fails that message
-once. It is kept, and `tripbox replay --reread --status failed` asks again.
+once, and so does a request the model's server refuses (a request too large, say). It is kept,
+and `tripbox replay --reread --status failed` asks again. A model name the server does not know
+(a retired model, a typo) fails nothing: mail waits, as while the model cannot be reached, until
+`TRIPBOX_LLM_MODEL` names one it knows.
 
 ## The cap
 

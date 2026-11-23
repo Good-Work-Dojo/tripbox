@@ -331,7 +331,7 @@ def test_check_lists_the_openai_servers_models_and_quotes_nothing(env, monkeypat
         ("fail", (401,), 1, "FAIL model: openai, unavailable (key_rejected)"),
         ("fail", (500,), 1, "FAIL model: openai, unavailable (server_error)"),
         ("drop", (), 1, "FAIL model: openai, unavailable (unreachable)"),
-        ("fail", (404,), 1, "FAIL model: openai, invalid"),
+        ("fail", (404,), 1, "FAIL model: openai, rejected"),
     ):
         getattr(server, behaviour)(*args)
         assert cli.main(["check"]) == code, said

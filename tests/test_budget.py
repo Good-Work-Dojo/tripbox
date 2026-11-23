@@ -450,3 +450,32 @@ def test_a_failed_call_the_model_was_billed_for_counts_against_the_cap(tmp_path,
         month = at.astimezone(dt.UTC).strftime("%Y-%m")
         assert ctx.ledger.llm.month_cost(month) == (3, pytest.approx(sum(x[-1] for x in expected)))
         assert asked.calls == 4
+
+
+def test_a_request_the_server_refused_costs_nothing_and_an_unknown_model_makes_mail_wait(
+    tmp_path, monkeypatch
+):
+    """An HTTP refusal came back with no answer: nothing is billed, so no call is added to the
+    ledger. A model the server does not know fails nothing: mail waits, told once, as for an
+    outage; any other refusal (a request too large, say) fails its email."""
+    emails = read_by_the_model()[:3]
+    at = corpus.sent(emails[0])
+    down = (
+        "tripbox cannot reach the model (unknown_model). Mail that needs it waits and is read"
+        " when it answers again."
+    )
+    with pipeline(tmp_path, monkeypatch) as (ctx, asked, told):
+        asked.fails = ModelError("unavailable", "API error 404: model", word="unknown_model")
+        with util.clock_at(at):
+            got = [
+                run.process_raw(ctx, e.raw, source="imap", uid=n).status
+                for n, e in enumerate(emails[:2], 1)
+            ]
+        assert got == ["waiting", "waiting"] and told.of("failure") == [down]
+        asked.fails = ModelError("rejected", "API error 413: too large")
+        with util.clock_at(at + dt.timedelta(minutes=5)):
+            res = run.process_raw(ctx, emails[2].raw, source="imap", uid=3)
+        assert res.status == "failed" and res.parsed.usage is None
+        assert len(told.of("failure")) == 2
+        rows = ctx.ledger.conn.execute("SELECT COUNT(*) FROM llm_calls").fetchone()[0]
+        assert rows == 0 and asked.calls == 2

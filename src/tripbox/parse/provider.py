@@ -65,24 +65,26 @@ Rules:
 - confidence: your overall confidence (0..1) that the reservations are complete and correct.
 """
 
-# How a model call can fail: the model cannot be reached or does not take the key (unavailable);
-# it declines to answer (refused); its answer is cut off before it is whole (truncated); the
-# request is not one it takes, or the answer does not fit the wire schema (invalid); the budget is
-# used, so no call is made (over_budget).
-KINDS = ("unavailable", "refused", "truncated", "invalid", "over_budget")
+# How a model call can fail: the model cannot be reached, does not take the key or is not one
+# the server knows (unavailable); it declines to answer (refused); its answer is cut off before it
+# is whole (truncated); the answer does not fit the wire schema (invalid); the server refuses the
+# request with an HTTP status, so no answer came back (rejected: a request too large, say); the
+# budget is used, so no call is made (over_budget).
+KINDS = ("unavailable", "refused", "truncated", "invalid", "rejected", "over_budget")
 # The kinds after which mail that needs the model waits, to be read once the model answers or
 # the cap allows; after any other the message fails.
 WAITS = ("unavailable", "over_budget")
-# The kinds of failure a model is billed for: it read the email, and its answer was no use.
+# The kinds of failure a model is billed for: it read the email, and its answer was no use. A
+# request the server refused (rejected) came back with no answer, and nothing is billed.
 BILLED = ("refused", "truncated", "invalid")
 
 
 class ModelError(RuntimeError):
     """A model call that gave no answer. `str()` is the detail, or the kind when there is none;
     `word` is a short code for notices and logs: why the model is unavailable (`unreachable`,
-    `server_error`, `rate_limited`, `key_rejected`, `no_credit`), which cap is reached (`month`,
-    `day`), or `no_answer`. `usage` is what a failure of a BILLED kind is estimated to have
-    cost, once the cap (`budget.Budgeted`) has worked it out."""
+    `server_error`, `rate_limited`, `key_rejected`, `no_credit`, `unknown_model`), which cap is
+    reached (`month`, `day`), or `no_answer`. `usage` is what a failure of a BILLED kind is
+    estimated to have cost, once the cap (`budget.Budgeted`) has worked it out."""
 
     def __init__(self, kind: str, detail: str = "", *, word: str | None = None) -> None:
         if kind not in KINDS:

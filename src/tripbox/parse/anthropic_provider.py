@@ -35,6 +35,9 @@ MAX_PDF_BYTES = 5 * 1024 * 1024
 UNAVAILABLE_STATUSES = (408, 409, 429)
 KEY_REJECTED_STATUSES = (401, 403)
 NO_CREDIT_STATUS = 402  # a billing problem (`billing_error`), such as no credit left
+# The model named is not one the API knows (a retired one, a typo): mail waits until it is set
+# right, as for a key not taken. Any other refusal of the request is `rejected`.
+UNKNOWN_MODEL_STATUS = 404
 TIMEOUT = 180.0
 MAX_RETRIES = 2
 
@@ -162,7 +165,9 @@ def _failure(
             return ModelError("unavailable", detail, word="rate_limited")
         if status in UNAVAILABLE_STATUSES or status >= 500:
             return ModelError("unavailable", detail, word="server_error")
-        return ModelError("invalid", detail)
+        if status == UNKNOWN_MODEL_STATUS:
+            return ModelError("unavailable", detail, word="unknown_model")
+        return ModelError("rejected", detail)
     if isinstance(exc, anthropic.APIConnectionError):  # a timeout is one too
         return ModelError("unavailable", f"connection error: {exc}", word="unreachable")
     # an answer that does not fit the wire schema (one cut off at max_tokens often does not):
