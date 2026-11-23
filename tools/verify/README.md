@@ -40,15 +40,7 @@
   on any difference no declared rule (`task<TAB>path-glob<TAB>from<TAB>to<TAB>reason`) covers. It
   prints the uncovered paths, never their values, then the counts; exit 0, 1 for uncovered
   differences, 3 when the message counts differ, 2 on a usage error, on two files that both hold
-  no messages, or on a rule whose glob is made only of `*` and `**`. Two more kinds of declared
-  line, in the same columns, carry a base of the older item shape over to the newer one: an
-  `@item` line maps a base item (`from` a JSON object of fields the item has: `route`, `action`,
-  `status`) to a `result` and a `sync` (`to` a JSON object giving each as a word or a list of
-  words), and an `@check` line renames a finding's code (two JSON strings). They are applied only
-  when the declared file holds an `@item` line and the base is of the older shape; the first
-  `@item` line that matches an item decides, and the item's key, travellers and trip stay as they
-  are. A base item no `@item` line matches is reported as `<path>: no mapping` and fails the
-  comparison.
+  no messages, or on a rule whose glob is made only of `*` and `**`.
 
 - `standalone_smoke.py` is a new install end to end, run in a container of the test or the runtime
   image with no network, as any user. Its steps, in order: `doctor` (every optional feature off, no
