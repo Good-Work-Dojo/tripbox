@@ -2,4 +2,4 @@
 # Additional terms: see NOTICE
 """tripbox: travel confirmation emails -> AirTrail flights + trips."""
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
