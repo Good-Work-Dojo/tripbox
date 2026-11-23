@@ -89,6 +89,22 @@ def installed(steps: list[str]) -> list[str]:
     return [word for words in found for word in words.split()]
 
 
+def test_the_apps_own_modules_are_compiled_in_the_image():
+    """The project is installed editable (a .pth to /app/src), outside what UV_COMPILE_BYTECODE
+    compiles, and the root is read-only at run time: every worker child and health check would
+    compile what it imports. So /app/src is compiled once, after it is copied and before any
+    chmod, whose a+rX then reaches the bytecode too."""
+    runtime, _ = stages()
+    steps = instructions(runtime)
+    compile_step = "RUN python -m compileall -q /app/src"
+    assert compile_step in steps
+    at = steps.index(compile_step)
+    assert at > steps.index("COPY src/ ./src/")
+    assert not [s for s in steps[:at] if "chmod" in s]
+    assert at < steps.index("RUN chmod -R a+rX,go-w /app/src /app/scripts /app/config /app/tests")
+    assert not docker_ignores("src/tripbox/cli.py")
+
+
 def test_the_extractor_is_kdes_on_amd64_and_debians_elsewhere():
     runtime, test = stages()
     steps = instructions(runtime)

@@ -57,6 +57,10 @@ WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
 RUN uv sync --frozen --no-dev --no-install-project
 COPY src/ ./src/
+# The app's own modules are compiled here: the project is installed editable (a .pth to /app/src),
+# outside what UV_COMPILE_BYTECODE compiles, and the read-only root keeps a process from writing
+# their bytecode at run time.
+RUN python -m compileall -q /app/src
 COPY scripts/ ./scripts/
 COPY config/ ./config/
 RUN uv sync --frozen --no-dev && chmod +x scripts/healthcheck.py
