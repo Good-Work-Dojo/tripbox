@@ -11,7 +11,13 @@ import datetime as dt
 from collections.abc import Callable
 
 from tripbox.ledger import Ledger
-from tripbox.mail.imap import KV_LAST_UID, KV_UIDVALIDITY, MAX_HEADER_BYTES
+from tripbox.mail.imap import (
+    KV_LAST_UID,
+    KV_MAILBOX,
+    KV_UIDVALIDITY,
+    MAX_HEADER_BYTES,
+    mailbox_key,
+)
 from tripbox.util import now
 
 Raw = bytes | Callable[[], bytes]
@@ -30,7 +36,8 @@ class FakeInbox:
     fetched; `days` maps a UID to the day it arrived (a message given none arrived on the day
     the clock says when it was given). `sizes` holds a size the server states for a message, in
     place of its bytes' length. While `fail_copy` is set every copy raises, and while
-    `fail_folders` is set every folder call does."""
+    `fail_folders` is set every folder call does. `account` is the host and login it is read
+    with."""
 
     def __init__(
         self,
@@ -38,7 +45,9 @@ class FakeInbox:
         messages: dict[int, Raw] | None = None,
         *,
         days: dict[int, dt.date] | None = None,
+        account: str = "imap.example.com|trips@example.com",
     ) -> None:
+        self.account = account
         self._uv = uidvalidity
         self.messages: dict[int, Raw] = dict(messages or {})
         today = now().date()
@@ -72,6 +81,7 @@ class FakeInbox:
         before the first arrived: its UIDVALIDITY is stored and the cursor sits just below its
         first message."""
         ledger.kv.set(KV_UIDVALIDITY, str(self._uv))
+        ledger.kv.set(KV_MAILBOX, mailbox_key(self.account))
         ledger.kv.set(KV_LAST_UID, str(min(self.messages, default=self.uidnext()) - 1))
         return self
 

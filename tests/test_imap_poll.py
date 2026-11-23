@@ -19,14 +19,17 @@ from tripbox.ledger import Ledger
 from tripbox.mail.imap import (
     ALL_LABELS,
     KV_LAST_UID,
+    KV_MAILBOX,
     KV_UIDVALIDITY,
     LABEL_FAILED,
     LABEL_PROCESSED,
     LABEL_REJECTED,
     MAX_HEADER_BYTES,
     MAX_MESSAGE_BYTES,
+    backfill_uids,
     fetch_new,
     label,
+    mailbox_key,
     mark_seen_uid,
 )
 from tripbox.notify.notifier import Notifier
@@ -145,6 +148,39 @@ def test_a_changed_uidvalidity_with_no_good_poll_reads_from_now(tmp_path):
     assert list(fetch_new(inbox, led)) == [] and led.kv.get(KV_LAST_UID) == "300"
     uid = inbox.deliver(small_message(301))
     assert [m.uid for m in fetch_new(inbox, led)] == [uid] and led.kv.get(KV_UIDVALIDITY) == "2"
+
+
+def test_another_mailbox_with_the_same_uidvalidity_is_read_from_now(tmp_path, caplog):
+    """The cursor belongs to one host and login. Pointed at another account whose INBOX states
+    the same UIDVALIDITY, tripbox does not take the old account's cursor for it: it starts at
+    now, says so, and reads what arrives after; a backfill counts it as a mailbox with no
+    cursor. A ledger whose cursor names no account takes the one it reads."""
+    led = Ledger.open(tmp_path / "ledger.db")
+    old = FakeInbox(messages={n: small_message(n) for n in range(1, 9001)})
+    assert list(fetch_new(old, led)) == [] and led.kv.get(KV_LAST_UID) == "9000"
+    new = FakeInbox(account="imap.example.com|other@example.com")
+    for n in range(1, 41):
+        new.deliver(small_message(n))
+    caplog.set_level(logging.INFO, logger="tripbox.imap")
+    caplog.clear()
+    assert list(fetch_new(new, led)) == [] and led.kv.get(KV_LAST_UID) == "40"
+    said = [r.getMessage() for r in caplog.records if r.name == "tripbox.imap"]
+    assert len(said) == 1 and "another mailbox" in said[0] and "starting at now" in said[0]
+    uid = new.deliver(small_message(41))
+    assert [m.uid for m in fetch_new(new, led)] == [uid]
+    mark_seen_uid(led, uid)
+    assert backfill_uids(new, led, dt.date(2000, 1, 1)) == list(
+        range(1, 42)
+    )
+    assert backfill_uids(old, led, dt.date(2000, 1, 1)) == list(
+        range(1, 9001)
+    )
+    # a cursor stored before the account was kept beside it is this mailbox's
+    led.kv.set(KV_MAILBOX, "")
+    caplog.clear()
+    assert list(fetch_new(new, led)) == [] and led.kv.get(KV_LAST_UID) == "41"
+    assert [r for r in caplog.records if r.name == "tripbox.imap"] == []
+    assert led.kv.get(KV_MAILBOX) == mailbox_key(new.account) != mailbox_key(old.account)
 
 
 def test_an_oversize_message_is_never_fetched_and_is_said_once(tmp_path, monkeypatch):

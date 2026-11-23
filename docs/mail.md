@@ -65,6 +65,9 @@ checked again.
 - When the server renumbers its messages (a new `UIDVALIDITY`), tripbox reads again what arrived
   since the day before its last good poll, and knows what it has read by its content. This
   assumes the server numbers messages in the order they arrive.
+- Pointed at another mailbox (another `TRIPBOX_MAIL_HOST` or `TRIPBOX_MAIL_USER`), tripbox reads
+  it from now on, as a new install does, and logs that; older mail there is read only by
+  `tripbox mail backfill`.
 - A message over 20 MB is never fetched, only its header, for the sender check. You are told once
   of one from an allowed sender; anyone else's is rejected without a word, as other mail is.
 - Messages are fetched without marking them read, and never deleted.

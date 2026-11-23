@@ -352,7 +352,8 @@ are also kept in an AirTrail flight log. One image runs three roles: `web`, `wor
   read (`failed`, `stopped`, once read `uploads.MAX_READINGS` times), with no model makes waiting
   mail wait for one (`run.wait_for_a_model`), and SIGTERM ends it and its children (exit 0) and
   gives the ledger up (`stopped_at`). Compose's `worker` service runs it.
-- `tripbox mail backfill --since YYYY-MM-DD [--apply]`: mail is read from the first poll on (a new
+- `tripbox mail backfill --since YYYY-MM-DD [--apply]`: mail is read from the first poll on, and
+  from the first poll of another host or login (`imap.KV_MAILBOX`) (a new
   UIDVALIDITY: from the day before the last good poll; over 20 MB: only the header is fetched, for
   the sender check, and a stranger's is rejected quietly). It counts the
   messages since that day up to the cursor; `--apply` reads them as mail, the cursor untouched.

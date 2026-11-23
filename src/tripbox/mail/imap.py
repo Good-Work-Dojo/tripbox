@@ -10,6 +10,7 @@ tests use a fake. Mail is never deleted or marked seen.
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import logging
 import re
 from collections.abc import Iterator
@@ -32,6 +33,9 @@ ALL_LABELS = (LABEL_PROCESSED, LABEL_REJECTED, LABEL_FAILED)
 KV_UIDVALIDITY = "imap_uidvalidity"
 # The cursor: the highest UID read (or passed over); every poll reads what is above it.
 KV_LAST_UID = "imap_last_uid"
+# Whose the cursor is: `mailbox_key` of the host and login it was kept for. Another account is
+# another mailbox, whatever UIDVALIDITY it states, and is read from now on.
+KV_MAILBOX = "imap_mailbox"
 # When the last poll that ended well did (pipeline.run.poll writes it)
 KV_LAST_POLL_OK = "last_poll_ok"
 STARTED_AT_NOW = "mail: starting at now; older mail is read only by tripbox mail backfill"
@@ -46,6 +50,8 @@ MAX_HEADER_BYTES = 256 * 1024
 
 
 class Inbox(Protocol):
+    account: str  # the host and login it is read with, `host|user`
+
     def uidvalidity(self) -> int: ...
     def uidnext(self) -> int: ...
     def uids_after(self, last_uid: int) -> list[int]: ...
@@ -80,6 +86,7 @@ class ImapInbox:
         from imap_tools import MailBox
 
         self._mb = MailBox(host, timeout=IMAP_TIMEOUT).login(user, password, initial_folder=folder)
+        self.account = f"{host}|{user}"
         self._folder = folder
         self._separator: str | None = None
 
@@ -175,16 +182,25 @@ def fetch_new(inbox: Inbox, ledger: Ledger) -> Iterator[RawMessage | Oversize]:
     """Yield the messages above the cursor in UID order, each fetched, or an Oversize for one
     over MAX_MESSAGE_BYTES, which is never fetched; the caller calls `mark_seen_uid` after each.
     A mailbox read for the first time is read from now on (older mail only by `tripbox mail
-    backfill`); one whose UIDVALIDITY changed is read again since the last good poll, and what
-    the ledger holds of that is known by its bytes."""
+    backfill`), and so is one at another host or login than the cursor was kept for (KV_MAILBOX;
+    a cursor kept before that was noted is taken as this mailbox's); one whose UIDVALIDITY changed
+    is read again since the last good poll, and what the ledger holds of that is known by its
+    bytes."""
     uv = inbox.uidvalidity()
     stored = ledger.kv.get(KV_UIDVALIDITY)
-    if not stored:
+    mine = mailbox_key(inbox.account)
+    held = ledger.kv.get(KV_MAILBOX)
+    if not stored or (held and held != mine):
         top = inbox.uidnext() - 1
         with ledger.transaction():
             ledger.kv.set(KV_UIDVALIDITY, str(uv))
             ledger.kv.set(KV_LAST_UID, str(top))
-        log.info(STARTED_AT_NOW)
+            ledger.kv.set(KV_MAILBOX, mine)
+        if stored:
+            started = STARTED_AT_NOW.removeprefix("mail: ")
+            log.warning("mail: another mailbox (host or login) than before; %s", started)
+        else:
+            log.info(STARTED_AT_NOW)
     elif stored != str(uv):
         cursor = _since_the_last_good_poll(inbox, ledger)
         log.warning(
@@ -197,6 +213,8 @@ def fetch_new(inbox: Inbox, ledger: Ledger) -> Iterator[RawMessage | Oversize]:
         with ledger.transaction():
             ledger.kv.set(KV_UIDVALIDITY, str(uv))
             ledger.kv.set(KV_LAST_UID, str(cursor))
+    if held != mine and ledger.kv.get(KV_MAILBOX) != mine:
+        ledger.kv.set(KV_MAILBOX, mine)  # a cursor kept before its mailbox was noted
     last_uid = int(ledger.kv.get(KV_LAST_UID, "0") or 0)
     for uid in inbox.uids_after(last_uid):
         yield from fetch(inbox, [uid])
@@ -216,12 +234,24 @@ def fetch(inbox: Inbox, uids: list[int]) -> Iterator[RawMessage | Oversize]:
 def backfill_uids(inbox: Inbox, ledger: Ledger, since: dt.date) -> list[int]:
     """What `tripbox mail backfill` reads: the messages that arrived on or after `since` at or
     below the cursor as it stands, ascending; every one of them when no cursor is stored for
-    this mailbox's UIDVALIDITY (what the ledger holds is then known by its bytes)."""
+    this mailbox (its UIDVALIDITY, its host and login) (what the ledger holds is then known by
+    its bytes)."""
     uids = inbox.uids_since(since)
     last_uid = ledger.kv.get(KV_LAST_UID)
-    if not last_uid or ledger.kv.get(KV_UIDVALIDITY) != str(inbox.uidvalidity()):
+    held = ledger.kv.get(KV_MAILBOX)
+    if (
+        not last_uid
+        or ledger.kv.get(KV_UIDVALIDITY) != str(inbox.uidvalidity())
+        or (held and held != mailbox_key(inbox.account))
+    ):
         return uids
     return [uid for uid in uids if uid <= int(last_uid)]
+
+
+def mailbox_key(account: str) -> str:
+    """What the ledger keeps of the host and login a cursor is for (KV_MAILBOX): a digest, so
+    the login is not written there."""
+    return hashlib.sha256(account.strip().lower().encode()).hexdigest()[:16]
 
 
 def mark_seen_uid(ledger: Ledger, uid: int) -> None:
