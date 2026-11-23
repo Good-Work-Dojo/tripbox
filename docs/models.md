@@ -62,9 +62,9 @@ Every call to the configured model is counted before it is made.
 
 Mail that cannot be read now (no model, the cap reached, the model not answering) waits, and the
 first poll that can read it does, oldest first. So does mail the extractor read only in part:
-nothing of that part is filed until the model has read the whole email. You are told once a month or day for the cap and
-once for an outage. After an outage, no call is made for a minute, so the rest of a poll's mail
-waits at once instead of each message timing out.
+nothing of that part is filed until the model has read the whole email. You are told once a
+month or day for the cap and once for an outage. After an outage, no call is made for a minute,
+so the rest of a poll's mail waits at once instead of each message timing out.
 
 ## Reading how a model does: `tripbox eval`
 
