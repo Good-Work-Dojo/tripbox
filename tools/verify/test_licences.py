@@ -62,6 +62,7 @@ def script(tmp_path: Path, dists: list[dict], *args: str):
     [
         ("MIT", True),
         ("MIT-0", True),
+        ("MIT-CMU", True),
         ("0BSD", True),
         ("CC0-1.0", True),
         ("PSF-2.0", True),

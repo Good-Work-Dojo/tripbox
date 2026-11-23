@@ -74,6 +74,25 @@ Python Software Foundation licence (`/usr/local/lib/python3.14/LICENSE.txt` in t
 dependencies below, is `MIT OR Apache-2.0`. Debian's packages each keep their copyright file under
 `/usr/share/doc/<package>/copyright` in the image.
 
+## Pillow
+
+Pillow (<https://python-pillow.github.io>), the image library the worker uses to make a cover photo, is under the
+MIT-CMU licence (the Python Imaging Library's licence). Its Linux wheels, which the image installs, also carry
+compiled copies of the libraries below; each keeps the licence named here, and Pillow's own `LICENSE` file in the
+installed package (`pillow-<version>.dist-info/licenses/LICENSE`) holds every full text.
+
+- AOM, dav1d, libavif, OpenJPEG: BSD 2-clause.
+- libwebp, libyuv: BSD 3-clause. Zstandard: BSD (it is also offered under GPL-2.0; the BSD terms are the ones used).
+- Brotli, Little CMS 2 (lcms2), Raqm, libxcb: MIT. HarfBuzz: the "Old MIT" licence.
+- libXau and libXdmcp: the X Consortium (Open Group) permissive licence.
+- FreeType: the FreeType Licence (the FreeType project's BSD-style licence with an advertising clause; it is also
+  offered under GPL-2.0-or-later, and the FreeType Licence is the one used). Portions of this software are
+  copyright (c) The FreeType Project (<https://www.freetype.org>). All rights reserved.
+- libjpeg: the IJG licence (the Independent JPEG Group's). libpng: the PNG Reference Library License, version 2.
+- libtiff: the libtiff licence (permissive, Sam Leffler and Silicon Graphics). zlib: the zlib licence.
+- bzip2: the bzip2 licence (BSD-style). XZ Utils (liblzma): public domain and permissive licences; see Pillow's file.
+- Tcl/Tk: the University of California / Sun / Scriptics BSD-style terms.
+
 ## Python packages
 
 The packages the image installs at run time, one line each (name, licence, home page), checked against the
@@ -101,6 +120,7 @@ CI is the amd64 image; the arm64 image installs the same lock, and CI does not r
 - MarkupSafe — BSD-3-Clause — https://github.com/pallets/markupsafe/
 - openai — Apache-2.0 — https://github.com/openai/openai-python
 - opentelemetry-api — Apache-2.0 — https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-api
+- pillow — MIT-CMU — https://python-pillow.github.io
 - pycparser — BSD-3-Clause — https://github.com/eliben/pycparser
 - pydantic — MIT — https://github.com/pydantic/pydantic
 - pydantic_core — MIT — https://github.com/pydantic/pydantic

@@ -38,6 +38,7 @@ ALLOWED = frozenset(
     {
         "MIT",
         "MIT-0",
+        "MIT-CMU",
         "Apache-2.0",
         "BSD-2-Clause",
         "BSD-3-Clause",
