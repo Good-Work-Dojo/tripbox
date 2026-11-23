@@ -24,7 +24,7 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 from starlette.concurrency import run_in_threadpool
 from starlette.requests import HTTPConnection, Request
@@ -280,16 +280,37 @@ class PasswordLogin(Authenticator):
     def challenge(self, request: HTTPConnection) -> Response:
         """A page load (GET or HEAD accepting text/html) goes to the login page, with the page it
         asked for as `next`: its route path as the app sees it (the base already off) put back
-        under the base, with its query. Anything else is a 401, never a redirect."""
+        under the base, with its query. Anything else is a 401, never a redirect: for a browser's
+        form (another method accepting text/html) a page linking the login page, with the page
+        the form came from as `next` (`_came_from`); for a script the plain word."""
         method = request.scope.get("method", "")
-        if method in ("GET", "HEAD") and "text/html" in request.headers.get("accept", "").lower():
+        if "text/html" not in request.headers.get("accept", "").lower():
+            return PlainTextResponse("unauthorized", status_code=401)
+        where = self.urls.path("/login")
+        if method in ("GET", "HEAD"):
             query = request.scope.get("query_string", b"").decode("latin-1")
             asked = self.urls.path(request.scope.get("path", "")) + (f"?{query}" if query else "")
-            where = self.urls.path("/login")
             if self._next(asked):
                 where += "?" + urlencode({"next": asked})
             return RedirectResponse(where, status_code=303)
-        return PlainTextResponse("unauthorized", status_code=401)
+        came_from = self._came_from(request.headers.get("referer", ""))
+        if came_from:
+            where += "?" + urlencode({"next": came_from})
+        return request.app.state.templates.TemplateResponse(
+            Request(request.scope), "ended.html", {"login": where}, status_code=401
+        )
+
+    def _came_from(self, referer: str) -> str | None:
+        """The path of `referer` when it is an address of this page's origin and a page under the
+        base the login could send back to (`_next`); else None. Its query is left: what was
+        filtered can be filtered again."""
+        try:
+            parts = urlsplit(referer)
+        except ValueError:
+            return None
+        if f"{parts.scheme}://{parts.netloc}".lower() != self.urls.origin.lower():
+            return None
+        return self._next(parts.path)
 
     # ------------------------------------------------------------------------- the routes
     def routes(self) -> list[BaseRoute]:

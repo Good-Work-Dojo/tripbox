@@ -183,6 +183,20 @@ async function other(event) {
   return r;
 }
 
+// A change from one of this page's own pages: sent as it is, never queued; with no network, the
+// page that says it was not saved. A 401 or a 403 (the session is over) empties the pages store;
+// a store that cannot be emptied changes no answer.
+async function change(asked) {
+  let r;
+  try {
+    r = await fetch(asked);
+  } catch (e) {
+    return said(NOT_SAVED);
+  }
+  if (r.status === 401 || r.status === 403) await caches.delete(PAGES).catch(() => null);
+  return r;
+}
+
 // A static file: from its store, else the network (a 200 is stored); a store that cannot be
 // read or written changes no answer.
 async function file(request) {
@@ -208,10 +222,10 @@ self.addEventListener("fetch", (event) => {
   if (path === null) return;
   if (UNTOUCHED.includes(path) || UNTOUCHED_UNDER.some((p) => path.startsWith(p))) return;
   if (asked.method !== "GET") {
-    // a change from one of this page's own pages is sent as it is, never queued, and with no
-    // network refused; any other is left to the browser, never sent again from here
+    // a change from one of this page's own pages is the worker's (`change`); any other is left
+    // to the browser, never sent again from here
     if (!asked.referrer.startsWith(self.location.origin + BASE + "/")) return;
-    event.respondWith(fetch(asked).catch(() => said(NOT_SAVED)));
+    event.respondWith(change(asked));
     return;
   }
   if (path.startsWith("/static/")) {

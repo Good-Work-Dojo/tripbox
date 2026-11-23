@@ -1,0 +1,19 @@
+{# SPDX-License-Identifier: AGPL-3.0-only -#}
+{# Additional terms: see NOTICE -#}
+{% extends "base.html" %}
+{#- What a browser's form posted with no session gets (status 401): no page of the owner's, only
+    the way back in. Its one script empties the store of saved copies, as the login page's does. -#}
+{% block title %}Signed out · Trips{% endblock %}
+{% block script %}<script src="{{ base }}/static/clear.js?v={{ asset_v }}" defer></script>{% endblock %}
+{% block body %}
+<header class="top">
+  <h1>Signed out</h1>
+</header>
+<main class="page signin">
+  <p class="notice" role="alert">Your sign-in has ended, so this was not saved.</p>
+  <p class="muted small">Going back may still show what you typed.</p>
+  <div class="row">
+    <a class="btn primary" href="{{ login }}">Sign in</a>
+  </div>
+</main>
+{% endblock %}

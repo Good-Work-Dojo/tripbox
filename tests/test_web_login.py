@@ -27,6 +27,7 @@ from tripbox.config import Settings, report
 from tripbox.ledger import Ledger
 from tripbox.ledger.repo import Sessions
 from tripbox.web.login import _Signed
+from tripbox.web.middleware import SECURITY_HEADERS
 from tripbox.web.urls import Urls
 
 PASSWORD = FAKE
@@ -614,10 +615,14 @@ def test_a_page_request_goes_to_the_login_page_and_a_fetch_gets_401(tmp_path, mo
             assert where.path == c.url("/login") and not where.netloc
             assert parse_qsl(where.query) == [("next", c.url(asked))]
             assert urls.inside(c.url(asked))
-    # anything but a page load is a 401, never a redirect: a fetch, another method, a post
+    # anything but a page load is a 401, never a redirect: a fetch, another method, a post; a
+    # plain word to a script, a page to a browser (`test_a_form_posted_after_the_sign_in_ended`)
     for method, headers in (
         ("GET", {"Accept": "application/json"}),
         ("GET", {}),
+        ("OPTIONS", {}),
+        ("DELETE", {"Accept": "*/*"}),
+        ("PUT", {"Accept": "application/json"}),
         ("OPTIONS", PAGE_LOAD),
         ("DELETE", PAGE_LOAD),
         ("PUT", PAGE_LOAD),
@@ -625,15 +630,19 @@ def test_a_page_request_goes_to_the_login_page_and_a_fetch_gets_401(tmp_path, mo
         r = fresh(c).request(
             method, c.url(f"/trips/{trip.id}"), headers=headers, follow_redirects=False
         )
-        assert (r.status_code, r.text) == (401, "unauthorized"), (method, headers)
-        assert "location" not in r.headers
-    r = fresh(c).post(
-        f"/trips/{trip.id}/notes",
-        data={"notes": "x"},
-        headers={**SAME, **PAGE_LOAD},
-        follow_redirects=False,
-    )
-    assert (r.status_code, r.text) == (401, "unauthorized") and "location" not in r.headers
+        assert r.status_code == 401 and "location" not in r.headers, (method, headers)
+        if headers is PAGE_LOAD:
+            assert r.headers["content-type"].startswith("text/html"), method
+        else:
+            assert r.text == "unauthorized", (method, headers)
+    for accept in ({}, {"Accept": "*/*"}, {"Accept": "application/json"}):
+        r = fresh(c).post(
+            f"/trips/{trip.id}/notes",
+            data={"notes": "x"},
+            headers={**SAME, **accept},
+            follow_redirects=False,
+        )
+        assert (r.status_code, r.text) == (401, "unauthorized") and "location" not in r.headers
     assert ctx.trips.get(trip.id).notes is None
     # a path the login page could not send back to: the login page with no `next`
     for raw in (f"{base}//elsewhere.example/".encode(), (f"{base}/" + "x" * 100_000).encode()):
@@ -646,6 +655,58 @@ def test_a_page_request_goes_to_the_login_page_and_a_fetch_gets_401(tmp_path, mo
     assert (r.status_code, r.headers["location"]) == (303, c.url(asked))
     shown = get(c, c.local(r.headers["location"]), as_cookie("tripbox_session", session_of(r)))
     assert shown.status_code == 200 and trip.title in shown.text
+
+
+def test_a_form_posted_after_the_sign_in_ended_gets_a_page_that_links_the_login(
+    tmp_path, monkeypatch, base
+):
+    """A browser's form posted with no session (signed out elsewhere, a changed password, 30
+    days unseen) gets a 401 page, not a bare word: it says the change was not saved and links
+    the login page, its `next` the page the form came from (the Referer's path, when it is a
+    page under the base the login could send back to); the page carries the security headers
+    and no inline script or style, and its one script empties the store of saved copies."""
+    c, ctx = page(tmp_path, monkeypatch, base)
+    trip = seed_trip(ctx)
+    came_from = c.url(f"/trips/{trip.id}")
+    login = c.url("/login")
+    for referer, goto in (
+        (ORIGIN + came_from + "?past=all#notes", came_from),  # the path alone
+        (ORIGIN + came_from, came_from),
+        (ORIGIN + c.url("/"), c.url("/")),
+        (None, None),
+        ("", None),
+        ("not an address", None),
+        (ORIGIN + login + "?next=" + came_from, None),  # the login page's own
+        (ORIGIN + c.url("/logout"), None),
+        ("https://elsewhere.example" + came_from, None),  # another origin's
+        (ORIGIN + "//elsewhere.example/", None),
+        (ORIGIN + "/outside" + came_from, None) if base else (ORIGIN + "/x/../y", None),
+    ):
+        said = {"Referer": referer} if referer is not None else {}
+        r = fresh(c).post(
+            f"/trips/{trip.id}/notes",
+            data={"notes": "typed and lost"},
+            headers={**SAME, **PAGE_LOAD, **said},
+            follow_redirects=False,
+        )
+        assert r.status_code == 401 and "location" not in r.headers, referer
+        assert r.headers["content-type"].startswith("text/html"), referer
+        assert r.headers["cache-control"] == "no-store"
+        assert {k: r.headers.get(k) for k in SECURITY_HEADERS} == SECURITY_HEADERS
+        html = r.text
+        assert "Your sign-in has ended, so this was not saved." in html, referer
+        links = re.findall(r'<a class="btn primary" href="([^"]*)">Sign in</a>', html)
+        want = login + ("?" + urlencode({"next": goto}) if goto else "")
+        assert [unescape(h) for h in links] == [want], referer
+        assert "typed and lost" not in html
+        assert "<style" not in html and " style=" not in html
+        scripts = re.findall(r"<script\b([^>]*)>", html)
+        assert len(scripts) == 1, scripts
+        assert re.fullmatch(rf' src="{c.url("/static/clear.js")}\?v=[0-9a-f]+" defer', scripts[0])
+    assert ctx.trips.get(trip.id).notes is None
+    # followed, the link signs in and lands on the page the form came from
+    r = sign_in(c, next=came_from)
+    assert (r.status_code, r.headers["location"]) == (303, came_from)
 
 
 # ----------------------------------------------------------------------------- secrets

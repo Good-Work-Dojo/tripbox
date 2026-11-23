@@ -221,8 +221,11 @@ def test_no_private_route_answers_without_a_login_at_any_base_or_spelling(
                 if "POST" in methods:
                     same = [("sec-fetch-site", "same-origin"), *load]
                     status, said, body = raw_get(c.app, sent, same, method="POST", client=peer)
-                    assert (status, body) == (401, b"unauthorized"), sent
-                    assert "location" not in said, sent
+                    assert status == 401 and "location" not in said, sent
+                    if login.mode == "password":  # a browser's form: the way back in, only
+                        assert b"Your sign-in has ended" in body and title not in body, sent
+                    else:
+                        assert body == b"unauthorized", sent
     assert dump(ctx) == before
     status, _, body = raw_get(c.app, f"{base}/trips/{trip.id}".encode(), signed)
     assert status == 200 and title in body  # what the refusals are searched for

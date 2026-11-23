@@ -28,7 +28,11 @@ The page's facts; the hard rules are the repository's `AGENTS.md`.
   `urls.cookie_path`; at the root over https a sign-in drops the older `__Secure-` names (a
   device known under one keeps its bucket), and a sign-out drops every session name. `Throttle`: 10 wrong in 900 s close a bucket,
   a known device's (`devices`) or everyone else's, never an address; admission, scrypt and count
-  under one lock, off the loop. Sign-out ends the row; the device cookie outlives it.
+  under one lock, off the loop. Sign-out ends the row; the device cookie outlives it. Its
+  challenge: a page load (GET/HEAD accepting text/html) 303s to the login with `next`; another
+  method accepting text/html (a form posted after the session ended) gets a 401 page
+  (`ended.html`, `clear.js` its one script) linking the login, `next` the Referer's path when
+  it is of the origin and `_next` takes it; anything else the plain 401.
 - Wrappers, outermost first: `BasePath`, `Headers` (`SECURITY_HEADERS`, `X-Robots-Tag` too, on
   every response, `no-store` but on `/static/`), `BodyLimit` (64 KiB, `app.FORM_LIMITS` for paste and upload),
   `SameOrigin` (every POST: `Sec-Fetch-Site` or an `Origin` equal to `Settings.origin`, never
@@ -107,4 +111,5 @@ The page's facts; the hard rules are the repository's `AGENTS.md`.
   `tripbox<base>:` + `static:`/`pages:` + `app.state.version`, so a release replaces them. The
   pages store goes on a 401, 403, redirect or unmarked 200 of a kept page, before a sign-out is
   sent (`app.js`) and on the login page (`clear.js`); `Clear-Site-Data` is not relied on to empty
-  it. The worker answers a non-GET only when its referrer is under `<origin><base>/`.
+  it. The worker answers a non-GET only when its referrer is under `<origin><base>/`, and
+  empties the pages store when the answer is a 401 or 403.

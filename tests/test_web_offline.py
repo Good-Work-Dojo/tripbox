@@ -292,9 +292,21 @@ def test_an_unmarked_page_empties_the_store_and_only_the_pages_own_changes_are_a
     lines = [line.strip() for line in changes.group(1).splitlines() if "//" not in line]
     assert lines == [
         'if (!asked.referrer.startsWith(self.location.origin + BASE + "/")) return;',
-        "event.respondWith(fetch(asked).catch(() => said(NOT_SAVED)));",
+        "event.respondWith(change(asked));",
         "return;",
     ]
+    # a change refused for want of a session (401) or as forbidden (403) empties the pages
+    # store too; with no network it says it was not saved, and a store that cannot be emptied
+    # changes no answer
+    change = worker_function(script, "change")
+    assert "    r = await fetch(asked);\n" in change
+    assert "    return said(NOT_SAVED);\n" in change
+    assert (
+        "  if (r.status === 401 || r.status === 403) await caches.delete(PAGES).catch(() => null);"
+        in change
+    )
+    assert change.index("return said(NOT_SAVED);") < change.index("caches.delete(PAGES)")
+    assert change.rstrip().endswith("return r;")
 
 
 def test_a_saved_copy_locks_what_needs_a_connection_and_keeps_the_copy_buttons(
