@@ -64,7 +64,8 @@ def _terminate(signum, frame) -> None:  # noqa: ARG001
     """SIGTERM (every `docker compose up -d`): leave at once instead of being SIGKILLed after
     the grace period. The update being handled is re-delivered on restart (offset not yet
     advanced), where the ledger dedupe and a button that has nothing left to do make it a
-    no-op."""
+    no-op, and a pasted itinerary being read is read again (the paste stays pending until its
+    reading returns)."""
     raise SystemExit(0)
 
 
@@ -134,8 +135,10 @@ class Bot:
         if text.startswith("/"):
             self._command(text)
         elif self._paste_pending():
-            self.ctx.ledger.kv.set(KV_PASTE, "")
+            # cleared once the text is read: a bot stopped while reading it is handed the same
+            # text again on restart, which is then still the paste
             self._ingest_text(text)
+            self.ctx.ledger.kv.set(KV_PASTE, "")
         else:
             self.tg.send("Not a command. /paste first if that was an itinerary, or /help.")
 

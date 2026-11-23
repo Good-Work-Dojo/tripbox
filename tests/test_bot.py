@@ -590,6 +590,37 @@ def test_bot_paste_flow(monkeypatch, tmp_path):
         assert not ctx.ledger.kv.get(KV_PASTE)  # the paste window is closed
 
 
+def test_a_paste_the_bot_was_stopped_while_reading_is_read_on_redelivery(monkeypatch, tmp_path):
+    """SIGTERM while the pasted text is being read leaves the update unanswered (the offset not
+    advanced) and the paste still pending, so the text Telegram delivers again is read."""
+    entry, flight = owners_flight()
+    leg = flight["segments"][0]
+    with filing() as ctx:
+        bot, tg = bot_for(ctx, tmp_path)
+        model_reads(monkeypatch, [flight])
+        assert "Send the itinerary" in said(bot, tg, "/paste")
+        pasted = {"update_id": 9, "message": {"chat": {"id": CHAT}, "text": f"{entry.name} it"}}
+        monkeypatch.setattr(tg, "api", lambda method, **params: [pasted])
+        reading = botmod.process_text
+        calls = []
+
+        def stopped_once(*args, **kwargs):
+            calls.append(1)
+            if len(calls) == 1:
+                _terminate(15, None)
+            return reading(*args, **kwargs)
+
+        monkeypatch.setattr(botmod, "process_text", stopped_once)
+        with pytest.raises(SystemExit):
+            bot.poll_once()
+        assert ctx.ledger.kv.get(botmod.KV_OFFSET, "0") in ("0", "")
+        assert bot.poll_once() == 1
+        code = f"{leg['carrier_iata']}{leg['flight_number']}"
+        assert any(code in t for t, _ in tg.sent) and len(calls) == 2
+        assert not ctx.ledger.kv.get(KV_PASTE)
+        assert ctx.ledger.kv.get(botmod.KV_OFFSET) == "10"
+
+
 def test_a_paste_that_waits_for_the_model_is_kept_and_status_counts_what_waits(
     monkeypatch, tmp_path
 ):
