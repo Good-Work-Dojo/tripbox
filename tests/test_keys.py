@@ -129,6 +129,20 @@ def test_a_real_key_needs_every_part_it_is_made_of():
     assert key("train", {**train, "dep_local": "no day"}) is None
 
 
+def test_a_key_takes_the_day_a_printed_date_reads_as():
+    """However the day is printed, the key holds it as YYYY-MM-DD, so one booking read once as
+    ISO and once as printed has one key."""
+    for printed in ("2031-03-13", "2031-03-13T15:00", "Mar 13, 2031", "Thu Mar 13 2031 9:40 AM"):
+        stay = {"property_name": "Example Inn", "check_in": printed}
+        assert key("lodging", stay) == "lodging|exampleinn|2031-03-13", printed
+        car = {"provider": "Example Cars", "pickup_time": printed, "pickup_location": "BOS"}
+        assert key("car", car) == "car|examplecars|2031-03-13|bos", printed
+        train = {"train_number": "9031", "origin": "Example Station", "dep_local": printed}
+        assert key("train", train) == "train|9031|2031-03-13|examplestation", printed
+        flight = {"carrier": "DL", "flight_number": "1234", "origin": "BOS", "dep_local": printed}
+        assert key("flight", flight) == "DL|1234|2031-03-13|BOS", printed
+
+
 def legs_from_a_city():
     """Each flight leg of the corpus whose origin reads as a city as well as a code: its entry,
     its reservation, the leg, the code and the city."""

@@ -44,11 +44,12 @@ def _text(payload: Mapping[str, object], field: str) -> str:
 
 
 def _day(payload: Mapping[str, object], field: str) -> str | None:
-    """The day a key takes of the field: its first ten characters, when it reads as a date."""
+    """The day a key takes of the field: the date it reads as, YYYY-MM-DD, however it is
+    printed."""
     from tripbox.validate.rules import parse_local  # rules imports this module
 
-    value = _text(payload, field)
-    return value[:10] if parse_local(value) is not None else None
+    read = parse_local(_text(payload, field))
+    return read.date().isoformat() if read is not None else None
 
 
 def real_key(kind: str, payload: Mapping[str, object], *, airports: Airports) -> str | None:
@@ -66,8 +67,8 @@ def real_key(kind: str, payload: Mapping[str, object], *, airports: Airports) ->
       operator), the departure station and a departure that reads as a date. A confirmation
       code never keys a train.
 
-    A day is the first ten characters of a value that reads as a date (`YYYY-MM-DD` in the form
-    the extractors are asked for); names, places and stations are reduced to lower-case letters
+    A day is the date a value reads as (`rules.parse_local`), written `YYYY-MM-DD` whatever form
+    it was printed in; names, places and stations are reduced to lower-case letters
     and digits, codes to upper-case ones."""
     # the validator's own patterns and reductions; imported here because rules imports this module
     from tripbox.validate.rules import CARRIER, FLIGHT_NO, IATA_AIRPORT, _norm
