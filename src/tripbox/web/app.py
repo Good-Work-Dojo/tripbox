@@ -53,6 +53,8 @@ PRIVATE: list[BaseRoute] = [
     # after the two above, which the same pattern would otherwise take
     Route("/add/{kind}", views.add_by_hand, methods=["GET", "POST"], name="add_by_hand"),
     Route("/uploads/{token}", views.upload_status, name="upload_status"),
+    # before the photos, whose pattern would otherwise take it
+    Route("/covers/upload", views.upload_cover, methods=["POST"], name="upload_cover"),
     # a cover photo, by its file name (`middleware.COVER`: any other name is the 404 page)
     Route("/covers/{file}", views.cover_image, name="cover_image"),
     Route("/trips/{trip_id:int}", views.trip, name="trip"),
@@ -84,9 +86,13 @@ PRIVATE: list[BaseRoute] = [
     *settings_page.ROUTES,
     *shared.ROUTES,
 ]
-# The paste and upload forms read up to views.BODY_CAP and answer past it with their own
-# sentence; past this, the body limit answers first.
-FORM_LIMITS = {"/add/paste": views.BODY_CAP + LIMIT, "/add/upload": views.BODY_CAP + LIMIT}
+# The paste, upload and cover photo forms read up to views.BODY_CAP and answer past it with their
+# own sentence; past this, the body limit answers first.
+FORM_LIMITS = {
+    "/add/paste": views.BODY_CAP + LIMIT,
+    "/add/upload": views.BODY_CAP + LIMIT,
+    "/covers/upload": views.BODY_CAP + LIMIT,
+}
 
 
 def _asset_version(static: Path = HERE / "static", version: str = tripbox.__version__) -> str:

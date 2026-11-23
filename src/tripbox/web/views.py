@@ -25,9 +25,9 @@ from starlette.types import Message
 from tripbox import status as worker_status
 from tripbox import uploads, util
 from tripbox.ledger import Ledger
+from tripbox.trips import coversniff, grouping, ical, shares
 from tripbox.trips import display as displaymod
 from tripbox.trips import format as fmt
-from tripbox.trips import grouping, ical, shares
 from tripbox.trips.format import ICON
 from tripbox.trips.store import DRY_RUN_KV, Trip, TripItem, TripStore, editable_value
 from tripbox.util import parse_iso, today_local
@@ -53,7 +53,13 @@ FLASH = {  # ?f=<key> after a redirect → one toast; app.js then strips it from
     "noowner": "No owner is named in travellers.yaml",
     "stale": "The page was out of date: check again",
     "added": "Added",
+    "cover_received": "Photo received — it shows in a few seconds",
+    "cover_heic": "That photo is HEIC — upload a JPEG, PNG or WebP",
+    "cover_type": "That file is not a JPEG, PNG or WebP photo",
+    "cover_big": "That photo is larger than 10 MB",
 }
+# The kinds of picture an owner's cover photo may be (`coversniff.sniff`); a HEIC one is told so
+COVER_KINDS = ("jpeg", "png", "webp")
 # Where a flight stands with the flight log (its sync state), said only while one is kept; a
 # flight it holds nothing for (`off`) says nothing.
 SYNC_LINE = {
@@ -1352,6 +1358,39 @@ async def add_upload(request: Request) -> Response:
     except _TooLarge:
         return _add_page(request, "upload.html", code="too_large")
     return _take(request, "upload.html", body, name=name)
+
+
+async def upload_cover(request: Request) -> Response:
+    """The owner's own cover photo for the trip `?trip=<id>` (in the address, so a body refused
+    before it is read still knows its trip; one the owner cannot see is the 404 page, before a
+    byte is read), its `photo` a multipart file stored as it came for the worker, the one
+    reader of a picture, and replacing whatever the trip had. Counted as it arrives and
+    refused past BODY_CAP, as an upload is; past 10 MB, as HEIC or as anything but a JPEG, a
+    PNG or a WebP by its first bytes (never its name or declared type), the trip's page says
+    why and nothing is stored."""
+    with _ctx(request) as c:
+        t = _trip_or_404(c, _id(request.query_params.get("trip")) or -1)
+    try:
+        if _declares_too_much(request):
+            raise _TooLarge
+        async with _counted(request).form(max_files=1, max_part_size=BODY_CAP) as form:
+            part = form.get("photo")
+            data = await part.read() if isinstance(part, UploadFile) else b""
+    except _TooLarge:
+        return _back(request, t.id, "cover_big")
+    kind = coversniff.sniff(data)
+    if len(data) > uploads.MAX_BYTES:
+        refused = "cover_big"
+    elif kind not in COVER_KINDS:
+        refused = "cover_heic" if kind == "heic" else "cover_type"
+    else:
+        with _ctx(request) as c, c.ledger.transaction():
+            _trip_or_404(c, t.id)  # still one the owner can see
+            c.store.covers.upload(t.id, data)
+        log.info("cover photo for trip #%s stored (%s, %d bytes)", t.id, kind, len(data))
+        return _back(request, t.id, "cover_received")
+    log.info("cover photo for trip #%s refused: %s (%d bytes)", t.id, refused, len(data))
+    return _back(request, t.id, refused)
 
 
 def _size(n: int) -> str:
