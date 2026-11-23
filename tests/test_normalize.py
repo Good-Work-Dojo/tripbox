@@ -308,7 +308,8 @@ def test_auto_forwarded_mail_is_trusted_only_from_known_travel_senders():
 
 def test_authentication_results_injected_through_a_quoted_envelope_is_rejected():
     """Values an attacker controls can be echoed inside Gmail's own header (the envelope sender):
-    quoted text must not spawn fake dkim=/dmarc= entries, and a repeated method fails closed."""
+    quoted text must not spawn fake dkim=/dmarc= entries, and a repeated dmarc or spf fails
+    closed."""
     injected = {
         "Authentication-Results": "mx.google.com; spf=pass smtp.mailfrom="
         '"a;dkim=pass header.i=@example.com;dmarc=pass header.from=example.com;x"@evil.example; '
@@ -319,17 +320,60 @@ def test_authentication_results_injected_through_a_quoted_envelope_is_rejected()
     assert n.origin_ok is False and "dkim/dmarc did not bind to example.com" in n.origin_reason
     repeated = {
         "Authentication-Results": "mx.google.com; dkim=pass header.i=@example.com; "
-        "dkim=fail header.i=@example.com; dmarc=pass header.from=example.com"
+        "dmarc=pass header.from=example.com; dmarc=fail header.from=example.com"
     }
     m = make_eml(from_="alex@example.com", subject="x", date=D1, text="x", headers=repeated)
     n = normalize(m.as_bytes(), ALLOWED)
     assert n.origin_ok is False and "dkim/dmarc did not bind to example.com" in n.origin_reason
+    caf_twice = {
+        "Return-Path": "<alex+caf_=trips=example.com@example.com>",
+        "Authentication-Results": "mx.google.com; spf=pass smtp.mailfrom="
+        "alex+caf_=trips=example.com@example.com; spf=fail smtp.mailfrom=x@evil.example",
+    }
+    m = make_eml(from_="x@evil.example", subject="x", date=D1, text="x", headers=caf_twice)
+    n = normalize(m.as_bytes(), ALLOWED)
+    assert n.origin_ok is False and "spf did not bind" in n.origin_reason
     comment = {
         "Authentication-Results": 'mx.google.com; dkim=pass (a comment with "quotes;" and a )'
         " paren) header.i=@example.com; dmarc=pass header.from=example.com"
     }
     m = make_eml(from_="alex@example.com", subject="x", date=D1, text="x", headers=comment)
     assert normalize(m.as_bytes(), ALLOWED).origin_ok is True
+
+
+def test_mail_signed_twice_passes_on_its_own_domain_s_signature():
+    """A domain whose mail its provider signs too carries one dkim result per signature: the
+    sender's own passing signature binds it, whatever the other says; none of its own does not."""
+
+    def origin(ar: str):
+        m = make_eml(
+            from_="alex@example.com",
+            subject="x",
+            date=D1,
+            text="x",
+            headers={"Authentication-Results": ar},
+        )
+        return normalize(m.as_bytes(), ALLOWED)
+
+    dmarc = "dmarc=pass header.from=example.com"
+    for ar in (
+        f"mx.google.com; dkim=pass header.i=@example.com; "
+        f"dkim=pass header.i=@example-com.gappssmtp.example; {dmarc}",
+        f"mx.google.com; dkim=pass header.i=@provider.example; "
+        f"dkim=pass header.i=@example.com; {dmarc}",
+        f"mx.google.com; dkim=fail header.i=@example.com; "
+        f"dkim=pass header.i=@example.com; {dmarc}",
+    ):
+        n = origin(ar)
+        assert n.origin_ok is True, ar
+    for ar in (
+        f"mx.google.com; dkim=pass header.i=@provider.example; "
+        f"dkim=fail header.i=@example.com; {dmarc}",
+        f"mx.google.com; dkim=pass header.i=@provider.example; "
+        f"dkim=pass header.i=@other.example; {dmarc}",
+    ):
+        n = origin(ar)
+        assert n.origin_ok is False and "did not bind to example.com" in n.origin_reason, ar
 
 
 def test_every_attached_email_is_handed_back():
@@ -625,6 +669,7 @@ GMAIL_DECIDES: dict[str, list[tuple[bool, bool]]] = {
     "test_authentication_results_injected_through_a_quoted_envelope_is_rejected": [
         UNREAD,
         UNREAD,
+        UNREAD,
         VOUCHED,
     ],
     "test_auto_forward_keeps_original_headers_and_passes_origin": [VOUCHED],
@@ -637,6 +682,7 @@ GMAIL_DECIDES: dict[str, list[tuple[bool, bool]]] = {
     "test_forward_as_attachment_without_inner_date_falls_back_to_outer_date": [VOUCHED],
     "test_html_only_body_becomes_readable_text": [VOUCHED],
     "test_inline_forward_recovers_original_date_subject_sender": [VOUCHED],
+    "test_mail_signed_twice_passes_on_its_own_domain_s_signature": [VOUCHED] * 3 + [UNREAD] * 2,
     "test_only_topmost_authentication_results_counts": [UNREAD],
     "test_outlook_forward_sent_line_is_the_original_date": [VOUCHED],
     "test_owner_mail_requires_dkim_and_dmarc_for_its_own_domain": [UNREAD, UNREAD],

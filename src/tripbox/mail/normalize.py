@@ -307,14 +307,25 @@ def _ar_chunks(value: str) -> list[str]:
     return [c.strip() for c in out if c.strip()]
 
 
-def _parse_auth_results(value: str) -> tuple[str, dict[str, tuple[str, dict[str, str]]]]:
-    """Parse one Authentication-Results header -> (authserv-id, {method: (result, props)}).
-    A method that appears twice fails closed ('conflict'): a real Gmail header states each once."""
+# The methods an Authentication-Results header states once per signature: a message signed twice
+# (by its own domain and by the provider that sends it) carries a result for each.
+PER_SIGNATURE = ("dkim",)
+AuthResult = tuple[str, dict[str, str]]
+
+
+def _parse_auth_results(
+    value: str,
+) -> tuple[str, dict[str, AuthResult], dict[str, list[AuthResult]]]:
+    """Parse one Authentication-Results header -> (authserv-id, {method: (result, props)},
+    {method: [(result, props), …]}). A method of PER_SIGNATURE goes in the last, every result of
+    it in order; any other that appears twice fails closed ('conflict'): a real Gmail header
+    states each once."""
     chunks = _ar_chunks(" ".join(str(value).split()))
     if not chunks or not chunks[0].split():
-        return "", {}
+        return "", {}, {}
     authserv = chunks[0].split()[0].lower()
-    methods: dict[str, tuple[str, dict[str, str]]] = {}
+    methods: dict[str, AuthResult] = {}
+    signed: dict[str, list[AuthResult]] = {}
     twice: set[str] = set()
     for chunk in chunks[1:]:
         parts = chunk.split()
@@ -327,13 +338,15 @@ def _parse_auth_results(value: str) -> tuple[str, dict[str, tuple[str, dict[str,
             if "=" in kv:
                 k, v = kv.split("=", 1)
                 props[k.lower()] = v.strip().strip("<>").lower()
-        if method in methods:
+        if method in PER_SIGNATURE:
+            signed.setdefault(method, []).append((result.lower(), props))
+        elif method in methods:
             twice.add(method)
         else:
             methods[method] = (result.lower(), props)
     for method in twice:
         methods[method] = ("conflict", {})
-    return authserv, methods
+    return authserv, methods, signed
 
 
 def _google_auth_ok(
@@ -350,7 +363,7 @@ def _google_auth_ok(
     topmost = msg.get("Authentication-Results")  # the first one, alone parsed
     if topmost is None:
         return False, "no Authentication-Results header"
-    authserv, methods = _parse_auth_results(str(topmost))
+    authserv, methods, signed = _parse_auth_results(str(topmost))
     if authserv != TRUSTED_AUTHSERV:
         return (
             False,
@@ -358,11 +371,14 @@ def _google_auth_ok(
         )
     domain = sender.rsplit("@", 1)[-1]
     if path == "from":
-        dkim = methods.get("dkim", ("", {}))
+        # one signature of the sender's own domain that passed is enough, beside any other
+        dkim = any(
+            result == "pass" and props.get("header.i") == f"@{domain}"
+            for result, props in signed.get("dkim", [])
+        )
         dmarc = methods.get("dmarc", ("", {}))
         if (
-            dkim[0] == "pass"
-            and dkim[1].get("header.i") == f"@{domain}"
+            dkim
             and dmarc[0] == "pass"
             and dmarc[1].get("header.from") == domain
         ):
@@ -506,7 +522,7 @@ def _dmarc_vouches_for(msg: EmailMessage, addr: str) -> bool:
     topmost = msg.get("Authentication-Results")  # the first one, alone parsed
     if topmost is None:
         return False
-    authserv, methods = _parse_auth_results(str(topmost))
+    authserv, methods, _ = _parse_auth_results(str(topmost))
     if authserv != TRUSTED_AUTHSERV:
         return False
     result, props = methods.get("dmarc", ("", {}))

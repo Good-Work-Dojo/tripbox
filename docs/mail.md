@@ -18,7 +18,9 @@ trust mode, `TRIPBOX_MAIL_TRUST`.
 
 - A message from an allowed sender is read only when Gmail's own `Authentication-Results`
   header, the topmost one, from `mx.google.com`, says `dkim=pass` for the sender's own domain
-  and `dmarc=pass` for it.
+  and `dmarc=pass` for it. Mail signed twice (by its own domain and by the service that sends
+  it) carries a `dkim=` result for each signature; one passing for the sender's own domain is
+  enough. A `dmarc=` or `spf=` result stated twice rejects the message.
 - A message forwarded by a Gmail filter carries a return address of the form
   `you+caf_=…@your-domain`; it is read only when the same header says `spf=pass` for exactly that
   address. Gmail adds `X-Forwarded-For` too, which on its own proves nothing and only names the
