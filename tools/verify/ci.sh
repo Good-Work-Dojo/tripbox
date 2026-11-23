@@ -26,8 +26,7 @@
 #   corpus scorecard        `tripbox eval --recorded` as that same user on a read-only root ->
 #                           `eval: N of N emails right`
 #   tools lint, tools tests ruff check tools, then pytest -q tools (the repository mounted
-#                           read-only at /repo, with TRIPBOXOSS_STRICT=1, so a test of the docker
-#                           wrapper scripts that its environment would skip fails instead)
+#                           read-only at /repo)
 #   demo site               `tripbox demo export` into a tmpfs in the image as that same user, then
 #                           tools/verify/demo_site_check.py on it -> `demo site: ok <n> pages`
 #   secrets                 gitleaks (its image pulled by digest), with no network, over a copy of
@@ -37,10 +36,9 @@
 #                           its checkout: its own rules and .gitleaks.toml's allowances, every
 #                           finding's value redacted
 # Usage: tools/verify/ci.sh
-# Env:   TRIPBOXOSS_DK  the docker wrapper to call (default tools/private/dk.sh when it exists;
-#                       a tree without those scripts gets plain docker with the same labels,
-#                       the same 6g memory cap with no swap beyond it, and no network). A
-#                       TRIPBOXOSS_DK that is not an executable file is an error.
+# Env:   TRIPBOXOSS_DK  an executable file called in place of docker (a maintainer's own wrapper);
+#                       unset, docker is called with the label program=tripboxoss, a 6g memory
+#                       cap with no swap beyond it, and no network.
 # TRIPBOXOSS_DK and TRIPBOXOSS_CI_LOCK are for tests only: when either is set, stderr says
 # `ci.sh: overrides in effect: N`, never their values.
 # The run holds an exclusive lock on TRIPBOXOSS_CI_LOCK (default /tmp/tripboxoss-ci.lock) from
@@ -95,29 +93,21 @@ elif [ "$held" -ne 0 ]; then
   echo "ci.sh: cannot take the lock" >&2; exit 2
 fi
 
-dk_mode=plain
 DK=""
 if [ -n "${TRIPBOXOSS_DK:-}" ]; then
   [ -x "$TRIPBOXOSS_DK" ] && [ -f "$TRIPBOXOSS_DK" ] \
     || { echo "ci.sh: TRIPBOXOSS_DK is not an executable file" >&2; exit 2; }
-  DK="$TRIPBOXOSS_DK"; dk_mode=guard
-elif [ -f "$W/tools/private/dk.sh" ]; then
-  DK="$W/tools/private/dk.sh"; dk_mode=guard
+  DK="$TRIPBOXOSS_DK"
 fi
 
-# dkr build|run ARGS...: the wrapper when there is one, else docker with the labels the wrapper adds.
+# dkr build|run|images|pull ARGS...: TRIPBOXOSS_DK when it is set, else docker with the label,
+# and for a container 6g of memory, no swap beyond it and no network.
 dkr() {
-  if [ "$dk_mode" = guard ]; then "$DK" "$@"; return; fi
+  if [ -n "$DK" ]; then "$DK" "$@"; return; fi
   local sub="$1"; shift
   case "$sub" in
     build) docker build --label program=tripboxoss "$@" ;;
-    run)
-      # 6g of memory and no swap beyond it, as the wrapper gives every container
-      if [ "${TRIPBOXOSS_EGRESS:-}" = 1 ]; then
-        docker run --rm --label program=tripboxoss --memory 6g --memory-swap 6g "$@"
-      else
-        docker run --rm --label program=tripboxoss --network none --memory 6g --memory-swap 6g "$@"
-      fi ;;
+    run) docker run --rm --label program=tripboxoss --network none --memory 6g --memory-swap 6g "$@" ;;
     images) docker images --filter label=program=tripboxoss "$@" ;;
     *) docker "$sub" "$@" ;;
   esac
@@ -170,12 +160,12 @@ dkr run --user "$ANY_USER" --read-only --tmpfs /tmp -v "$W:/repo:ro" -w /repo \
 echo "== corpus scorecard =="
 dkr run --user "$ANY_USER" --read-only --tmpfs /tmp "$IMAGE" python -m tripbox eval --recorded
 
-# The whole repository, read-only: tools/ tests need tools/private and, for the wrapper scripts' own tests,
-# the .git directory. Neither the bytecode nor the caches may be written there.
+# The whole repository, read-only: the tools' tests read the tree, and test_shipped_names what git
+# would commit, from the .git directory. Neither the bytecode nor the caches may be written there.
 echo "== tools lint =="
 dkr run -v "$W:/repo:ro" -w /repo -e PYTHONDONTWRITEBYTECODE=1 "$IMAGE" ruff check --no-cache tools
 echo "== tools tests =="
-dkr run -v "$W:/repo:ro" -w /repo -e PYTHONDONTWRITEBYTECODE=1 -e TRIPBOXOSS_STRICT=1 "$IMAGE" \
+dkr run -v "$W:/repo:ro" -w /repo -e PYTHONDONTWRITEBYTECODE=1 "$IMAGE" \
   pytest -q -p no:cacheprovider tools
 
 # The demo's static copy, made in the image as any user and checked before it is published

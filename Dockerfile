@@ -77,7 +77,8 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 CMD ["python", "-m", "tripbox", "work"]
 
 # Test stage: same image plus the dev group (pytest, ruff). Build with --target test. It stays
-# root: the docker wrapper scripts' own tests need an account-database entry; the app suite is run as any user.
+# root, which the lint and the tools' tests run as; ci.sh runs the app suite as a user no account
+# names.
 FROM runtime AS test
 USER root
 # git: the tool tests under tools/ run `git init` in throwaway repositories.

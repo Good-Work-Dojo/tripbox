@@ -5,8 +5,7 @@
 # tools/verify/ci.sh's stages, in its order and under its names, then two only a workflow runs:
 # `stack` (the quick start's default path, tools/verify/stack_smoke.sh) and `browser` (the
 # screenshot stack's checks, tools/verify/browser_checks.sh).
-# A pull request's run spends nothing while the repository is private: the job waits for it to
-# be public. Each job's runner is a GitHub-hosted label written as a fixed literal, never an
+# Each job's runner is a GitHub-hosted label written as a fixed literal, never an
 # expression. tools/verify/check_workflows.py enforces that, GitHub's own actions alone and the
 # full-SHA pin on every action. Every value a script reads reaches it through its environment.
 # Tracebacks and the warnings summary are off (--tb=no -rN --disable-warnings) because CI logs are
@@ -18,7 +17,6 @@ name: ci
 on:
   push:
     branches: [main]
-    paths-ignore: ['docs/dev/**']
   pull_request:
   workflow_dispatch:
 
@@ -31,7 +29,6 @@ permissions:
 
 jobs:
   test:
-    if: github.event_name != 'pull_request' || github.event.repository.private == false
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:

@@ -400,11 +400,10 @@ def test_the_weekly_workflow_runs_only_in_the_public_repository():
     assert flow["concurrency"] == {"group": "dock-patch", "cancel-in-progress": True}
     assert list(flow["jobs"]) == ["applies"]
     job = flow["jobs"]["applies"]
-    # the public repository alone: not a fork, and not this one while it is still private
-    public = ("github.repository == 'Good-Work-Dojo/tripbox'"
-              " && github.event.repository.private == false")
-    assert f"if: {public}" in lines
-    assert job["if"] == public
+    # this repository alone, never a fork
+    own = "github.repository == 'Good-Work-Dojo/tripbox'"
+    assert f"if: {own}" in lines
+    assert job["if"] == own
     assert "runs-on: ubuntu-24.04" in lines and job["runs-on"] == "ubuntu-24.04"
     assert job["timeout-minutes"] == 5
     assert job["permissions"] == {"contents": "read", "issues": "write"}

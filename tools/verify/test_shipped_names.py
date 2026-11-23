@@ -1,10 +1,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Additional terms: see NOTICE
 """What ships names no private tool of the maintainers' host, and tools/verify's README says what
-each file of its folder is. The tree outside `docs/dev` and `tools/private` (both export-ignored,
-see .gitattributes) is read as it stands: the files git would commit (tracked, or new and not
-ignored), so a contributor's ignored file, `.env` included, is never read; a tree that is no git
-work tree is read whole."""
+each file of its folder is. The tree is read as it stands: the files git would commit (tracked, or
+new and not ignored), so a contributor's ignored file, `.env` included, is never read; a tree that
+is no git work tree is read whole."""
 
 from __future__ import annotations
 
@@ -16,8 +15,8 @@ ROOT = Path(__file__).resolve().parents[2]
 VERIFY = ROOT / "tools" / "verify"
 SELF = "tools/verify/test_shipped_names.py"
 
-# Folders that do not ship: the export drops the first two; the others are tool caches and scratch.
-NOT_SHIPPED = ("docs/dev", "tools/private", ".git", ".superpowers")
+# Folders that do not ship: git's own and scratch.
+NOT_SHIPPED = (".git", ".superpowers")
 SKIP_DIRS = {"__pycache__", ".pytest_cache", ".ruff_cache", ".venv", "node_modules"}
 
 # What names the maintainers' own host and tools, each as a pattern built so that this file does not
@@ -31,16 +30,9 @@ PRIVATE_NAMES = {
 
 # The few files that must name one, each for the reason given. A file not listed here names none.
 ALLOWED = {
-    # the gate's one switch to the host's docker guard, and the lock and label of its plain path
-    "tools/verify/ci.sh": ("a private tool", "the program's label or project prefix"),
-    "tools/verify/narrow.sh": ("a private tool", "the program's label or project prefix"),
-    # the export rule that drops the private folders
-    ".gitattributes": ("a private tool",),
-    # the licence-header check leaves the private folder alone, and its tests prove it
-    "tools/verify/spdx.py": ("a private tool",),
-    "tools/verify/test_spdx.py": ("a private tool",),
-    # the build context excludes the private folder, and the test proves it
-    "tools/verify/test_ignore_files.py": ("a private tool",),
+    # the lock and the label of the gate's docker calls
+    "tools/verify/ci.sh": ("the program's label or project prefix",),
+    "tools/verify/narrow.sh": ("the program's label or project prefix",),
     # scans for these very words
     "tools/verify/test_screens.py": ("a private tool",),
     "tools/verify/test_github_files.py": ("a private tool",),

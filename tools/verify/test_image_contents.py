@@ -131,8 +131,8 @@ def test_the_image_runs_as_a_plain_user_and_lets_any_user_read_it():
     assert [s for s in steps if s.startswith("USER ")] == ["USER 1000:1000"]
     assert steps[steps.index("USER 1000:1000") + 1].startswith("HEALTHCHECK ")
     assert re.search(r"\bHOME=/tmp\b", "\n".join(s for s in steps if s.startswith("ENV ")))
-    # the test stage is root throughout (the guards' own tests need an account-database entry)
-    # and lets any user read what it adds, since the app suite runs as an arbitrary one
+    # the test stage is root throughout (the lint and the tools' tests run as root) and lets any
+    # user read what it adds, since the app suite runs as an arbitrary one
     tsteps = instructions(test)
     assert tsteps[1] == "USER root"
     assert [s for s in tsteps if s.startswith("USER ")] == ["USER root"]
@@ -178,9 +178,13 @@ def test_the_arm64_workflow_builds_and_tries_the_image_on_an_arm64_runner():
         "    paths: ['Dockerfile', '.dockerignore', 'pyproject.toml', 'uv.lock', 'compose.yaml',",
         "            'src/tripbox/parse/**', 'tests/corpus/**', 'tools/verify/stack_smoke.sh',",
         "            'tools/verify/quickstart_check.py', '.github/workflows/arm64.yml']",
+        "  pull_request:",
+        "    paths: ['Dockerfile', '.dockerignore', 'pyproject.toml', 'uv.lock', 'compose.yaml',",
+        "            'src/tripbox/parse/**', 'tests/corpus/**', 'tools/verify/stack_smoke.sh',",
+        "            'tools/verify/quickstart_check.py', '.github/workflows/arm64.yml']",
         "  workflow_dispatch:",
     ]
-    assert "pull_request" not in text
+    assert "pull_request_target" not in text
     assert "concurrency:\n  group: arm64-${{ github.ref }}\n  cancel-in-progress: true\n" in text
     assert "\npermissions:\n  contents: read\n\njobs:\n  smoke:\n" in text
     assert re.findall(r"^ {2}\S.*$", text[text.index("\njobs:\n") :], re.M) == ["  smoke:"]

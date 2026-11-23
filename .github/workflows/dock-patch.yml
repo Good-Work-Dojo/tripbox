@@ -3,8 +3,7 @@
 # Once a week, checks that the Trips button's patch (integrations/airtrail/trips-dock.patch) still
 # applies to AirTrail's newest release, and opens an issue when it does not (one per release: an
 # open issue with the same title is not opened again). It fetches two of AirTrail's files and
-# builds nothing. It runs in the public repository alone, and only once it is public: in a fork
-# or while the repository is still private the job is skipped.
+# builds nothing. It runs in this repository alone: in a fork the job is skipped.
 # Each job's runner is a fixed literal, never an expression; tools/verify/check_workflows.py
 # enforces that and the full-SHA pin on every action.
 name: dock patch
@@ -23,7 +22,7 @@ permissions:
 
 jobs:
   applies:
-    if: github.repository == 'Good-Work-Dojo/tripbox' && github.event.repository.private == false
+    if: github.repository == 'Good-Work-Dojo/tripbox'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:

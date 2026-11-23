@@ -5,21 +5,18 @@
   `test`), runs `ruff check src tests` and `pytest -q` in it (pytest as uid 12345:54321, which the
   image has no account for), then `standalone_smoke.py` and the corpus scorecard (`tripbox eval
   --recorded`) as that user on a read-only root, then `ruff check tools` and `pytest -q -p
-  no:cacheprovider tools` with the whole repository mounted read-only at `/repo` and
-  `TRIPBOXOSS_STRICT=1`, under which a guard test that its environment would skip fails instead,
-  then the demo site, and last the secret scan: gitleaks, its image pulled by digest, over the
+  no:cacheprovider tools` with the whole repository mounted read-only at `/repo`, then the demo
+  site, and last the secret scan: gitleaks, its image pulled by digest, over the
   repository with no network, with its own rules and the allowances of `.gitleaks.toml` (each with
   its reason and its one path), every finding's value redacted. Each stage prints `== <name> ==`;
   `.github/workflows/ci.yml` runs the same stages under the same names, then `stack` and `browser`
-  (below). The last line is `CI OK`. Docker is called through a wrapper the maintainers keep outside
-  the published tree, when the checkout has one (override: `TRIPBOXOSS_DK`, an executable file) and
-  through plain `docker` with the label and no network when it has not. `TRIPBOXOSS_DK` and
-  `TRIPBOXOSS_CI_LOCK` are for tests: when either is set, stderr says `ci.sh: overrides in effect:
-  N`.
+  (below). The last line is `CI OK`. Docker is called with a label of the gate's own, a 6g memory
+  cap and no network; `TRIPBOXOSS_DK`, an executable file, is called in its place when set
+  (a maintainer's own wrapper). `TRIPBOXOSS_DK` and `TRIPBOXOSS_CI_LOCK` are for tests: when either
+  is set, stderr says `ci.sh: overrides in effect: N`.
 - `narrow.sh <pytest args>` runs one pytest selection in the existing image, with the repository
   mounted read-only at `/repo` as the working directory and `PYTHONPATH=/repo/src`. Paths are
-  relative to the repository root. Run `ci.sh` first if the image is missing. It leaves
-  `TRIPBOXOSS_STRICT` unset.
+  relative to the repository root. Run `ci.sh` first if the image is missing.
 - `spdx.py [--write] [ROOT]` checks that every source file carries the two licence lines
   (`SPDX-License-Identifier: AGPL-3.0-only`, `Additional terms: see NOTICE`) in its own comment
   syntax, and that the Trips patch carries its own licence (GPL-3.0-only); `--write` adds the lines

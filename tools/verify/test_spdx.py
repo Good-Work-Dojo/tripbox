@@ -122,8 +122,6 @@ def test_a_data_file_and_a_private_tool_are_not_sources(tmp_path):
         "src/x/e.eml",
         "docs/proxy/nginx-hostname.conf",
         "docs/proxy/traefik-hostname.yml",
-        "tools/private/dk.sh",
-        "tools/private/x.py",
         "uv.lock",
         "pyproject.toml",
         "config/travellers.example.yaml",
@@ -147,7 +145,6 @@ def test_a_data_file_and_a_private_tool_are_not_sources(tmp_path):
     }
     assert run(tmp_path, "--write").returncode == 0
     assert (tmp_path / "docs/proxy/nginx-hostname.conf").read_text() == "x\n"
-    assert (tmp_path / "tools/private/x.py").read_text() == "x\n"
     assert (tmp_path / "tests/corpus/config/travellers.yaml").read_text() == "x\n"
 
 

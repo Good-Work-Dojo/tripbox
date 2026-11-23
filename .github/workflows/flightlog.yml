@@ -4,8 +4,7 @@
 # (tools/verify/flightlog_e2e.sh: AirTrail and its database started under the project
 # tripbox-e2e, five fresh API keys passed to the tests by name, both test modules, the stack
 # removed whatever happened). It runs only when a change reaches what it tests or how it runs,
-# on a push to main, on a pull request and by hand. A pull request's run spends nothing while the
-# repository is private: the job waits for it to be public. The runner is a fixed literal, never
+# on a push to main, on a pull request and by hand. The runner is a fixed literal, never
 # an expression (see ci.yml). Nothing is uploaded; the tests print only invented flights, and the
 # demo users by id.
 name: flight log
@@ -51,7 +50,6 @@ permissions:
 
 jobs:
   e2e:
-    if: github.event_name != 'pull_request' || github.event.repository.private == false
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:

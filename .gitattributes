@@ -1,3 +1,1 @@
-docs/dev export-ignore
-tools/private export-ignore
 tests/corpus/**/email.eml -text

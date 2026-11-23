@@ -3,14 +3,20 @@
 # Build the runtime image on an arm64 runner and try it there. On arm64 the image carries Debian's
 # kitinerary-extractor (KDE publishes its static build for x86_64 only), so the corpus scorecard,
 # a new install and the quick start's stack (tools/verify/stack_smoke.sh) are run on the image as
-# built. It runs on pushes to main that change what goes into the image, decides its extractor,
-# what the corpus holds or how the stack is started and checked, and by hand; never on a pull
-# request. The runner is a fixed literal, never an expression (see ci.yml). Nothing is uploaded.
+# built. It runs on a push to main or a pull request that changes what goes into the image,
+# decides its extractor, what the corpus holds or how the stack is started and checked (a
+# Dependabot update of the base image or the packages among them, proven on arm64 before it is
+# merged), and by hand. The runner is a fixed literal, never an expression (see ci.yml). Nothing
+# is uploaded.
 name: arm64
 
 on:
   push:
     branches: [main]
+    paths: ['Dockerfile', '.dockerignore', 'pyproject.toml', 'uv.lock', 'compose.yaml',
+            'src/tripbox/parse/**', 'tests/corpus/**', 'tools/verify/stack_smoke.sh',
+            'tools/verify/quickstart_check.py', '.github/workflows/arm64.yml']
+  pull_request:
     paths: ['Dockerfile', '.dockerignore', 'pyproject.toml', 'uv.lock', 'compose.yaml',
             'src/tripbox/parse/**', 'tests/corpus/**', 'tools/verify/stack_smoke.sh',
             'tools/verify/quickstart_check.py', '.github/workflows/arm64.yml']

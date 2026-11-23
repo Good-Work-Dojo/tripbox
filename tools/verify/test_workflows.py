@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Additional terms: see NOTICE
 """The workflows, each read as text and as YAML: every one passes the workflow rules and uses
-GitHub's own actions alone, pinned by commit; no script interpolates an expression; a job a pull
-request starts waits for the repository to be public; ci.yml runs ci.sh's stages under the same
-names, then the stack and the browser; arm64.yml runs the stack and never on a pull request; the
-flight log's end to end runs only when its paths change. The release's and the demo site's
+GitHub's own actions alone, pinned by commit; no script interpolates an expression; ci.yml runs
+ci.sh's stages under the same names, then the stack and the browser; arm64.yml runs the stack when
+what builds the image changes, a pull request's change included; the flight log's end to end runs
+only when its paths change. The release's and the demo site's
 workflows are held to their jobs, their permissions and what their scripts do, run in bash against
 stub `gh`, `git` and `docker`."""
 
@@ -23,7 +23,6 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 WORKFLOWS = ROOT / ".github" / "workflows"
 CHECKER = HERE / "check_workflows.py"
-PUBLIC_ONLY = "github.event_name != 'pull_request' || github.event.repository.private == false"
 PINNED = re.compile(r" +(- )?uses: actions/[a-z-]+@[0-9a-f]{40} # v[0-9]+\.[0-9]+\.[0-9]+")
 
 
@@ -79,14 +78,17 @@ def test_no_script_interpolates_an_expression():
                     assert "${{" not in s["run"], f"{name}: {job_name}: {s.get('name')}"
 
 
-def test_pull_request_jobs_wait_for_a_public_repository():
+def test_pull_requests_run_with_no_condition_and_never_as_the_target():
+    """The repository is public: a pull request's jobs run with no `if:` (a fork of it is public
+    too), and nothing runs in the base repository's context."""
     with_pr = [n for n in flows() if "pull_request" in (load(n)["on"] or {})]
-    assert set(with_pr) >= {"ci.yml", "flightlog.yml"}
+    assert set(with_pr) == {"ci.yml", "flightlog.yml", "arm64.yml"}
     for name in with_pr:
         for job_name, job in load(name)["jobs"].items():
-            assert job.get("if") == PUBLIC_ONLY, f"{name}: {job_name}"
+            assert "if" not in job, f"{name}: {job_name}"
     for name in flows():
         assert "pull_request_target" not in text(name)
+        assert "repository.private" not in text(name), name
 
 
 # ---------------------------------------------------------------- ci.yml and ci.sh
@@ -98,12 +100,12 @@ def ci_sh_stages() -> list[str]:
 
 def test_ci_yml_and_ci_sh_run_the_same_stages():
     flow = load("ci.yml")
-    assert flow["on"] == {"push": {"branches": ["main"], "paths-ignore": ["docs/dev/**"]},
-                          "pull_request": None, "workflow_dispatch": None}
+    assert flow["on"] == {"push": {"branches": ["main"]}, "pull_request": None,
+                          "workflow_dispatch": None}
     assert flow["permissions"] == {"contents": "read"}
     (job,) = flow["jobs"].values()
     assert list(flow["jobs"]) == ["test"]
-    assert (job["runs-on"], job["timeout-minutes"], job["if"]) == ("ubuntu-24.04", 40, PUBLIC_ONLY)
+    assert (job["runs-on"], job["timeout-minutes"]) == ("ubuntu-24.04", 40)
     names = [s["name"] for s in job["steps"]]
     assert names[0] == "Check out"
     assert names[1:] == [*ci_sh_stages(), "stack", "browser"]
@@ -186,11 +188,14 @@ ARM64_PATHS = ["Dockerfile", ".dockerignore", "pyproject.toml", "uv.lock", "comp
                "tools/verify/quickstart_check.py", ".github/workflows/arm64.yml"]
 
 
-def test_the_arm64_workflow_runs_the_stack_and_never_on_a_pull_request():
+def test_the_arm64_workflow_runs_the_stack_when_what_builds_the_image_changes():
+    """On a push to main and on a pull request alike (a Dependabot update of the base image or the
+    packages is proven on arm64 before it is merged), and by hand."""
     flow = load("arm64.yml")
     assert flow["on"] == {"push": {"branches": ["main"], "paths": ARM64_PATHS},
-                          "workflow_dispatch": None}
-    assert "pull_request" not in text("arm64.yml")
+                          "pull_request": {"paths": ARM64_PATHS}, "workflow_dispatch": None}
+    for path in ("Dockerfile", "pyproject.toml", "uv.lock"):
+        assert path in ARM64_PATHS, path
     (job,) = flow["jobs"].values()
     assert job["runs-on"] == "ubuntu-24.04-arm"
     assert step(job, "Stack")["run"] == \
@@ -228,7 +233,7 @@ def test_the_flight_log_workflow_runs_only_when_its_paths_change():
     assert flow["permissions"] == {"contents": "read"}
     assert list(flow["jobs"]) == ["e2e"]
     job = flow["jobs"]["e2e"]
-    assert (job["runs-on"], job["timeout-minutes"], job["if"]) == ("ubuntu-24.04", 20, PUBLIC_ONLY)
+    assert (job["runs-on"], job["timeout-minutes"]) == ("ubuntu-24.04", 20)
     runs = [s["run"] for s in job["steps"] if "run" in s]
     assert runs == ["docker build --target test -t tripboxoss:test .",
                     "TRIPBOX_SMOKE=1 tools/verify/flightlog_e2e.sh"]

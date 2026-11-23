@@ -12,7 +12,7 @@ above a Python module's docstring leaves the docstring the module's first statem
 template the two lines are Jinja comments closed with `-#}`, so a rendered page is the same bytes
 as before.
 
-Sources are the files of the kinds in STYLES under src/, tests/, tools/ (outside tools/private),
+Sources are the files of the kinds in STYLES under src/, tests/, tools/,
 scripts/, integrations/ and .github/, and Dockerfile and compose.yaml at the top. Data carries
 none: JSON, .eml, .txt, .md, .toml, lock files, fonts, pictures, .ics, dotfiles, everything under
 tests/corpus/ and tests/data/, and the proxy recipes under docs/proxy/ (a reader copies each into a
@@ -39,7 +39,7 @@ TERMS = "Additional terms: see NOTICE"
 SOURCE_DIRS = ("src", "tests", "tools", "scripts", "integrations", ".github")
 TOP_FILES = ("Dockerfile", "compose.yaml")
 SKIP_PARTS = {"__pycache__", ".pytest_cache", ".ruff_cache", ".venv"}
-SKIP_PREFIXES = ("tools/private/", "tests/corpus/", "tests/data/")
+SKIP_PREFIXES = ("tests/corpus/", "tests/data/")
 OTHER = {"integrations/airtrail/trips-dock.patch": "GPL-3.0-only"}
 
 

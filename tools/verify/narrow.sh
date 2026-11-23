@@ -6,7 +6,7 @@
 # are given relative to the repository root.
 # Usage: tools/verify/narrow.sh <pytest args...>
 #        tools/verify/narrow.sh tests/test_x.py -k name
-#        tools/verify/narrow.sh tools/private/test_guards.py
+#        tools/verify/narrow.sh tools/verify/test_spdx.py
 # Exit 2 on a usage error or a missing image (run tools/verify/ci.sh first); otherwise pytest's own
 # status. Env: TRIPBOXOSS_DK and TRIPBOXOSS_CI_LOCK, as for ci.sh (for tests only: when either is
 # set, stderr says `narrow.sh: overrides in effect: N`); the run holds the lock shared (flock(1),
@@ -37,26 +37,18 @@ else
   echo "narrow.sh: neither flock nor perl is installed; running without the lock" >&2
 fi
 
-dk_mode=plain
 DK=""
 if [ -n "${TRIPBOXOSS_DK:-}" ]; then
   [ -x "$TRIPBOXOSS_DK" ] && [ -f "$TRIPBOXOSS_DK" ] \
     || { echo "narrow.sh: TRIPBOXOSS_DK is not an executable file" >&2; exit 2; }
-  DK="$TRIPBOXOSS_DK"; dk_mode=guard
-elif [ -f "$W/tools/private/dk.sh" ]; then
-  DK="$W/tools/private/dk.sh"; dk_mode=guard
+  DK="$TRIPBOXOSS_DK"
 fi
+# dkr run|images ARGS...: TRIPBOXOSS_DK when it is set, else docker as ci.sh calls it
 dkr() {
-  if [ "$dk_mode" = guard ]; then "$DK" "$@"; return; fi
+  if [ -n "$DK" ]; then "$DK" "$@"; return; fi
   local sub="$1"; shift
   case "$sub" in
-    run)
-      # 6g of memory and no swap beyond it, as the guard gives every container
-      if [ "${TRIPBOXOSS_EGRESS:-}" = 1 ]; then
-        docker run --rm --label program=tripboxoss --memory 6g --memory-swap 6g "$@"
-      else
-        docker run --rm --label program=tripboxoss --network none --memory 6g --memory-swap 6g "$@"
-      fi ;;
+    run) docker run --rm --label program=tripboxoss --network none --memory 6g --memory-swap 6g "$@" ;;
     images) docker images --filter label=program=tripboxoss "$@" ;;
     *) docker "$sub" "$@" ;;
   esac
