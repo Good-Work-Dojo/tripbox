@@ -77,7 +77,8 @@ What it cannot do, so that nobody takes its output for more than it is:
 - a street stays when it has no street word the rules know, no label, and no postcode and
   town beside it; so does a town, or a postcode, that stands alone;
 - a value a page's markup splits (`alex@<b>example.com</b>`) is read as its pieces;
-- nothing inside an attachment is read: every attachment is removed whole.
+- every attachment, one of text too (a list, a card, a page), is removed whole, nothing inside
+  it read, except a calendar file, which is redacted like the body.
 
 The module is pure: it imports nothing of the pipeline, the ledger or the settings."""
 
@@ -2804,12 +2805,26 @@ def _part_node(
                 return _Node("more", more=_count(inner), dropped=dropped)
             child = _mail_node(inner, depth + 1, left)
             return _Node("attached", ctype, dropped=dropped, filename=name, children=[child])
-    elif ctype.startswith("text/") and ctype != "text/rfc822-headers" and not part.is_multipart():
+    elif (
+        ctype.startswith("text/")
+        and ctype != "text/rfc822-headers"
+        and not part.is_multipart()
+        and (ctype == "text/calendar" or not _attachment(part))
+    ):
         kind = "html" if ctype in ("text/html", "text/x-amp-html") else "text"
         kind = "calendar" if ctype == "text/calendar" else kind
         return _Node(kind, ctype, dropped=dropped, text=_text_of(part), filename=name)
     size = len(_bytes_of(part)) if not part.is_multipart() else 0
     return _Node("gone", ctype, dropped=dropped, size=size, filename=name)
+
+
+def _attachment(part: email.message.Message) -> bool:
+    """Whether a part's `Content-Disposition` says it is an attachment: a text one is removed
+    whole as any other is, whatever it holds, except a calendar file."""
+    try:
+        return part.get_content_disposition() == "attachment"
+    except Exception:  # noqa: BLE001 - a disposition that cannot be read says nothing
+        return False
 
 
 def _tree(raw: bytes) -> _Node:

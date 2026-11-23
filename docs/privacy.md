@@ -98,7 +98,9 @@ label names.
   of a card, a door code or a password;
 - an encoded value, such as a long token, wherever it stands.
 
-Every attachment is removed whole: nothing inside one is read or shown.
+Every attachment except a calendar file, which is redacted like the body, is removed whole:
+nothing inside one is read or shown, whether it is a PDF, an image or text (a list, a card, a
+page).
 
 **What it cannot do**, so that nobody takes its output for more than it is:
 

@@ -441,6 +441,30 @@ def test_an_attachment_is_never_carried():
         ).as_bytes()
         shown = Redactor(Known(names=("Alex Sample",))).email(odd)
         assert 'filename="[FILE-1]"' in shown and name.split(".")[1] not in shown, name
+    # an attachment of text goes whole too, whatever no rule would know in it; a calendar file
+    # stays, redacted as the body is
+    texts = [
+        ("manifest.csv", "text/csv", b"name,seat\nLee Example,14A\nPat Example,14B\n"),
+        ("host.vcf", "text/vcard", b"BEGIN:VCARD\nFN:Lee Example\nEND:VCARD\n"),
+        ("notes.txt", "text/plain", b"Lee Example sits in 14A.\n"),
+        ("page.html", "text/html", b"<p>Lee Example</p>\n"),
+    ]
+    invite = (
+        b"BEGIN:VCALENDAR\nBEGIN:VEVENT\nSUMMARY:Alex Sample to Seattle\n"
+        b"END:VEVENT\nEND:VCALENDAR\n"
+    )
+    raw = make_eml(
+        from_="Alex Sample <alex@example.com>", subject="Fwd: Manifest", text="See them.\n",
+        attachments=[*texts, ("trip.ics", "text/calendar", invite)],
+    ).as_bytes()
+    r = Redactor(Known(names=("Alex Sample",)))
+    out = r.email(raw)
+    for kept in ("Lee", "Pat", "Example", "14A", "VCARD", "<p>"):
+        assert kept not in out, kept
+    for _, ctype, data in texts:
+        assert f"[ATTACHMENT REMOVED: {ctype}, {len(data)} bytes]" in out, ctype
+    assert r.removed_attachments == len(texts)
+    assert "SUMMARY:[NAME-1] to Seattle" in out and "Content-Type: text/calendar" in out
 
 
 def test_no_part_is_left_encoded():
@@ -749,7 +773,7 @@ def test_a_long_line_and_many_parts_are_cut():
     msg["Subject"] = "Your trip"
     msg.set_content("fare rules " * 9_091 + "\nEnd of fare rules.\n")
     for n in range(299):
-        msg.add_attachment(f"part {n}\n", subtype="plain")
+        msg.add_attachment(f"part {n}\n", subtype="plain", disposition="inline")
     out = Redactor(Known()).email(msg.as_bytes())
     lines = out.split("\n")
     assert max(map(len, lines)) == MAX_LINE + len("[CUT]")
