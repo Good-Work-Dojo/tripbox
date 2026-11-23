@@ -3,12 +3,13 @@
 # The demo site on GitHub Pages: the trips page of the invented Sample family, exported as static,
 # read-only files (`tripbox demo export`, run in the runtime image with no network, today's date)
 # and checked (tools/verify/demo_site_check.py) before it is uploaded. It is published on each full
-# release, when run by hand, and once a week from the latest full release, so the demo's trips stay
-# where they are said to be: one under way, one to come. Both jobs run only while the repository
-# variable TRIPBOX_PAGES is `true`, so a repository (a fork included) publishes no site until its
-# owner sets it, and turns Pages on in its settings: this workflow never turns it on itself. The
-# build job reads the repository (and, weekly, its latest release) alone; only the deploy job
-# holds the Pages token.
+# release that is the highest (a patch to an older line leaves the site on the newer one, as
+# release.yml leaves `latest`), when run by hand, and once a week from the latest full release, so
+# the demo's trips stay where they are said to be: one under way, one to come. Both jobs run only
+# while the repository variable TRIPBOX_PAGES is `true`, so a repository (a fork included)
+# publishes no site until its owner sets it, and turns Pages on in its settings: this workflow
+# never turns it on itself. The build job reads the repository and its list of releases alone;
+# only the deploy job holds the Pages token.
 name: pages
 
 on:
@@ -31,6 +32,8 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
+    outputs:
+      skip: ${{ steps.highest.outputs.skip }}
     steps:
       # a weekly run builds the latest full release (GitHub's latest is never a prerelease or a
       # draft), never the default branch's newer code
@@ -50,10 +53,34 @@ jobs:
         with:
           ref: ${{ steps.latest.outputs.ref }}
           persist-credentials: false
+      # a release below the highest full release published (tools/verify/release_names.py
+      # highest, the rule release.yml tags `latest` by) builds and deploys nothing
+      - name: The highest release
+        id: highest
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "the release's tag is not vX.Y.Z" >&2; exit 1; }
+          gh release list --repo "$REPOSITORY" --exclude-drafts --exclude-pre-releases --limit 1000 \
+            --json tagName --jq '.[].tagName' >"$RUNNER_TEMP/released"
+          echo "$TAG" >>"$RUNNER_TEMP/released"
+          HIGHEST="$(python3 tools/verify/release_names.py highest <"$RUNNER_TEMP/released")"
+          if [ "$HIGHEST" = "$TAG" ]; then
+            echo "skip=false" >>"$GITHUB_OUTPUT"
+          else
+            echo "$TAG is below the highest full release, $HIGHEST: the site stays as it is"
+            echo "skip=true" >>"$GITHUB_OUTPUT"
+          fi
       - name: Runtime image
+        if: steps.highest.outputs.skip != 'true'
         run: docker build --target runtime -t tripboxoss:pages .
       # the About line links to the source of what the site runs: this repository
       - name: Demo site
+        if: steps.highest.outputs.skip != 'true'
         env:
           TRIPBOX_SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}
         run: |
@@ -64,12 +91,13 @@ jobs:
             tripbox demo export --out /out/site
           python3 tools/verify/demo_site_check.py "$RUNNER_TEMP/demo/site"
       - name: Upload the site
+        if: steps.highest.outputs.skip != 'true'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: ${{ runner.temp }}/demo/site
 
   deploy:
-    if: vars.TRIPBOX_PAGES == 'true'
+    if: vars.TRIPBOX_PAGES == 'true' && needs.build.outputs.skip != 'true'
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 10

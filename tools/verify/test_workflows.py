@@ -298,7 +298,8 @@ def test_pages_is_gated_whole_on_its_variable():
     jobs = flow["jobs"]
     assert set(jobs) == {"build", "deploy"}
     assert jobs["build"]["if"] == "vars.TRIPBOX_PAGES == 'true' && !github.event.release.prerelease"
-    assert jobs["deploy"]["if"] == "vars.TRIPBOX_PAGES == 'true'"
+    assert jobs["deploy"]["if"] == (
+        "vars.TRIPBOX_PAGES == 'true' && needs.build.outputs.skip != 'true'")
     assert jobs["deploy"]["needs"] == "build"
     assert jobs["build"]["permissions"] == {"contents": "read"}
     assert jobs["deploy"]["permissions"] == {"pages": "write", "id-token": "write"}
@@ -326,6 +327,52 @@ def test_pages_is_gated_whole_on_its_variable():
     for other in flows():
         if other != "pages.yml":
             assert not any(a in text(other) for a in PAGES_ACTIONS), other
+
+
+PAGES_GH = """echo "gh $*" >> "$STUB_LOG"
+case "$1 $2" in
+  "release list") printf '%b' "${STUB_RELEASED:-}" ;;
+  *) exit 3 ;;
+esac
+"""
+
+
+@pytest.mark.parametrize("released, tag, skip", [
+    ("", "v1.0.0", "false"),
+    ("v1.0.0\\n", "v1.0.0", "false"),
+    ("v1.0.0\\nv1.1.0-rc.1\\n", "v1.0.1", "false"),
+    ("v1.0.0\\nv1.1.0\\nv1.0.1\\n", "v1.0.1", "true"),
+    ("v1.0.0\\nv2.0.0\\n", "v1.9.9", "true"),
+], ids=["first", "listed", "above-a-candidate", "older-line", "older-major"])
+def test_a_release_below_the_highest_leaves_the_demo_site_as_it_is(
+    tmp_path, released, tag, skip
+):
+    """The release.yml rule for `latest`: a patch to an older line builds and deploys nothing."""
+    jobs = load("pages.yml")["jobs"]
+    s = step(jobs["build"], "The highest release")
+    assert s["if"] == "github.event_name == 'release'"
+    assert s["env"]["TAG"] == "${{ github.event.release.tag_name }}"
+    r = run_step(tmp_path, s, stubs(tmp_path, gh=PAGES_GH), GH_TOKEN="sample",
+                 REPOSITORY="Good-Work-Dojo/tripbox-rc", TAG=tag, STUB_RELEASED=released)
+    assert r.returncode == 0, r.stderr
+    assert outputs(tmp_path) == {"skip": skip}
+    assert calls(tmp_path) == [
+        "gh release list --repo Good-Work-Dojo/tripbox-rc --exclude-drafts --exclude-pre-releases"
+        " --limit 1000 --json tagName --jq .[].tagName"]
+    assert (f"{tag} is below the highest full release" in r.stdout) == (skip == "true")
+    # every later step and the deploy job are skipped with it; the build says why
+    names = [x.get("name") for x in jobs["build"]["steps"]]
+    for later in names[names.index("The highest release") + 1:]:
+        assert step(jobs["build"], later)["if"] == "steps.highest.outputs.skip != 'true'", later
+    assert jobs["build"]["outputs"] == {"skip": "${{ steps.highest.outputs.skip }}"}
+
+
+def test_a_release_tag_of_another_form_stops_the_demo_build(tmp_path):
+    s = step(load("pages.yml")["jobs"]["build"], "The highest release")
+    r = run_step(tmp_path, s, stubs(tmp_path, gh=PAGES_GH), GH_TOKEN="sample",
+                 REPOSITORY="Good-Work-Dojo/tripbox-rc", TAG="v1.0;id")
+    assert r.returncode != 0 and "not vX.Y.Z" in r.stderr
+    assert (tmp_path / "output").read_text() == "" and calls(tmp_path) == []
 
 
 # ---------------------------------------------------------------- dependabot

@@ -62,7 +62,9 @@ Maintainers only. A release is a `## [X.Y.Z]` section in `CHANGELOG.md`, the sam
 `pyproject.toml`, merged through a pull request; then `gh release create vX.Y.Z --target <the merge commit>` (the
 script `tools/maintainer/post-publish.sh` runs it and checks the image and the demo site afterwards, see
 `tools/maintainer/README.md`). The release's notes are the changelog section, and publishing it builds the image for
-both architectures. A tag with a pre-release part (`vX.Y.Z-rc.1`) is a rehearsal that `release.yml` proves and
+both architectures. A patch to an older line (`v1.0.1` after `v1.1.0`) is created with `--latest=false`, which the
+script adds itself, so GitHub's latest release, the quick start's download and the demo site stay on the newest line.
+A tag with a pre-release part (`vX.Y.Z-rc.1`) is a rehearsal that `release.yml` proves and
 cleans up on its own; the script refuses one.
 
 ## Pull requests
