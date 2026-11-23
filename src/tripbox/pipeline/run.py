@@ -105,6 +105,9 @@ ATTACHED_GIVEN_UP = (
 # cap is reached, or the model cannot be reached. It is unlabelled in the mailbox, and the resume
 # pass of every poll reads it again once the reason is gone (`resume_waiting`).
 WAIT_REASONS = ("no_model", "over_budget", "model_down")
+# The `error` of a message the resume pass found with no archived email to read again (a backup
+# restored without its mail): it is finished `failed`, told once.
+ARCHIVE_MISSING = "archived email missing"
 # The period the last notice that the cap is reached was sent for (`budget.Budget.period`), and
 # when the model was last found unreachable, until it answers again: each is told once.
 KV_BUDGET_ALERTED = "budget_alerted"
@@ -1106,8 +1109,9 @@ def resume_waiting(ctx: Context) -> int:
     the messages that wait for the model; each is read from its archive file through
     `process_raw` under its own source and told as any reading is. The second pass stops at the
     first message that waits again, its reason not gone, and every message that waits then
-    takes that reason (`wait_for_a_model`); it does not run while no model is built. How many
-    were read."""
+    takes that reason (`wait_for_a_model`); it does not run while no model is built. A message
+    whose archived email is gone is failed, told once (`_archived`), and the pass goes on. How
+    many were read."""
     read = 0
     led = ctx.ledger
     tries = _resume_tries(led)
@@ -1122,12 +1126,12 @@ def resume_waiting(ctx: Context) -> int:
             tries[key] = tries.get(key, 0) + 1
             _keep_resume_tries(led, tries)
             try:
-                raw = Path(row["archive_path"]).read_bytes()
-                process_raw(ctx, raw, source=row["source"])
+                raw = _archived(ctx, row)
+                if raw is not None:
+                    process_raw(ctx, raw, source=row["source"])
+                    read += 1
             except Exception:  # noqa: BLE001 - one message that cannot be read stops no other
                 log.exception("message #%s: the resume pass could not take it up", row["id"])
-            else:
-                read += 1
         now = led.messages.get(row["id"])
         if now is None or now["error"] != ATTACHED_UNFILED:
             tries.pop(key, None)
@@ -1142,7 +1146,9 @@ def resume_waiting(ctx: Context) -> int:
     waited = 0
     for row in ctx.ledger.messages.by_status("waiting"):
         try:
-            raw = Path(row["archive_path"]).read_bytes()
+            raw = _archived(ctx, row)
+            if raw is None:
+                continue
             res = process_raw(ctx, raw, source=row["source"])
         except Exception:  # noqa: BLE001 - one message that cannot be read stops no other
             log.exception("message #%s: the resume pass could not read it", row["id"])
@@ -1156,6 +1162,24 @@ def resume_waiting(ctx: Context) -> int:
     if waited:
         log.info("resume: %d message(s) that waited for the model read", waited)
     return read + waited
+
+
+def _archived(ctx: Context, row: sqlite3.Row) -> bytes | None:
+    """The bytes of the email the message `row` was read from, from its archive file. When the
+    file is gone (a backup restored without its mail), nothing can read it again: the message is
+    finished `failed` (ARCHIVE_MISSING), told once, the upload it ended as says so, and None."""
+    path = Path(row["archive_path"] or "")
+    try:
+        return path.read_bytes()
+    except FileNotFoundError:
+        pass
+    led = ctx.ledger
+    with led.transaction():
+        led.messages.finish(row["id"], "failed", error=ARCHIVE_MISSING)
+        led.uploads.read_again(row["id"], "failed", "unreadable", row["id"])
+    log.warning("message #%s: its archived email is missing; failed", row["id"])
+    _alert(ctx, True, row["subject"] or f"message #{row['id']}", ARCHIVE_MISSING)
+    return None
 
 
 def _resume_tries(ledger: Ledger) -> dict[str, int]:

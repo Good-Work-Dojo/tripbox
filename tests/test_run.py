@@ -332,6 +332,32 @@ def test_the_resume_pass_stops_at_the_first_message_that_waits_again(tmp_path, m
         assert told.of("budget_reached") == [DAY.format(n=1)] and told.of("failure") == []
 
 
+def test_a_waiting_message_whose_archived_email_is_gone_fails_once(tmp_path, monkeypatch, caplog):
+    """A backup restored without its mail leaves a waiting message with no archived email: the
+    next resume pass fails it, told once and logged with no traceback, and reads the next; the
+    pass after that finds nothing of it left to read."""
+    entries = read_by_the_model()[:2]
+    at = corpus.sent(entries[0])
+    with pipeline(tmp_path, monkeypatch, model=False) as (ctx, asked, told):
+        with util.clock_at(at):
+            for n, e in enumerate(entries, 1):
+                assert runmod.process_raw(ctx, e.raw, source="imap", uid=n).status == "waiting"
+        gone, kept = ctx.ledger.messages.by_status("waiting")
+        Path(gone["archive_path"]).unlink()
+        capped(ctx, asked)  # a model is set up
+        with caplog.at_level(logging.WARNING), util.clock_at(at + dt.timedelta(minutes=5)):
+            assert runmod.resume_waiting(ctx) == 1
+        row = ctx.ledger.messages.get(gone["id"])
+        assert (row["status"], row["error"]) == ("failed", runmod.ARCHIVE_MISSING)
+        assert ctx.ledger.messages.get(kept["id"])["status"] == "processed"
+        assert not any(r.exc_info for r in caplog.records)
+        assert len(told.of("failure")) == 1 and runmod.ARCHIVE_MISSING in told.of("failure")[0]
+        caplog.clear()
+        with caplog.at_level(logging.WARNING), util.clock_at(at + dt.timedelta(minutes=10)):
+            assert runmod.resume_waiting(ctx) == 0
+        assert caplog.records == [] and len(told.of("failure")) == 1
+
+
 def test_a_resume_reading_cut_short_leaves_the_message_waiting(tmp_path, monkeypatch):
     """The poll that reads what waits can be stopped while the model reads (the worker stops a
     poll that runs past its time). While it reads, the message still counts as waiting; a
