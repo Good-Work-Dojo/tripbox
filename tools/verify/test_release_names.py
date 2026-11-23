@@ -215,7 +215,7 @@ def test_the_notes_of_this_repositorys_version_come_from_its_changelog():
     changelog = (ROOT / "CHANGELOG.md").read_text("utf-8")
     version = rn.package_version((ROOT / "pyproject.toml").read_text("utf-8"))
     final, candidate = rn.notes(changelog, f"v{version}"), rn.notes(changelog, f"v{version}-rc.1")
-    assert final == candidate and "### Added" in final
+    assert final == candidate and re.search(r"^### ", final, re.M)
     dated = rf"^## \[{re.escape(version)}\] - \d{{4}}-\d{{2}}-\d{{2}}$"
     assert re.search(dated, changelog, re.M), \
         "the heading carries its release's date, as Keep a Changelog writes it"

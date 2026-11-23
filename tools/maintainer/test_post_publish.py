@@ -11,6 +11,7 @@ registry; every name here is invented."""
 from __future__ import annotations
 
 import json
+import re
 import shlex
 import shutil
 import stat
@@ -313,6 +314,14 @@ class Rig:
         for rel in TREE_FILES:
             (self.tree / rel).parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / rel, self.tree / rel)
+        # the tree as it stood at the first release, whatever the repository's own version now
+        pyproject = self.tree / "pyproject.toml"
+        pyproject.write_text(re.sub(r'^version = "[^"]*"', 'version = "1.0.0"',
+                                    pyproject.read_text("utf-8"), count=1, flags=re.M), "utf-8")
+        changelog = self.tree / "CHANGELOG.md"
+        text = changelog.read_text("utf-8")
+        head, first = text.split("\n## [", 1)[0], text[text.index("\n## [1.0.0]"):]
+        changelog.write_text(head + first, "utf-8")
         self.bin = tmp / "bin"
         self.bin.mkdir()
         for name, body in (("gh", FAKE_GH), ("git", FAKE_GIT), ("docker", FAKE_DOCKER), ("curl", FAKE_CURL)):

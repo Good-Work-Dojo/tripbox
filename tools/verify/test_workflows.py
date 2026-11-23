@@ -11,6 +11,7 @@ stub `gh`, `git` and `docker`."""
 from __future__ import annotations
 
 import re
+import shutil
 import subprocess
 import sys
 import tomllib
@@ -514,7 +515,8 @@ def stubs(tmp_path: Path, **scripts: str) -> Path:
     return bindir
 
 
-def run_step(tmp_path: Path, s: dict, bindir: Path, **env: str) -> subprocess.CompletedProcess:
+def run_step(tmp_path: Path, s: dict, bindir: Path, cwd: Path = ROOT,
+             **env: str) -> subprocess.CompletedProcess:
     """A step's script in bash, as the runner gives it: its environment, a temporary folder, an
     outputs file, a summary file, the stubs first on PATH and the repository as its folder."""
     for f in ("output", "summary", "log"):
@@ -525,7 +527,7 @@ def run_step(tmp_path: Path, s: dict, bindir: Path, **env: str) -> subprocess.Co
             "STUB_DIR": str(tmp_path), **env}
     assert set(s.get("env", {})) <= set(full), "the test gives the step every variable it reads"
     shell = ["bash", "-eo", "pipefail", "-c"] if s.get("shell") == "bash" else ["bash", "-e", "-c"]
-    return subprocess.run([*shell, s["run"]], env=full, cwd=ROOT, capture_output=True, text=True,
+    return subprocess.run([*shell, s["run"]], env=full, cwd=cwd, capture_output=True, text=True,
                           timeout=120, check=False)
 
 
@@ -555,11 +557,26 @@ esac
 """
 
 
+def first_release_tree(tmp_path: Path) -> Path:
+    """The files the release step reads, as they stood at the first release (version 1.0.0),
+    whatever the repository's own version now is."""
+    tree = tmp_path / "tree"
+    (tree / "tools/verify").mkdir(parents=True)
+    shutil.copy2(HERE / "release_names.py", tree / "tools/verify/release_names.py")
+    pyproject = (ROOT / "pyproject.toml").read_text("utf-8")
+    (tree / "pyproject.toml").write_text(
+        re.sub(r'^version = "[^"]*"', 'version = "1.0.0"', pyproject, count=1, flags=re.M), "utf-8")
+    changelog = (ROOT / "CHANGELOG.md").read_text("utf-8")
+    head, first = changelog.split("\n## [", 1)[0], changelog[changelog.index("\n## [1.0.0]"):]
+    (tree / "CHANGELOG.md").write_text(head + first, "utf-8")
+    return tree
+
+
 def run_prepare(tmp_path: Path, event: str, prerelease: str, tag: str = "v1.0.0-rc.1",
                 **stub: str) -> subprocess.CompletedProcess:
     s = next(s for s in release()["jobs"]["prepare"]["steps"] if s.get("id") == "names")
     bindir = stubs(tmp_path, gh=PREPARE_GH, git=PREPARE_GIT)
-    return run_step(tmp_path, s, bindir, EVENT=event, GH_TOKEN="sample", TAG=tag,
+    return run_step(tmp_path, s, bindir, first_release_tree(tmp_path), EVENT=event, GH_TOKEN="sample", TAG=tag,
                     REPOSITORY="Good-Work-Dojo/tripbox-rc", SOURCE=SOURCE, DISPATCHED=DISPATCHED,
                     STUB_PRERELEASE=prerelease, STUB_TAG_SHA=TAG_SHA, **stub)
 
