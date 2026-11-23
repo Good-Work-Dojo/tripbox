@@ -22,8 +22,9 @@ internet would let whoever came first choose it.
   new browser waits until the guessing has stopped for 15 minutes: sign in from a browser that
   has signed in before, or restart the page (`docker compose restart web`), which empties the
   count. The count is kept for those two groups, never for an address.
-- The cookie's name and `Secure` flag follow `TRIPBOX_BASE_URL`: over https it is a `__Secure-`
-  cookie.
+- The cookie's name and `Secure` flag follow `TRIPBOX_BASE_URL`: over https at the root of its
+  host it is a `__Host-` cookie, which no other site under the same domain can set or shadow;
+  over https under a sub-path it is a `__Secure-` cookie.
 
 **`proxy`**: a login proxy in front of the page (Authelia, Authentik, oauth2-proxy and the like)
 signs people in and names the user in a header. The header is believed only when the request's
