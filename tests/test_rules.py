@@ -382,6 +382,25 @@ def test_parse_local_handles_single_digit_hours_and_impossible_dates():
     assert parse_local("2027-06-22 garbage") is None
 
 
+def test_a_year_at_either_end_of_the_calendar_is_no_usable_time():
+    """A year no booking has (out of 1900-2200) reads as no date, so a leg whose instant would
+    leave the calendar is filed with the hard check `departure` instead of raising."""
+    for printed in ("0001-01-01T00:00", "9999-12-31T23:00", "Dec 31, 9999", "1899-12-31T08:00"):
+        assert parse_local(printed) is None, printed
+        assert rules.day_alone(printed) is None, printed
+    tokyo = leg_of(seg(departure_tz="Asia/Tokyo", departure_local="0001-01-01T00:00"))
+    lax = leg_of(seg(departure_tz="America/Los_Angeles", departure_local="9999-12-31T23:00"))
+    for it in (tokyo, lax):
+        assert [p.code for p in it.problems] == ["departure"]
+        assert it.payload["dep_utc"] is None
+        again = rebuild_item("flight", it.payload, refdata=rd(), book=BOOK)
+        assert [p.code for p in again.problems] == ["departure"]
+    late_arrival = leg_of(seg(arrival_local="9999-12-31T23:00"))
+    assert late_arrival.payload["arr_utc"] is None
+    assert parse_local("2200-12-31T23:59") is not None
+    assert parse_local("1900-01-01T00:00") is not None
+
+
 def test_passengers_are_classified_per_segment():
     """One PNR, Alex on the outbound only and Sam on the return only (kitinerary lists the
     travellers of each leg): the return is Sam's flight, not Alex's."""

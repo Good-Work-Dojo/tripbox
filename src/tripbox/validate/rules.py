@@ -170,7 +170,17 @@ def _read_local(value: str | None) -> tuple[dt.datetime, bool] | None:
     """`value` read as parse_local reads it, and whether it carries a time of day. That is told
     from what was printed — a time part, in any of the forms read — never from the time read, so
     a time printed as 00:00 is a time and a day alone (a printed zone or offset beside it
-    included) is not."""
+    included) is not. A year outside YEARS is no date: no booking has one, and an instant worked
+    out from it can leave the calendar."""
+    read = _read_any_year(value)
+    return read if read is not None and read[0].year in YEARS else None
+
+
+# The years a time is read in.
+YEARS = range(1900, 2201)
+
+
+def _read_any_year(value: str | None) -> tuple[dt.datetime, bool] | None:
     if not value:
         return None
     v = value.strip()
