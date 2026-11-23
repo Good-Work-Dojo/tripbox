@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-only
 # Additional terms: see NOTICE
-# Run once by the maintainer, after the repository is made public, from a checkout of it (bash). In order, stopping at
-# the first failure with what to do next:
+# Run by the maintainer from a checkout of the repository (bash): once after it was made public, to switch on what a
+# public repository gets and publish the first release, and again for each later release, where every switch is
+# already as wanted and it publishes the release and checks it. In order, stopping at the first failure with what to
+# do next:
 #   1. the repository is public; its default branch's head is the expected commit (--expect-sha), and this checkout is
 #      at that head with no change in it; the version (a full release: a prerelease is refused, release.yml alone
-#      proves a candidate), its CHANGELOG notes, ci.yml's job and the tag are checked. A private repository, and any
-#      failure here, stops the script before anything changes;
+#      proves a candidate), its CHANGELOG notes, ci.yml's job and the tag are checked, and the published full releases
+#      are read: with none but this one, this is the first release. A private repository, and any failure here, stops
+#      the script before anything changes;
 #   2. Dependabot alerts and security updates, secret scanning and push protection, private vulnerability reporting
 #      and CodeQL's default setup are switched on;
 #   3. a branch ruleset on the default branch requires the job of .github/workflows/ci.yml (its name, read from the
@@ -17,10 +20,12 @@
 #      published release) and pages.yml is run on the default branch;
 #   5. the release of the version (CHANGELOG.md's first versioned section unless --version says) is created at the
 #      head with `gh release create --target`, its notes that section (tools/verify/release_names.py notes), and
-#      release.yml's run is awaited;
+#      release.yml's run is awaited; a release below the highest full release (a patch to an older line) is created
+#      with --latest=false, so GitHub's latest release stays the highest;
 #   6. the image is pulled by its full version (the one tag every release pushes, a patch to an older line included)
 #      with an empty docker configuration, so without any sign-in, and must hold both architectures; the publish gate
-#      (tools/publish_gate.py images) scans it with the given denylist and prints counts and paths only. Its content
+#      (tools/publish_gate.py images) scans it with the given denylist and prints counts and paths only (the first
+#      release needs --denylist or --skip-gate; a later one without --denylist is not scanned, and says so). Its content
 #      matches count only in the project's own files (MEMBER_RULES): those in what the image holds from upstream (the base
 #      image, the bundled extractor, pip, uv and the third-party packages) are reported as one count of public upstream
 #      bytes; a source map, an export file's name or a damaged archive there still fails the step. When the
@@ -33,12 +38,14 @@
 #      reported. It never merges: that is going live, and the owner's. Every check is made in step 1: the clone and
 #      its remote, a pull request of the branch already merged (the page is live: nothing to do), a fetch of the
 #      clone, the base site on the site's main, the bundle and its tip's [CF-Pages-Skip] marker, and that a moved
-#      remote merges without conflict. Without --site it prints what to run by hand.
+#      remote merges without conflict. Without --site it prints what to run by hand for the first release, and
+#      nothing more for a later one, whose page is live already.
+# After the first release it also reminds of the one step no API call makes (the CLA Assistant app).
 # Every step reads the state first and changes nothing that is already as wanted, so running the script again is
 # safe. --dry-run makes the reads and prints every call that would change something (and the pull, the gate and the
 # demo check) without making it. No token is ever printed: gh holds its own.
 # Usage: tools/maintainer/post-publish.sh [--repo OWNER/NAME] [--version vX.Y.Z] [--expect-sha SHA]
-#          (--denylist DIR | --skip-gate) [--export-names FILE] [--timeout MINUTES]
+#          [--denylist DIR | --skip-gate] [--export-names FILE] [--timeout MINUTES]
 #          [--site DIR --site-bundle FILE [--site-repo OWNER/NAME]] [--dry-run]
 # Needs gh signed in (gh auth status) as an account with admin rights on the repository, docker, curl and python3.
 # Exit 0 done, 1 a step failed (its line says what to do), 2 a usage error.
@@ -94,7 +101,7 @@ MEMBER_RULES=(
 usage() {
   cat >&2 <<'EOF'
 usage: tools/maintainer/post-publish.sh [--repo OWNER/NAME] [--version vX.Y.Z] [--expect-sha SHA]
-         (--denylist DIR | --skip-gate) [--export-names FILE] [--timeout MINUTES]
+         [--denylist DIR | --skip-gate] [--export-names FILE] [--timeout MINUTES]
          [--site DIR --site-bundle FILE [--site-repo OWNER/NAME]] [--dry-run]
 EOF
   exit 2
@@ -130,10 +137,11 @@ fi
   || refuse "--expect-sha takes a commit SHA in lower-case hex, 7 to 40 characters (got '$EXPECT_SHA')"
 if [ "$SKIP_GATE" = 1 ]; then
   [ -z "$DENYLIST" ] || refuse "--denylist and --skip-gate contradict each other: give one"
-else
-  [ -n "$DENYLIST" ] || refuse "the publish gate needs the denylist: give --denylist DIR (or --skip-gate to leave the scan out)"
+elif [ -n "$DENYLIST" ]; then
   [ -d "$DENYLIST" ] || refuse "the denylist $DENYLIST is not a directory"
 fi
+# why the scan is left out, when it is: --skip-gate, or no denylist for a release after the first (decided in step 1)
+GATE_SKIPPED="--skip-gate"
 [ -z "$EXPORT_NAMES" ] || [ -f "$EXPORT_NAMES" ] || refuse "the export names file $EXPORT_NAMES does not exist"
 for tool in gh git docker curl python3; do
   command -v "$tool" >/dev/null 2>&1 || refuse "$tool is not installed: install it, then run this again"
@@ -231,6 +239,10 @@ elif cmd == "latest-run":  # LIST EVENT SHA: "id status conclusion url" of the n
     if found:
         r = max(found, key=lambda r: r.get("id") or 0)
         print(r.get("id"), r.get("status"), r.get("conclusion") or "-", r.get("html_url") or "-")
+elif cmd == "other-releases":  # LIST TAG: the tags of the published full releases but TAG, one a line
+    for r in load(args[0]):
+        if not r.get("draft") and not r.get("prerelease") and r.get("tag_name") and r["tag_name"] != args[1]:
+            print(r["tag_name"])
 elif cmd == "release-names":  # NAMES_OUTPUT: release_names.py's `key=value` lines as image, version, rehearsal
     pairs = dict(line.split("=", 1) for line in open(args[0], encoding="utf-8").read().splitlines() if "=" in line)
     print(pairs["image"], pairs["version"], pairs["rehearsal"])
@@ -386,6 +398,27 @@ if [ "$RELEASED" = 1 ] || [ "$rc" = 0 ]; then
   get "repos/$REPO/commits/$TAG" "$TMP/tag.json" || fail "the tag $TAG could not be read: run this again (nothing was changed)"
   [ "$(tool get "$TMP/tag.json" sha)" = "$HEAD" ] \
     || fail "the tag $TAG already exists on another commit than the head $HEAD: delete it (and any release of it), then run this again (nothing was changed)"
+fi
+# the published full releases: with none but this one, this is the first release, which gets the launch's steps (the
+# scan's denylist, the site's page, the CLA reminder); one below the highest is not made GitHub's latest release
+get "repos/$REPO/releases?per_page=100" "$TMP/releases.json" \
+  || fail "the releases of $REPO could not be read: run this again (nothing was changed)"
+tool other-releases "$TMP/releases.json" "$TAG" >"$TMP/other-releases"
+FIRST=0
+[ -s "$TMP/other-releases" ] || FIRST=1
+HIGHEST="$({ cat "$TMP/other-releases"; echo "$TAG"; } | python3 -I "$W/tools/verify/release_names.py" highest)"
+LATEST=()
+if [ "$HIGHEST" != "$TAG" ]; then LATEST=(--latest=false); fi
+if [ "$SKIP_GATE" = 0 ] && [ -z "$DENYLIST" ]; then
+  [ "$FIRST" = 0 ] \
+    || refuse "$TAG is the first release, whose image the publish gate scans: give --denylist DIR (or --skip-gate to leave the scan out); nothing was changed"
+  SKIP_GATE=1
+  GATE_SKIPPED="no --denylist given; $TAG is not the first release"
+fi
+if [ "$FIRST" = 1 ]; then
+  echo "release $TAG: the first release"
+else
+  echo "release $TAG: after $(grep -c '' "$TMP/other-releases") earlier; the highest full release is $HIGHEST"
 fi
 # the full version is the tag every release pushes: a patch to an older line moves no major tag
 PULL_TAG="$IMAGE_VERSION"
@@ -586,7 +619,7 @@ if [ "$RELEASED" = 1 ]; then
   echo "release $TAG: already published at $HEAD"
 else
   echo "notes: CHANGELOG.md's section for $TAG ($(grep -c '' "$TMP/notes.md") lines)"
-  change gh release create "$TAG" --repo "$REPO" --target "$HEAD" --title "$TAG" --notes-file "$TMP/notes.md"
+  change gh release create "$TAG" --repo "$REPO" --target "$HEAD" --title "$TAG" --notes-file "$TMP/notes.md" "${LATEST[@]}"
   [ "$DRY" = 1 ] || RELEASED=1
 fi
 if [ "$RELEASED" = 1 ]; then
@@ -647,7 +680,7 @@ for image in "${IMAGES[@]}"; do
   echo "$image: pulled anonymously, linux/amd64 and linux/arm64"
 done
 if [ "$SKIP_GATE" = 1 ]; then
-  echo "publish gate: skipped (--skip-gate)"
+  echo "publish gate: skipped ($GATE_SKIPPED)"
 else
   # the image carries no list of export files: the scan's own checks still run with an empty one
   if [ -z "$EXPORT_NAMES" ]; then
@@ -699,7 +732,9 @@ else
 fi
 
 step 8 "the site's tripbox page"
-if [ -z "$SITE_DIR" ]; then
+if [ -z "$SITE_DIR" ] && [ "$FIRST" = 0 ]; then
+  echo "no --site given: the site's page went live with the first release; nothing to do"
+elif [ -z "$SITE_DIR" ]; then
   echo "no --site given: the site's page is left for you. In a clone of $SITE_REPO, with the page's bundle:"
   echo "  git fetch origin"
   echo "  git cat-file -e origin/main:$SITE_BASE_FILE    # the base site must be on main; if not, stop"
@@ -770,5 +805,5 @@ else
 fi
 
 if [ "$DRY" = 1 ]; then echo; echo "dry run: nothing was changed"; else echo; echo "done: $REPO is published as $TAG"; fi
-# The one step no API call makes: the contributor agreement's app is installed by hand, once.
-echo "by hand, once: install the CLA Assistant GitHub App on $REPO, pointed at a Gist holding CLA.md, so that it asks the author of each first pull request to sign"
+# The one step no API call makes: the contributor agreement's app is installed by hand, once, at the first release.
+[ "$FIRST" = 0 ] || echo "by hand, once: install the CLA Assistant GitHub App on $REPO, pointed at a Gist holding CLA.md, so that it asks the author of each first pull request to sign"

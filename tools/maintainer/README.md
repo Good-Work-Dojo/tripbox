@@ -12,23 +12,26 @@ What they need:
   show as unavailable without it.
 - For `post-publish.sh`: also bash 4.4 or later (macOS's own `/bin/bash` is 3.2: install a newer
   one, for example with Homebrew, and the script refuses an older one), `docker`, `curl` and
-  `python3` (3.12 or later, for the publish gate), and a denylist you supply to the publish gate
-  (`tools/publish_gate.py`). The denylist stays on the maintainer's machine: its path is given on
-  the command line and never written into the tree.
+  `python3` (3.12 or later, for the publish gate). For the first release only, a denylist you
+  supply to the publish gate (`tools/publish_gate.py`), or `--skip-gate`. The denylist stays on
+  the maintainer's machine: its path is given on the command line and never written into the
+  tree.
 
 ## post-publish.sh
 
-Run **once, after the repository is made public**. It turns on what a public repository gets for
-free, publishes the first release and the demo site, and checks what was published. In order,
-stopping at the first failure with a line that says what to do:
+Run once after the repository is made public, and again for each later release. The first run
+turns on what a public repository gets for free, publishes the first release and the demo site,
+and checks what was published; a later run finds every switch as wanted, publishes its release and
+checks it. In order, stopping at the first failure with a line that says what to do:
 
 1. Checks, before anything changes, that the repository is public; that its default branch's head
    is the expected commit and that this checkout is at that head with no change in it (the version,
    the notes and the `ci.yml` job are read from it); that the version is a full release (a
    prerelease is refused: release candidates are proven by `release.yml` alone, which removes its
    own images), the same as `pyproject.toml`'s, with a `CHANGELOG.md` section; and that a tag or
-   release of that version, if one exists, is on this commit. A private repository stops the
-   script here too.
+   release of that version, if one exists, is on this commit. It reads the published full
+   releases: with none but this version's, this is the first release. A private repository stops
+   the script here too.
 2. Turns on Dependabot alerts and security updates, secret scanning and push protection, private
    vulnerability reporting and CodeQL's default setup.
 3. Applies a branch ruleset named `default-branch` to the default branch: the job of
@@ -43,24 +46,26 @@ stopping at the first failure with a line that says what to do:
    demo's dates follow the calendar) and runs `pages.yml` on the default branch.
 5. Creates the release at the head commit with `gh release create --target <sha>`, its notes the
    version's section of `CHANGELOG.md`, and waits for `release.yml` to build and publish the image.
+   A release below the highest full release (a patch to an older line) gets `--latest=false`, so
+   GitHub's latest release, which the quick start's download and the weekly demo follow, stays the
+   highest.
 6. Pulls the image by its full version (`ghcr.io/<owner>/<name>:1.0.0` for `v1.0.0`, the one tag
-   every release pushes) with an empty docker configuration, so without any sign-in, which proves
-   it is public; it must hold `linux/amd64` and `linux/arm64`. Then the publish gate scans it with
-   the denylist and prints counts and paths only. Its token and pattern matches count only in
-   the project's own files: `/app`, and inside its virtual environment `/app/.venv` only what
-   tripbox installs of itself (its `tripbox-*` metadata, its `.pth` file and `bin/tripbox`).
-   Everything else in the image is
-   public upstream bytes the project did not write (the Debian base, the bundled kitinerary
-   binary, pip, uv and the third-party Python packages), where author addresses, common words
-   and public hosts can match the denylist's words and the generic patterns; those content
-   matches are printed as one line,
-   `upstream: N findings in M members (public upstream bytes, not counted)`, with no tokens,
-   labels or paths, and never fail the step. A source map, a file named like an export file or a
-   damaged archive fails it wherever it is. The rules are `MEMBER_RULES` in the
-   script. It scans the image of this computer's
-   architecture alone; the other's project files under `/app` are the same, its system packages
-   are not read. When the anonymous pull fails, it prints the package's settings page,
-   where its visibility is set.
+   every release pushes) with an empty docker configuration, so without any sign-in, which proves it
+   is public; it must hold `linux/amd64` and `linux/arm64`. Then the publish gate scans it with the
+   denylist and prints counts and paths only. The first release needs `--denylist` or `--skip-gate`;
+   a later release without `--denylist` is not scanned, and the step says so. Its token and pattern
+   matches count only in the project's own files: `/app`, and inside its virtual environment
+   `/app/.venv` only what tripbox installs of itself (its `tripbox-*` metadata, its `.pth` file and
+   `bin/tripbox`). Everything else in the image is public upstream bytes the project did not write
+   (the Debian base, the bundled kitinerary binary, pip, uv and the third-party Python packages),
+   where author addresses, common words and public hosts can match the denylist's words and the
+   generic patterns; those content matches are printed as one line, `upstream: N findings in M
+   members (public upstream bytes, not counted)`, with no tokens, labels or paths, and never fail
+   the step. A source map, a file named like an export file or a damaged archive fails it wherever
+   it is. The rules are `MEMBER_RULES` in the script. It scans the image of this computer's
+   architecture alone; the other's project files under `/app` are the same, its system packages are
+   not read. When the anonymous pull fails, it prints the package's settings page, where its
+   visibility is set.
 7. Fetches the demo site: it must answer 200, and its page must hold the banner and carry its
    content-security policy in a `<meta>` tag.
 8. The maintainers' own site's tripbox page (a separate repository; without one, skip this step).
@@ -79,23 +84,24 @@ stopping at the first failure with a line that says what to do:
    site is on `main` (`git cat-file -e origin/main:site/assets/analytics.js`; if not, it stops and
    tells you); that the bundle verifies, holds the branch and its tip's message starts
    `[CF-Pages-Skip]` (a pushed branch without it gets a public preview); and that a moved remote
-   would merge without a conflict. Without `--site` the step prints what to run by hand and the
-   script still exits 0.
+   would merge without a conflict. Without `--site` the step prints what to run by hand for the
+   first release, and for a later one only that the page is live already; the script still exits
+   0.
 
 Each step reads the current state first and changes nothing that is already as wanted, so running
 it again after a failure is safe: the steps already done are skipped.
 
-**One-time manual step** (no API call makes it; the script's last line is a reminder): install the
-CLA Assistant GitHub App on the repository (from `https://cla-assistant.io`, signed in as the
-repository's admin) and point it at a Gist holding `CLA.md`, so it asks the author of each first
-pull request to sign (`CONTRIBUTING.md`).
+**One-time manual step** (no API call makes it; the first release's last line is a reminder):
+install the CLA Assistant GitHub App on the repository (from `https://cla-assistant.io`, signed in
+as the repository's admin) and point it at a Gist holding `CLA.md`, so it asks the author of each
+first pull request to sign (`CONTRIBUTING.md`).
 
 | Flag | What |
 |---|---|
 | `--repo OWNER/NAME` | The repository (default `Good-Work-Dojo/tripbox`) |
 | `--version vX.Y.Z` | The release (default: the first section of `CHANGELOG.md` headed by a version) |
 | `--expect-sha SHA` | The commit the default branch and this checkout must be at; without it the checkout must equal the default branch's head |
-| `--denylist DIR` | The publish gate's denylist directory; required unless `--skip-gate` |
+| `--denylist DIR` | The publish gate's denylist directory; the first release needs it unless `--skip-gate`, a later one is scanned only with it |
 | `--skip-gate` | Leave out the scan of the published image |
 | `--export-names FILE` | File names the gate refuses in the image, one a line (default: none) |
 | `--timeout MINUTES` | How long to wait for each workflow run (default 60) |
@@ -115,9 +121,12 @@ Exit 0 when everything is done, 1 when a step failed, 2 on a usage error.
 
 1. Add a `## [X.Y.Z]` section to `CHANGELOG.md` and set `version` in `pyproject.toml` to the same
    number; both land on the default branch through a pull request.
-2. Run `tools/maintainer/post-publish.sh --version vX.Y.Z --expect-sha <the merge commit>
-   --denylist /path/to/denylist`: every switch is already as wanted, so it creates the release with
-   `gh release create vX.Y.Z --target <sha>` and checks the image and the demo site as above.
+2. Run `tools/maintainer/post-publish.sh --version vX.Y.Z --expect-sha <the merge commit>`
+   (add `--dry-run` first to see what it would do): every switch is already as wanted, so it
+   creates the release with `gh release create vX.Y.Z --target <sha>` (with `--latest=false` for a
+   patch to an older line), waits for `release.yml`, pulls the image anonymously and checks both
+   architectures, and checks the demo site. It needs no denylist (the image is scanned only when
+   one is given) and repeats no launch step: no site page, no CLA reminder.
 3. This script is for full releases only. A prerelease (`vX.Y.Z-rc.1`) is a rehearsal that
    `release.yml` proves and cleans up by itself, leaving no image behind; the script refuses one.
 

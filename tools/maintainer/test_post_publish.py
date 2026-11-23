@@ -233,6 +233,11 @@ def wanted_ruleset(contexts: list[str]) -> dict:
                       {"type": "non_fast_forward"}, {"type": "deletion"}]}
 
 
+def released(tag: str, **kw) -> dict:
+    """a release as GitHub lists it: published, a full release unless `kw` says"""
+    return {"tag_name": tag, "draft": False, "prerelease": False, **kw}
+
+
 def scenario(tree: Path, done: bool = False, tag: str = "v1.0.0", visibility: str = "public") -> dict:
     """the answers of a repository just made public (`done=False`) or of one this script already finished"""
     on = "enabled" if done else "disabled"
@@ -264,6 +269,7 @@ def scenario(tree: Path, done: bool = False, tag: str = "v1.0.0", visibility: st
             {"body": run_of("workflow_dispatch", run_id=40)} if done
             else [{"body": {"workflow_runs": []}}, {"body": run_of("workflow_dispatch", run_id=40)}],
         f"GET {R}/releases/tags/{tag}": {"body": {"tag_name": tag}} if done else {"status": 404},
+        f"GET {R}/releases?per_page=100": {"body": [released(tag)] if done else []},
         f"GET {R}/git/ref/tags/{tag}": {"status": 404},
         f"GET {R}/commits/{tag}": {"body": {"sha": HEAD}},
         f"GET {R}/actions/workflows/release.yml/runs?event=release&head_sha={HEAD}&per_page=20":
@@ -556,19 +562,86 @@ def test_an_image_without_both_architectures_stops(rig):
     assert rig.tools("curl") == []
 
 
-@pytest.mark.parametrize("args", [(), ("--denylist", "/nonexistent/denylist"),
+@pytest.mark.parametrize("args", [("--denylist", "/nonexistent/denylist"),
                                   ("--skip-gate", "--denylist", "/nonexistent/denylist")])
-def test_the_gate_is_required_unless_skipped_by_name(rig, args):
+def test_a_denylist_that_is_no_folder_or_contradicts_the_skip_is_refused_before_any_call(rig, args):
     r = rig.run("--repo", REPO, *args)
     assert r.returncode == 2 and r.stderr.startswith("post-publish: ")
     assert rig.calls() == []
+
+
+def test_the_first_release_needs_the_gate_or_its_skip_by_name(rig):
+    """With no full release published but this one, the scan is the launch's: the run stops
+    once step 1 has read that, before anything changes."""
+    rig.scenario["answers"][f"GET {R}/releases?per_page=100"] = {"body": [
+        released("v1.0.0-rc.1", prerelease=True), released("v0.9.0", draft=True)]}
+    r = rig.run("--repo", REPO)
+    assert r.returncode == 2
+    assert "v1.0.0 is the first release, whose image the publish gate scans: give --denylist DIR" in r.stderr
+    assert "nothing was changed" in r.stderr
+    assert write_only_calls(rig) == []
+
+
+def later_release(rig: Rig, tag: str, earlier: tuple[str, ...]) -> None:
+    """The tree and the answers of a release cut after `earlier` were published."""
+    version = tag[1:]
+    (rig.tree / "CHANGELOG.md").write_text(
+        f"# Changelog\n\n## [{version}] - 2027-03-01\n\n### Fixed\n- An invented fix.\n\n"
+        "## [1.0.0] - 2026-11-22\n\n- The first.\n", encoding="utf-8")
+    set_version(rig, version)
+    rig.scenario = scenario(rig.tree, done=True, tag=tag)
+    for key in (f"GET {R}/releases/tags/{tag}",):
+        rig.scenario["answers"][key] = {"status": 404}
+    rig.scenario["answers"][f"GET {R}/releases?per_page=100"] = {
+        "body": [released(e) for e in earlier]}
+
+
+def test_a_later_release_needs_no_denylist_and_repeats_no_launch_step(rig):
+    later_release(rig, "v1.0.1", ("v1.0.0",))
+    r = rig.run("--repo", REPO)
+    assert r.returncode == 0, r.stderr
+    assert rig.changes() == ["CREATE release v1.0.1"]
+    [create] = [c for c in rig.calls() if c.get("method") == "CREATE"]
+    assert "--latest=false" not in create["argv"], "the highest release is GitHub's latest"
+    assert len(rig.tools("docker", "pull")) == 1 and rig.tools("docker", "save") == []
+    assert "release v1.0.1: after 1 earlier; the highest full release is v1.0.1" in r.stdout
+    assert "publish gate: skipped (no --denylist given; v1.0.1 is not the first release)" in r.stdout
+    assert "no --site given: the site's page went live with the first release; nothing to do" in r.stdout
+    for launch_only in ("gh pr create", SITE_BASE_FILE, "CLA Assistant"):
+        assert launch_only not in r.stdout + r.stderr, launch_only
+    assert rig.site_calls() == []
+    # a denylist given is still used
+    r = rig.publish()
+    assert r.returncode == 0, r.stderr
+    assert len(rig.tools("docker", "save")) == 1 and "findings: 0 (accepted: 0)" in r.stdout
+
+
+def test_a_patch_to_an_older_line_is_not_made_the_latest_release(rig):
+    later_release(rig, "v1.0.1", ("v1.0.0", "v1.1.0"))
+    r = rig.run("--repo", REPO, "--dry-run")
+    assert r.returncode == 0, r.stderr
+    assert "release v1.0.1: after 2 earlier; the highest full release is v1.1.0" in r.stdout
+    assert "would run: gh release create v1.0.1" in r.stdout and "--latest=false" in r.stdout
+    r = rig.run("--repo", REPO)
+    assert r.returncode == 0, r.stderr
+    [create] = [c for c in rig.calls() if c.get("method") == "CREATE"]
+    assert create["argv"][-1] == "--latest=false"
+
+
+def test_the_first_release_still_prints_the_launch_steps(rig):
+    r = rig.publish()
+    assert r.returncode == 0, r.stderr
+    assert "release v1.0.0: the first release" in r.stdout
+    assert r.stdout.rstrip().splitlines()[-1].startswith("by hand, once: install the CLA Assistant")
+    [create] = [c for c in rig.calls() if c.get("method") == "CREATE"]
+    assert "--latest=false" not in create["argv"]
 
 
 def test_skipping_the_gate_still_pulls_but_scans_nothing(rig):
     r = rig.run("--repo", REPO, "--skip-gate")
     assert r.returncode == 0, r.stderr
     assert len(rig.tools("docker", "pull")) == 1 and rig.tools("docker", "save") == []
-    assert "publish gate: skipped" in r.stdout
+    assert "publish gate: skipped (--skip-gate)" in r.stdout
 
 
 MEMBER_RULES = ["--upstream", "*", "--own", "app/*", "--upstream", "app/.venv/*",
