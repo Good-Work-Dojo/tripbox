@@ -942,6 +942,58 @@ def owner_forwarding(receipts: list[EmailMessage]) -> bytes:
     return outer.as_bytes()
 
 
+def test_attached_emails_are_filed_when_the_first_was_handled_before(tmp_path, monkeypatch):
+    """The first receipt came on its own and was filed. Later the owner forwards it with two
+    more as attachments: the first is set aside as the same email, and the other two are filed
+    each as its own message."""
+    ctx, _ = make_ctx(tmp_path, monkeypatch, [])
+    receipts = three_receipts(monkeypatch)
+    alone = runmod.process_raw(ctx, owner_forwarding(receipts[:1]), source="imap", uid=8)
+    assert alone.status == "processed"
+    res = runmod.process_raw(ctx, owner_forwarding(receipts), source="imap", uid=9)
+    assert (res.status, res.same_as, res.label) == (
+        "ignored",
+        alone.message_row_id,
+        "tripbox/processed",
+    )
+    assert [(r.normalized.message_id, r.status) for r in res.children] == [
+        ("<i2>", "processed"),
+        ("<i3>", "processed"),
+    ]
+    assert [o.result for r in res.children for o in r.outcomes] == ["filed", "filed"]
+    row = ctx.ledger.messages.get(res.message_row_id)
+    assert (row["status"], row["error"]) == ("ignored", res.skipped_reason)
+    assert "Message-ID match" in row["error"] and len(ctx.airtrail.flights) == 3
+    assert runmod.resume_waiting(ctx) == 0
+
+
+def test_attached_emails_left_unfiled_beside_one_handled_before_are_taken_up(
+    tmp_path, monkeypatch
+):
+    """As above, but the run stops while the second attached email is read: the message stays
+    unfinished, and the resume pass files what was left and finishes it as the same email."""
+    ctx, _ = make_ctx(tmp_path, monkeypatch, [])
+    receipts = three_receipts(monkeypatch)
+    alone = runmod.process_raw(ctx, owner_forwarding(receipts[:1]), source="imap", uid=8)
+    reads = pl.kitinerary.run_extractor
+
+    def stopped(data, suffix, ctx_date):
+        if b"second receipt" in data:
+            raise SystemExit(1)
+        return reads(data, suffix, ctx_date)
+
+    monkeypatch.setattr(pl.kitinerary, "run_extractor", stopped)
+    with pytest.raises(SystemExit):
+        runmod.process_raw(ctx, owner_forwarding(receipts), source="imap", uid=9)
+    row = ctx.ledger.conn.execute("SELECT * FROM messages ORDER BY id").fetchall()[1]
+    assert (row["status"], row["error"]) == ("ignored", runmod.ATTACHED_UNFILED)
+    monkeypatch.setattr(pl.kitinerary, "run_extractor", reads)
+    assert runmod.resume_waiting(ctx) == 1
+    row = ctx.ledger.messages.get(row["id"])
+    assert row["status"] == "ignored" and f"message #{alone.message_row_id}" in row["error"]
+    assert len(ctx.airtrail.flights) == 3
+
+
 def test_the_resume_pass_takes_up_a_message_whose_attached_emails_were_left(
     tmp_path, monkeypatch
 ):

@@ -140,7 +140,7 @@ are also kept in an AirTrail flight log. One image runs three roles: `web`, `wor
   finished row is skipped unless forced). A handed-in row with no sender (`from_addr` NULL; an email
   reading records one) was read and is replayed as pasted text.
   An email set aside for an earlier delivery (same Message-ID) names it
-  (`MessageResult.same_as`); an upload of it shows that delivery's bookings (`uploads.came_to`).
+  (`MessageResult.same_as`), and the emails attached beside it are filed all the same; an upload of it shows that delivery's bookings (`uploads.came_to`).
   Same-key items of one message are merged (`planner.merge_items`).
   `trip_items.item_key` is UNIQUE. One rule, `validate.keys.real_key`, keys every booking, built
   only from parts the booking has (a flight's origin must be in the bundled airport table); a

@@ -571,9 +571,18 @@ def _file_raw(
         nm.sender_trusted = True  # the owner handed it in (CLI, paste, their own attachment)
     elif not vouched:
         nm.sender_trusted = False  # nothing authenticated it: nobody's, in either mode
+    # what the message's `error` holds once every email attached to it is filed: why it was set
+    # aside, when it was for an earlier delivery of the same email
+    done_error: str | None = None
     if unfiled:
         status = existing["status"]
         result = MessageResult(row_id, status, LABELS[status], normalized=nm)
+        if status == "ignored" and existing["parser"] is None:
+            # its own reading set it aside for an earlier delivery: it still is
+            earlier = _earlier_delivery(led, nm.message_id, row_id)
+            if earlier is not None:
+                result.same_as = earlier["id"]
+                result.skipped_reason = done_error = _same_email(earlier)
     else:
         led.messages.update(
             row_id,
@@ -593,12 +602,16 @@ def _file_raw(
                 "rejected uid=%s from=%s: %s", uid, shown(nm.from_addr), shown(nm.origin_reason)
             )
             return MessageResult(row_id, "rejected", LABELS["rejected"], normalized=nm)
+        # with emails attached, a reading that is done waits for them before it is finished
+        hold = bool(nm.extra_rfc822) and not attached
         earlier = None if force else _earlier_delivery(led, nm.message_id, row_id)
         if earlier is not None:
-            why = f"same email as message #{earlier['id']} ({earlier['status']}), Message-ID match"
-            led.messages.finish(row_id, "ignored", error=why)
+            # the email it reads as its own was handled before; those attached beside it are
+            # still filed, below
+            why = done_error = _same_email(earlier)
+            led.messages.finish(row_id, "ignored", error=ATTACHED_UNFILED if hold else why)
             log.info("message #%s ignored: %s", row_id, why)
-            return MessageResult(
+            result = MessageResult(
                 row_id,
                 "ignored",
                 LABELS["ignored"],
@@ -606,17 +619,17 @@ def _file_raw(
                 skipped_reason=why,
                 same_as=earlier["id"],
             )
-        # with emails attached, a reading that is done waits for them before it is finished
-        result = _process(
-            ctx,
-            nm,
-            row_id,
-            notify=notify,
-            message_hash=sha,
-            reread=reread,
-            found_at=found_at,
-            hold=bool(nm.extra_rfc822) and not attached,
-        )
+        else:
+            result = _process(
+                ctx,
+                nm,
+                row_id,
+                notify=notify,
+                message_hash=sha,
+                reread=reread,
+                found_at=found_at,
+                hold=hold,
+            )
     # "Forward as attachment" of several emails at once: normalize hands the rest back only when
     # the outer From is an allowed sender, and each is read whatever its own From says. The
     # owner's trust carries over to them when the owner handed the message in, or when Gmail
@@ -659,8 +672,13 @@ def _file_raw(
         and result.status in DONE_STATUSES
         and led.messages.get(row_id)["error"] == ATTACHED_UNFILED
     ):
-        led.messages.update(row_id, error=None)
+        led.messages.update(row_id, error=done_error)
     return result
+
+
+def _same_email(earlier: sqlite3.Row) -> str:
+    """Why a message is set aside for `earlier`, a delivery of the same email handled before."""
+    return f"same email as message #{earlier['id']} ({earlier['status']}), Message-ID match"
 
 
 def _attached_failed(ctx: Context, raw: bytes, exc: Exception) -> MessageResult:
