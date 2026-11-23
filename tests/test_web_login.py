@@ -211,7 +211,8 @@ def test_the_cookie_path_is_the_base(tmp_path, monkeypatch, base):
 
 def test_cookies_are_secure_exactly_when_the_base_url_is_https(tmp_path, monkeypatch, base):
     """The cookies' names and their Secure flag follow TRIPBOX_BASE_URL, whatever a forwarded
-    header says of the scheme; each page reads its own name only."""
+    header says of the scheme: `__Host-` at the root of an https origin, `__Secure-` under a
+    sub-path of one, none over http; each page reads its own name only."""
     path = base or "/"
     claims = [
         {"X-Forwarded-Proto": "https"},
@@ -220,14 +221,24 @@ def test_cookies_are_secure_exactly_when_the_base_url_is_https(tmp_path, monkeyp
         {"Forwarded": "proto=http"},
         {},
     ]
-    kinds = ((ORIGIN, "", ""), (HTTPS, "__Secure-", "; Secure"))
+    over_https = "__Host-" if base == "" else "__Secure-"
+    kinds = ((ORIGIN, "", ""), (HTTPS, over_https, "; Secure"))
+    older = {"__Secure-tripbox_session", "__Secure-tripbox_device"}
     for n, (address, prefix, secure) in enumerate(kinds):
         c, _ = page(tmp_path / str(n), monkeypatch, base, address=address)
+        host = prefix == "__Host-"
+        # the names a sign-out drops: the bare and __Secure- ones, and __Host- where it is used
+        dropped = ["", "__Secure-"] + (["__Host-"] if host else [])
         for said in claims:
             r = sign_in(c, headers=said)
             assert r.status_code == 303, (address, said)
             lines = set_cookies(r)
-            assert set(lines) == {f"{prefix}tripbox_session", f"{prefix}tripbox_device"}
+            # at the root over https the __Secure- names it used before are dropped
+            assert set(lines) == {f"{prefix}tripbox_session", f"{prefix}tripbox_device"} | (
+                older if host else set()
+            ), (address, said)
+            for name in older if host else ():
+                assert lines[name] == f"{name}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0; Secure"
             token = value(lines[f"{prefix}tripbox_session"])
             device = value(lines[f"{prefix}tripbox_device"])
             assert lines[f"{prefix}tripbox_session"] == (
@@ -239,19 +250,78 @@ def test_cookies_are_secure_exactly_when_the_base_url_is_https(tmp_path, monkeyp
                 f" Max-Age=34560000{secure}"
             ), (address, said)
             assert get(c, "/", as_cookie(f"{prefix}tripbox_session", token)).status_code == 200
-            other = "" if prefix else "__Secure-"  # the other name is never read
-            assert get(c, "/", as_cookie(f"{other}tripbox_session", token)).status_code == 401
+            for other in {"", "__Secure-", "__Host-"} - {prefix}:  # another name is never read
+                signed = as_cookie(f"{other}tripbox_session", token)
+                assert get(c, "/", signed).status_code == 401, (address, other)
             out = fresh(c).post(
                 "/logout",
                 headers={**SAME, **said, **as_cookie(f"{prefix}tripbox_session", token)},
                 follow_redirects=False,
             )
             assert set_cookies(out) == {
-                "tripbox_session": f"tripbox_session=; HttpOnly; SameSite=Lax; Path={path};"
-                f" Max-Age=0{secure}",
-                "__Secure-tripbox_session": "__Secure-tripbox_session=; HttpOnly;"
-                f" SameSite=Lax; Path={path}; Max-Age=0; Secure",
+                f"{p}tripbox_session": f"{p}tripbox_session=; HttpOnly; SameSite=Lax;"
+                f" Path={path}; Max-Age=0{'; Secure' if p else secure}"
+                for p in dropped
             }, (address, said)
+            assert get(c, "/", as_cookie(f"{prefix}tripbox_session", token)).status_code == 401
+
+
+def test_at_the_root_of_an_https_origin_no_sibling_host_can_shadow_the_session(
+    tmp_path, monkeypatch, base
+):
+    """Another host under the same domain can set a `__Secure-` or bare cookie for the whole
+    domain at every path prefix, which a browser sends before the owner's; never a `__Host-` one.
+    At the root of an https origin every value of the session's `__Host-` name is looked at, so
+    junk sent before the owner's leaves them signed in; elsewhere (over http, or under a
+    sub-path) only the first four are."""
+    for n, address in enumerate((HTTPS, ORIGIN)):
+        c, _ = page(tmp_path / str(n), monkeypatch, base, address=address)
+        host = address == HTTPS and base == ""
+        name = (
+            "__Host-tripbox_session"
+            if host
+            else ("__Secure-tripbox_session" if address == HTTPS else "tripbox_session")
+        )
+        good = session_of(sign_in(c), name)
+        junk = [f"{name}={'J' * 42}{k}" for k in range(5)]
+        cookie = {"Cookie": "; ".join([*junk, f"{name}={good}"])}
+        assert get(c, "/").status_code == 401
+        assert get(c, "/", cookie).status_code == (200 if host else 401), (address, base)
+        cookie = {"Cookie": "; ".join([*junk[:3], f"{name}={good}"])}
+        assert get(c, "/", cookie).status_code == 200, (address, base)
+
+
+def test_an_upgraded_root_https_page_leaves_no_older_cookie_behind(tmp_path, monkeypatch):
+    """A page at the root of an https origin called its cookies `__Secure-` before it took
+    `__Host-` names: a session sent under the older name is not read (that sign-in ends), a
+    device known under it keeps its own throttle bucket, and signing in or out drops every
+    older name."""
+    c, ctx = page(tmp_path, monkeypatch, "", address=HTTPS)
+    first = set_cookies(sign_in(c))
+    token, device = value(first["__Host-tripbox_session"]), value(first["__Host-tripbox_device"])
+    older = f"__Secure-tripbox_session={token}; __Secure-tripbox_device={device}"
+    assert get(c, "/", {"Cookie": older}).status_code == 401
+    # a stranger closes the shared bucket; the device known under the older name still signs in
+    for k in range(10):
+        assert sign_in(c, f"{PASSWORD}-{k}").status_code == 401
+    assert sign_in(c).status_code == 429
+    r = sign_in(c, cookie=older)
+    assert r.status_code == 303
+    lines = set_cookies(r)
+    assert value(lines["__Host-tripbox_device"]) == device  # the same device, renamed
+    for name in ("__Secure-tripbox_session", "__Secure-tripbox_device"):
+        assert lines[name].startswith(f"{name}=; ") and "Max-Age=0" in lines[name]
+    # a sign-out ends the session under each name it is sent under and drops every name
+    signed = value(lines["__Host-tripbox_session"])
+    both = {"Cookie": f"__Host-tripbox_session={signed}; __Secure-tripbox_session={token}"}
+    out = fresh(c).post("/logout", headers={**SAME, **both}, follow_redirects=False)
+    assert set(set_cookies(out)) == {
+        "tripbox_session",
+        "__Secure-tripbox_session",
+        "__Host-tripbox_session",
+    }
+    assert all("Max-Age=0" in line for line in set_cookies(out).values())
+    assert rows(ctx, "sessions") == []
 
 
 # ----------------------------------------------------------------------------- sessions
@@ -614,9 +684,10 @@ def test_the_password_and_tokens_reach_no_log_or_problem(tmp_path, monkeypatch, 
         r = sign_in(c)
         assert r.status_code == 303
         lines = set_cookies(r)
-        token = value(lines["__Secure-tripbox_session"])
-        hidden += [token, value(lines["__Secure-tripbox_device"])]
-        signed = as_cookie("__Secure-tripbox_session", token)
+        prefix = "__Host-" if base == "" else "__Secure-"
+        token = value(lines[f"{prefix}tripbox_session"])
+        hidden += [token, value(lines[f"{prefix}tripbox_device"])]
+        signed = as_cookie(f"{prefix}tripbox_session", token)
         assert get(c, "/", signed).status_code == 200
         if "TRIPBOX_PASSWORD_HASH" in login:  # the bucket closes, which is logged
             for n in range(11):

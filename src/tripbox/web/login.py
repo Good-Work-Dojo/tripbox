@@ -4,7 +4,9 @@
 as the line `tripbox passwd` prints, never chosen in the browser. A session is a random token in
 a cookie, of which the ledger keeps the SHA-256; a browser that has signed in before keeps a
 device cookie, which gives it a throttle bucket of its own, so a stranger's wrong passwords never
-lock the owner out. Each cookie's name and its Secure flag follow TRIPBOX_BASE_URL alone."""
+lock the owner out. Each cookie's name and its Secure flag follow TRIPBOX_BASE_URL alone: at the
+root of an https origin a `__Host-` name, which no other host can set or shadow; elsewhere over
+https a `__Secure-` one; over http the bare name."""
 
 from __future__ import annotations
 
@@ -43,7 +45,8 @@ log = logging.getLogger("tripbox.web.login")
 
 SESSION = "tripbox_session"
 DEVICE = "tripbox_device"
-SECURE = "__Secure-"  # the name's prefix, and the Secure flag, when the base URL is https
+SECURE = "__Secure-"  # the name's prefix, and the Secure flag, when the base URL is https ...
+HOST = "__Host-"  # ... and this one instead when it is also the origin's root (base "")
 SESSION_SECONDS = 15_552_000  # 180 days: the session cookie's Max-Age
 DEVICE_SECONDS = 34_560_000  # 400 days: the device cookie's
 IDLE = dt.timedelta(days=30)  # a session not seen for this long is over
@@ -58,8 +61,18 @@ TOO_MANY = "Too many wrong passwords. Try again in {n} minutes."
 TOO_MANY_ONE = "Too many wrong passwords. Try again in 1 minute."  # one minute or less left
 # A cookie's value as this page writes it; anything else is no token of ours
 _TOKEN = re.compile(r"[A-Za-z0-9_-]{1,128}")
-# The values of one cookie name looked at: a browser may send one for each path that matches
+# The values of a cookie name looked at: a browser may send one for each path that matches, and a
+# sibling host may set some of them (a `__Host-` name, which only this host can set at "/", is not
+# capped)
 _MAX_VALUES = 4
+
+
+def cookie_prefix(urls: Urls) -> str:
+    """The cookies' names' prefix: `__Host-` at the root of an https origin (a name only this host
+    can set, at the path "/"), `__Secure-` under a sub-path of one, none over http."""
+    if not urls.secure:
+        return ""
+    return HOST if urls.base == "" else SECURE
 
 
 def digest(token: str) -> str:
@@ -146,9 +159,11 @@ class PasswordLogin(Authenticator):
         self.urls = Urls.of(settings)
         self._open = ledger_factory
         self._owns = owns_ledger
-        prefix = SECURE if self.urls.secure else ""  # the setting decides, never a request
+        prefix = cookie_prefix(self.urls)  # the setting decides, never a request
         self.session_name = prefix + SESSION
         self.device_name = prefix + DEVICE
+        # what a page at the root of an https origin called them before it took `__Host-` names
+        self.older = (SECURE + SESSION, SECURE + DEVICE) if prefix == HOST else ()
         self.throttle = Throttle()
         self._warned: dt.datetime | None = None  # when a refused write was last logged
         with self._ledger() as led:
@@ -188,26 +203,28 @@ class PasswordLogin(Authenticator):
     # ------------------------------------------------------------------------- cookies
     @staticmethod
     def _values(request: HTTPConnection, name: str) -> list[str]:
-        """The values the request's cookies give `name` that have a token's shape, at most
-        _MAX_VALUES of them, in the order sent."""
+        """The values the request's cookies give `name` that have a token's shape, in the order
+        sent: at most _MAX_VALUES of them, unless `name` is a `__Host-` one."""
+        most = 0 if name.startswith(HOST) else _MAX_VALUES
         found: list[str] = []
         for header in request.headers.getlist("cookie"):
             for part in header.split(";"):
                 key, sep, value = part.strip().partition("=")
                 if sep and key == name and _TOKEN.fullmatch(value) and value not in found:
                     found.append(value)
-                    if len(found) == _MAX_VALUES:
+                    if len(found) == most:
                         return found
         return found
 
     def _cookie(self, name: str, value: str, max_age: int) -> str:
-        """A Set-Cookie line: HttpOnly, SameSite=Lax, the base's path; Secure over https (and
-        for a name that asks for it)."""
+        """A Set-Cookie line: HttpOnly, SameSite=Lax, the base's path, never a Domain; Secure over
+        https (and for a name that asks for it)."""
         line = (
             f"{name}={value}; HttpOnly; SameSite=Lax; Path={self.urls.cookie_path};"
             f" Max-Age={max_age}"
         )
-        return line + "; Secure" if self.urls.secure or name.startswith(SECURE) else line
+        asks = name.startswith((SECURE, HOST))
+        return line + "; Secure" if self.urls.secure or asks else line
 
     # ------------------------------------------------------------------------- who is signed in
     def authenticate(self, request: HTTPConnection) -> str | None:
@@ -315,6 +332,8 @@ class PasswordLogin(Authenticator):
             typed, goto = form.get("password"), self._next(form.get("next"))
         typed = typed if isinstance(typed, str) else ""
         devices = self._values(request, self.device_name)
+        if self.older:  # a device known under the older name keeps its bucket
+            devices += self._values(request, self.older[1])
         signed = await run_in_threadpool(self._check, devices, typed)
         if isinstance(signed, int):
             if not signed:
@@ -330,6 +349,8 @@ class PasswordLogin(Authenticator):
             (self.device_name, signed.device, DEVICE_SECONDS),
         ):
             r.headers.append("set-cookie", self._cookie(name, value, seconds))
+        for name in self.older:  # the newer names stand in for them
+            r.headers.append("set-cookie", self._cookie(name, "", 0))
         return r
 
     def _check(self, devices: list[str], typed: str) -> _Signed | int:
@@ -355,9 +376,9 @@ class PasswordLogin(Authenticator):
 
     async def logout(self, request: Request) -> Response:
         """Ends the session the request carries, if any, on the server; tells the browser to drop
-        the session cookie under either name and what it cached (and, when the page has its
+        the session cookie under each of its names and what it cached (and, when the page has its
         origin to itself, what it stored); the device cookie stays."""
-        tokens = self._values(request, SESSION) + self._values(request, SECURE + SESSION)
+        tokens = [t for name in self._session_names() for t in self._values(request, name)]
         if tokens:
             await run_in_threadpool(self._end, tokens)
         return self._signed_out()
@@ -372,14 +393,19 @@ class PasswordLogin(Authenticator):
 
     def _signed_out(self) -> Response:
         """The answer of a sign-out: to the login page, saying so, with the session cookie
-        dropped under either name and the site's cache (and, when the page has its origin to
-        itself, its storage) cleared."""
+        dropped under each of its names and the site's cache (and, when the page has its origin
+        to itself, its storage) cleared."""
         r = RedirectResponse(self.urls.path("/login") + "?f=out", status_code=303)
-        for name in (SESSION, SECURE + SESSION):
+        for name in self._session_names():
             r.headers.append("set-cookie", self._cookie(name, "", 0))
         # under a sub-path the origin may be another app's too: its storage is not ours to clear
         r.headers["Clear-Site-Data"] = '"cache", "storage"' if self.urls.base == "" else '"cache"'
         return r
+
+    def _session_names(self) -> tuple[str, ...]:
+        """Every name a session cookie of this page may have had: the bare and `__Secure-` ones
+        (an origin moved between http and https), and the `__Host-` one where it is used."""
+        return (SESSION, SECURE + SESSION) + ((HOST + SESSION,) if self.older else ())
 
     def _end(self, tokens: list[str]) -> None:
         with self._ledger() as led:

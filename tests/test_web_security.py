@@ -58,7 +58,9 @@ def sign_in_to(app, base: str) -> dict[str, str]:
     (pair,) = [
         line.split(";", 1)[0]
         for line in r.headers.get_list("set-cookie")
+        # a sign-in at the root over https also drops the older names: those lines hold no value
         if line.split("=", 1)[0].endswith("tripbox_session")
+        and not line.split(";", 1)[0].endswith("=")
     ]
     return {"Cookie": pair}
 

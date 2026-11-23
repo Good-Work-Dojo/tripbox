@@ -23,7 +23,10 @@ The page's facts; the hard rules are the repository's `AGENTS.md`.
   its SHA-256 in `sessions` with `cred` (a fingerprint of the origin and the hash line; at start
   other creds end); good under 30 days unseen and 180 old, `seen_at` rewritten hourly (a refused
   write keeps the session). Cookie names and `Secure`
-  follow the base URL alone, path `urls.cookie_path`. `Throttle`: 10 wrong in 900 s close a bucket,
+  follow the base URL alone (`login.cookie_prefix`: `__Host-` at the root of an https origin,
+  every value of it read; `__Secure-` under a sub-path, none over http, four values read), path
+  `urls.cookie_path`; at the root over https a sign-in drops the older `__Secure-` names (a
+  device known under one keeps its bucket), and a sign-out drops every session name. `Throttle`: 10 wrong in 900 s close a bucket,
   a known device's (`devices`) or everyone else's, never an address; admission, scrypt and count
   under one lock, off the loop. Sign-out ends the row; the device cookie outlives it.
 - Wrappers, outermost first: `BasePath`, `Headers` (`SECURITY_HEADERS`, `X-Robots-Tag` too, on
