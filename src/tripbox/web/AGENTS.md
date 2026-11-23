@@ -22,17 +22,11 @@ The page's facts; the hard rules are the repository's `AGENTS.md`.
 - Password sign-in (`login.PasswordLogin`, the default): a session is a random token in the cookie,
   its SHA-256 in `sessions` with `cred` (a fingerprint of the origin and the hash line; at start
   other creds end); good under 30 days unseen and 180 old, `seen_at` rewritten hourly (a refused
-  write keeps the session). Cookie names and `Secure`
-  follow the base URL alone (`login.cookie_prefix`: `__Host-` at the root of an https origin,
-  every value of it read; `__Secure-` under a sub-path, none over http, four values read), path
-  `urls.cookie_path`; at the root over https a sign-in drops the older `__Secure-` names (a
-  device known under one keeps its bucket), and a sign-out drops every session name. `Throttle`: 10 wrong in 900 s close a bucket,
+  write keeps the session). Cookie names (`__Host-` at an https root) and `Secure`
+  follow the base URL alone, path `urls.cookie_path`. `Throttle`: 10 wrong in 900 s close a bucket,
   a known device's (`devices`) or everyone else's, never an address; admission, scrypt and count
-  under one lock, off the loop. Sign-out ends the row; the device cookie outlives it. Its
-  challenge: a page load (GET/HEAD accepting text/html) 303s to the login with `next`; another
-  method accepting text/html (a form posted after the session ended) gets a 401 page
-  (`ended.html`, `clear.js` its one script) linking the login, `next` the Referer's path when
-  it is of the origin and `_next` takes it; anything else the plain 401.
+  under one lock, off the loop. Sign-out ends the row; the device cookie outlives it. Signed
+  out, a form gets `ended.html`.
 - Wrappers, outermost first: `BasePath`, `Headers` (`SECURITY_HEADERS`, `X-Robots-Tag` too, on
   every response, `no-store` but on `/static/`), `BodyLimit` (64 KiB, `app.FORM_LIMITS` for paste and upload),
   `SameOrigin` (every POST: `Sec-Fetch-Site` or an `Origin` equal to `Settings.origin`, never
@@ -60,12 +54,10 @@ The page's facts; the hard rules are the repository's `AGENTS.md`.
 - The policy (`SECURITY_HEADERS`) admits the page's own files alone: no other site, no inline
   script or style (no `style=`: a colour is a class, such as a trip's tile `tile-{id % 8}`), no
   framing. The font ships in `static/fonts/` (four `@font-face` weights); `app._asset_version`
-  hashes every static file. Text colours keep 4.5:1 on their backgrounds (`test_web_style.py`).
+  hashes every static file. Text colours keep 4.5:1 (`test_web_style.py`).
 - A page names only what the install has: the confirmations' `views.KEPT` names the flight log
   only while one is kept, and the list links it only when `TRIPBOX_AIRTRAIL_PUBLIC_URL` is set.
-  A stay's or a car's second line is `item-N-end`. A control repeated per row is described by
-  its row's title (`aria-describedby`: `item-N[-end]-title`, `trip-N-title`); a tile's letter
-  is `aria-hidden`. The photograph harness's browser checks are
+  A stay's or a car's second line is `item-N-end`. The photograph harness's browser checks are
   `tools/verify/screens/checks.py`.
 - A ledger with no trip, no booking and nothing deleted is a first run: the list says `No trips
   yet`, what to do and `Add a booking`, then the status card (`card.status_card`, `_status.html`),
@@ -111,5 +103,4 @@ The page's facts; the hard rules are the repository's `AGENTS.md`.
   `tripbox<base>:` + `static:`/`pages:` + `app.state.version`, so a release replaces them. The
   pages store goes on a 401, 403, redirect or unmarked 200 of a kept page, before a sign-out is
   sent (`app.js`) and on the login page (`clear.js`); `Clear-Site-Data` is not relied on to empty
-  it. The worker answers a non-GET only when its referrer is under `<origin><base>/`, and
-  empties the pages store when the answer is a 401 or 403.
+  it. The worker answers a non-GET only when its referrer is under `<origin><base>/`.
