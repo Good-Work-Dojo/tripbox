@@ -1301,3 +1301,16 @@ def test_alias_lookup_survives_a_malformed_payload():
     st.upsert_item(trip, outbound())
     st.led.conn.execute("UPDATE trip_items SET payload_json='not json'")
     assert st.item_by_key("lodging|NOPE") is None
+
+
+def test_purge_reads_the_held_clock():
+    st = store()
+    held = dt.datetime(2027, 3, 1, tzinfo=dt.UTC)
+    trip = st.find_or_create(outbound())
+    out = st.upsert_item(trip, outbound())
+    with util.clock_at(held):
+        st.remove_item(out.id)
+    with util.clock_at(held + dt.timedelta(days=29)):
+        assert st.purge_deleted() == (0, 0)
+    with util.clock_at(held + dt.timedelta(days=30)):
+        assert st.purge_deleted() == (1, 1)

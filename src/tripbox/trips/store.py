@@ -25,6 +25,7 @@ from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from types import SimpleNamespace
 
+from tripbox import util
 from tripbox.ledger import Ledger
 from tripbox.trips import grouping
 from tripbox.util import merge_payload, now_iso, parse_iso
@@ -2112,7 +2113,7 @@ class TripStore:
     ) -> tuple[int, int]:
         """Hard-delete what has sat in Recently deleted for `days` or more, plus trips that never
         got a booking (a failed trip link) once they are a day old. Returns (bookings, trips)."""
-        now = now or dt.datetime.now(dt.UTC)
+        now = now or util.now()
         cutoff = (now - dt.timedelta(days=days)).isoformat(timespec="seconds")
         items = trips = 0
         with self._tx():

@@ -13,6 +13,7 @@ import re
 import secrets
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from tripbox import util
 from tripbox.ledger import Ledger
 from tripbox.trips import format as fmt
 from tripbox.trips import grouping
@@ -56,7 +57,7 @@ def fold(line: str) -> str:
 def _stamp(iso: str | None) -> str:
     d = dt.datetime.fromisoformat((iso or "").replace("Z", "+00:00")) if iso else None
     if d is None:
-        d = dt.datetime.now(dt.UTC)
+        d = util.now()
     if d.tzinfo is None:
         d = d.replace(tzinfo=dt.UTC)
     return d.astimezone(dt.UTC).strftime("%Y%m%dT%H%M%SZ")
