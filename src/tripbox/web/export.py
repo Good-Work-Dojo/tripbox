@@ -174,11 +174,8 @@ class _Rewriter(HTMLParser):
     def _tag(self, tag: str, attrs: list[tuple[str, str | None]]) -> list[tuple[str, str | None]]:
         kept: list[tuple[str, str | None]] = []
         disable_link = False
-        values = dict(attrs)
         if tag == "form":
             attrs = [(k, v) for k, v in attrs if k not in ("action", "method")]
-        if tag == "link" and "manifest" in (values.get("rel") or "").split():
-            return []
         for name, value in attrs:
             if name in ("data-base", "data-sw"):
                 continue
