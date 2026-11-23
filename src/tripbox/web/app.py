@@ -65,6 +65,12 @@ PRIVATE: list[BaseRoute] = [
     Route("/trips/{trip_id:int}/notes", views.notes, methods=["POST"], name="notes"),
     Route("/trips/{trip_id:int}/merge", views.merge, methods=["POST"], name="merge"),
     Route("/trips/{trip_id:int}/place", views.save_place, methods=["POST"], name="save_place"),
+    Route(
+        "/trips/{trip_id:int}/cover/remove",
+        views.remove_cover,
+        methods=["POST"],
+        name="remove_cover",
+    ),
     Route("/trips/{trip_id:int}/delete", views.delete_trip, methods=["POST"], name="delete_trip"),
     Route(
         "/trips/{trip_id:int}/restore", views.restore_trip, methods=["POST"], name="restore_trip"

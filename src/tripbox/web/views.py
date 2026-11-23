@@ -57,6 +57,7 @@ FLASH = {  # ?f=<key> after a redirect → one toast; app.js then strips it from
     "cover_heic": "That photo is HEIC — upload a JPEG, PNG or WebP",
     "cover_type": "That file is not a JPEG, PNG or WebP photo",
     "cover_big": "That photo is larger than 10 MB",
+    "cover_removed": "Photo removed",
 }
 # The kinds of picture an owner's cover photo may be (`coversniff.sniff`); a HEIC one is told so
 COVER_KINDS = ("jpeg", "png", "webp")
@@ -1358,6 +1359,17 @@ async def add_upload(request: Request) -> Response:
     except _TooLarge:
         return _add_page(request, "upload.html", code="too_large")
     return _take(request, "upload.html", body, name=name)
+
+
+async def remove_cover(request: Request) -> Response:
+    """Remove photo: the trip goes back to its tile, whatever photo it had or was waiting for,
+    and no automatic one is looked up for it until its place changes (`CoverStore.remove`)."""
+    await _form(request)
+    with _ctx(request) as c, c.ledger.transaction():
+        t = _trip_or_404(c, request.path_params["trip_id"])
+        c.store.covers.remove(t.id)
+    log.info("cover photo of trip #%s removed", t.id)
+    return _back(request, t.id, "cover_removed")
 
 
 async def upload_cover(request: Request) -> Response:

@@ -375,3 +375,41 @@ def test_a_phone_photo_from_the_page_is_served_upright_with_nothing_but_pixels(
         assert not {"exif", "icc_profile", "comment", "xmp"} & set(img.info), name
         assert b"Example Phone" not in r.content and b"hello" not in r.content, name
     assert row(ctx, trip.id)["upload"] is None
+
+
+# ----------------------------------------------------------------------------- removing
+def test_remove_takes_the_photo_away_and_keeps_automatic_ones_off(tmp_path, monkeypatch, base):
+    """Remove photo leaves a `removed` row (no picture, nothing waiting), so the photo is no
+    longer served and no automatic one is looked up until the place changes; it comes back to
+    the trip with its toast. A trip the owner cannot see is the 404 page, and a post from
+    another site is refused; neither changes a row."""
+    c, ctx = client_for(tmp_path, monkeypatch, base=base)
+    trip = seed_trip(ctx)
+    digest = ready(ctx, trip.id)
+    seed_past(ctx, 1)
+    gone = next(t for t in ctx.trips.all_trips() if t.id != trip.id)
+    gone_digest = ready(ctx, gone.id, LARGE + b"!")
+    ctx.trips.delete_trip(gone.id)
+    url = f"/trips/{trip.id}/cover/remove"
+    assert c.post(url, follow_redirects=False).status_code == 403
+    assert row(ctx, trip.id)["state"] == "ready"
+    for tid in (gone.id, 999):
+        r = c.post(f"/trips/{tid}/cover/remove", headers=SAME, follow_redirects=False)
+        assert r.status_code == 404, tid
+    assert row(ctx, gone.id)["digest"] == gone_digest
+    r = c.post(url, headers=SAME, follow_redirects=False)
+    assert (r.status_code, r.headers["location"]) == (
+        303,
+        c.url(f"/trips/{trip.id}?f=cover_removed"),
+    )
+    held = row(ctx, trip.id)
+    assert (held["source"], held["state"]) == ("removed", "none")
+    assert (held["digest"], held["large"], held["small"], held["upload"]) == (None,) * 4
+    assert c.get(f"/covers/{digest}.jpg").status_code == 404
+    assert flashed(c, r) == "Photo removed"
+    # a photo still waiting for the worker is taken away the same way
+    send(c, trip.id, JPEG)
+    assert row(ctx, trip.id)["state"] == "pending"
+    c.post(url, headers=SAME)
+    assert (row(ctx, trip.id)["source"], row(ctx, trip.id)["upload"]) == ("removed", None)
+    assert CoverStore(ctx.ledger).next_upload() is None
