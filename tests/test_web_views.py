@@ -746,7 +746,15 @@ def test_status_toggle_from_the_item_menu(tmp_path, monkeypatch, base):
 # no photo (automatic covers off) never names, and the promise of a number of minutes. Where
 # photos come from is named only while automatic covers are on, or in the credit line of a photo
 # found before they were turned off (`test_web_covers`).
-NOT_HERE = ("flight log", "airtrail", "telegram", "wikipedia", "wikimedia", "find photo", "mailbox")
+NOT_HERE = (
+    "flight log",
+    "airtrail",
+    "telegram",
+    "wikipedia",
+    "wikimedia",
+    "finds a photo",
+    "mailbox",
+)
 MINUTES = re.compile(r"\b\d+\s*(?:minutes?|mins?)\b", re.IGNORECASE)
 STATUS_CARD = re.compile(r'<dl class="status-card">.*?</dl>', re.S)
 
@@ -759,10 +767,11 @@ def without_the_cards_labels(html: str) -> str:
 
 def test_no_page_names_what_the_install_does_not_have(tmp_path, monkeypatch, base):
     """With no flight log, no mail, no model and no automatic covers, no page, no confirmation a
-    page asks and no toast names a flight log, AirTrail, Telegram, Wikipedia, Wikimedia, Find
-    photo or a mailbox, or promises a number of minutes. The one exception is the status card's
-    labels: a first run's list shows the card, whose row for each feature names it to say it is
-    off; its sentences, like every other part of every page, name nothing the install lacks."""
+    page asks and no toast names a flight log, AirTrail, Telegram, Wikipedia or Wikimedia, says a
+    place finds a photo, names a mailbox, or promises a number of minutes. The one exception is
+    the status card's labels: a first run's list shows the card, whose row for each feature names
+    it to say it is off; its sentences, like every other part of every page, name nothing the
+    install lacks."""
     from tripbox import worker
     from tripbox.web import card
 
@@ -1833,7 +1842,7 @@ def test_a_trips_card_and_page_count_its_bookings_to_check(tmp_path, monkeypatch
     assert '<span class="chip chip-amber">2 to check</span>' in card[: card.index("</a>")]
     assert Marks.of(listing).chips == ["2 to check"]  # the other trip's card has none
     page = c.get(f"/trips/{trip.id}").text
-    hero = page[page.index('<section class="hero">') : page.index('<section class="notes">')]
+    hero = page[page.index('<section class="hero"') : page.index('<section class="notes">')]
     assert '<span class="chip chip-amber">2 to check</span>' in hero
     # and each marked booking says so once, on its first line
     assert sorted(Marks.of(page).chips) == ["2 to check", "To check", "To check"]

@@ -237,6 +237,33 @@
       document.addEventListener("touchcancel", reset, { passive: true });
     }
   }
+  // ---- a trip whose own photo is on its way (its hero's data-cover-pending): the page is loaded
+  // again every COVER_MS so the photo shows, at most COVER_TRIES times for that trip in this tab
+  // (counted for the tab, and with no count kept never), never on a saved copy, and never while
+  // the tab is hidden, a sheet or an inline form is open or a field has focus (a reload would
+  // drop what was typed). A page of the trip without the mark ends its count.
+  const hero = $(".hero[data-trip]");
+  if (hero && !savedAt) {
+    const COVER_MS = 5000;
+    const COVER_TRIES = 6;
+    const tries = "tripbox" + base + ":cover-reloads:" + hero.dataset.trip;
+    const kept = (use) => { try { return use(window.sessionStorage); } catch (e) { return null; } };
+    if (!hero.hasAttribute("data-cover-pending")) {
+      kept((s) => s.removeItem(tries));
+    } else {
+      const again = () => {
+        const busy = document.hidden || !!$("details[open]") ||
+          !!(document.activeElement && document.activeElement.matches("input, textarea, select"));
+        if (busy) { setTimeout(again, COVER_MS); return; }
+        const done = kept((s) => Number(s.getItem(tries)) || 0);
+        if (done === null || done >= COVER_TRIES) return;
+        const counted = kept((s) => { s.setItem(tries, String(done + 1)); return true; });
+        if (counted !== true) return;
+        location.reload();
+      };
+      setTimeout(again, COVER_MS);
+    }
+  }
   // ---- share page
   const form = $("#share-form");
   if (!form) return;

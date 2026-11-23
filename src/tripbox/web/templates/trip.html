@@ -19,14 +19,15 @@
       </form>
       <section class="sheet-part" aria-labelledby="photo-head">
         <h2 class="sheet-head" id="photo-head">Place and photo</h2>
-        <form method="post" action="{{ base }}/trips/{{ trip.id }}/place" class="{{ 'col' if find_photo else 'row' }}">
-          <input type="text" name="place" value="{{ trip.place or '' }}" placeholder="City" maxlength="80" aria-label="Place" aria-describedby="place-help">
-          <button type="submit" class="btn">{{ 'Save place and find photo' if find_photo else 'Save place' }}</button>
+        <form method="post" action="{{ base }}/trips/{{ trip.id }}/place" class="row">
+          <input type="text" name="place" value="{{ trip.place or '' }}" placeholder="City" maxlength="80" aria-label="Place" aria-describedby="place-help{{ ' photo-help' if find_photo }}">
+          <button type="submit" class="btn">Save place</button>
         </form>
-        <p class="muted small" id="place-help">The city this trip is about. Bookings there on nearby dates join this trip.{% if find_photo %} A free photo of it is looked up on Wikipedia.{% endif %}</p>
+        <p class="muted small" id="place-help">The city this trip is about. Bookings there on nearby dates join this trip.</p>
+        {% if find_photo %}<p class="muted small" id="photo-help">A new place also finds a photo of it on Wikipedia, unless you uploaded your own.</p>{% endif %}
         {% include "_photo_form.html" %}
         {% if photo.removable %}
-        <form method="post" action="{{ base }}/trips/{{ trip.id }}/cover/remove">
+        <form method="post" action="{{ base }}/trips/{{ trip.id }}/cover/remove" data-confirm="Remove this photo? An uploaded photo comes back only if you upload it again.">
           <button type="submit" class="btn link danger">Remove photo</button>
         </form>
         {% endif %}
@@ -49,7 +50,7 @@
   </details>
 </header>
 <main class="page">
-  <section class="hero{{ ' has-photo' if photo.digest }}">
+  <section class="hero{{ ' has-photo' if photo.digest }}" data-trip="{{ trip.id }}"{% if photo.pending %} data-cover-pending{% endif %}>
     {% if photo.digest %}<div class="cover big photo" aria-hidden="true"><img src="{{ base }}/covers/{{ photo.digest }}.jpg" alt="" width="1600" height="1000"></div>
     {% else %}<div class="cover big tile tile-{{ trip.id % 8 }}" aria-hidden="true"><span>{{ trip.title[:1]|upper }}</span></div>{% endif %}
     <div class="hero-text">

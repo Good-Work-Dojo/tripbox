@@ -45,9 +45,10 @@ The page's facts; the hard rules are the repository's `AGENTS.md`.
   (`uploads.DEAD_ENDS`: then taken again under its token); at most 20 wait. A status page,
   named by the row's random token (never its id), shows its cleaned name and state, never the
   body.
-- Covers: `/covers/upload?trip=<id>` (trip checked first) keeps a JPEG, PNG or WebP by its bytes
-  (`coversniff`) for the worker; `/covers/<sha256>[-s].jpg`: a ready cover of a trip not deleted,
-  never on a shared page or Recently deleted; a credit links only http(s).
+- Covers: `/covers/upload?trip=<id>` (trip checked first; body limit `COVER_LIMIT`) keeps a
+  JPEG, PNG or WebP by its bytes (`coversniff`) for the worker; `/covers/<sha256>[-s].jpg`: a
+  ready cover of a trip not deleted, never on a shared page or Recently deleted; a credit links
+  only http(s).
 - A booking typed in by hand (`/add/{flight,hotel,car,train}`: the edit form, its Trip field's
   first choice leaving it to the dates) goes straight to `TripStore.add_by_hand`: no model, no
   message row, `payload["source"]` `hand`, its real key or a draft key of its own; a booking
@@ -57,7 +58,7 @@ The page's facts; the hard rules are the repository's `AGENTS.md`.
   framing. The font is in `static/fonts/` (four `@font-face` weights); `app._asset_version`
   hashes every static file. Text colours keep 4.5:1 (`test_web_style.py`).
 - A page names only what the install has: `views.KEPT` names the flight log only while one is
-  kept, the list links it only with `TRIPBOX_AIRTRAIL_PUBLIC_URL` set, Find photo (and
+  kept, the list links it only with `TRIPBOX_AIRTRAIL_PUBLIC_URL` set, a photo lookup (and
   Wikipedia) only with `TRIPBOX_COVERS=wikimedia`. A stay's or a car's second line is
   `item-N-end`. Browser checks: `tools/verify/screens/checks.py`.
 - A ledger with no trip, no booking and nothing deleted is a first run: the list says `No trips
@@ -65,7 +66,7 @@ The page's facts; the hard rules are the repository's `AGENTS.md`.
   from the worker's record alone (`tripbox.status`: codes and counts, never an error's text; a
   code that is no word shows as `error`); a row needing a look has the class `status-look`.
   Past a first run, while no worker is live the list starts by saying so. The record's `mailbox`
-  shows on private pages alone, never a public one or a log. The card's labels are the one
+  shows on private pages alone, never in a log. The card's labels are the one
   exception to `test_no_page_names_what_the_install_does_not_have` (a row names its feature to
   say it is off).
 - Settings (`settings_page`, private; posts redirect by `views._go`): the status card,

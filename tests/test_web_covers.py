@@ -20,6 +20,7 @@ from PIL import Image
 from test_coverimage import phone_jpeg
 from test_web_login import as_cookie, fresh, get, session_of, sign_in
 from test_web_login import page as password_page
+from test_web_style import STATIC, contrast, declarations
 from test_web_uploads import endless
 from test_web_views import POLICY, Node, Tree, seed_past, seed_trip
 from test_worker import a_worker, beat, start
@@ -28,7 +29,7 @@ from tripbox import uploads, util
 from tripbox.ledger import repo
 from tripbox.trips import shares
 from tripbox.trips.covers import CoverStore
-from tripbox.web import views
+from tripbox.web import app, views
 from tripbox.web.middleware import LIMIT
 
 # What a cover's 200 carries, and every other answer under /covers/
@@ -37,6 +38,9 @@ KEPT = "private, max-age=31536000, immutable"
 # they need be nothing but bytes
 LARGE = b"\xff\xd8\xff\xe0" + b"large picture " * 8
 SMALL = b"\xff\xd8\xff\xe0" + b"small picture " * 4
+# What the place's help adds while automatic covers are on, and what Remove photo asks first
+FINDS = "A new place also finds a photo of it on Wikipedia, unless you uploaded your own."
+REMOVE_PHOTO = "Remove this photo? An uploaded photo comes back only if you upload it again."
 CREDIT = {
     "artist": "Sample Author",
     "licence": "CC BY-SA 4.0",
@@ -273,15 +277,18 @@ def test_heic_and_what_is_no_photo_are_refused_with_their_toasts(tmp_path, monke
             c.url(f"/trips/{tid}?f={toast}"),
         ), (tid, body[:12])
     r = c.post(
-        f"/covers/upload?trip={trip.id}", data={"note": "no file"}, headers=SAME,
+        f"/covers/upload?trip={trip.id}",
+        data={"note": "no file"},
+        headers=SAME,
         follow_redirects=False,
     )
     assert r.headers["location"] == c.url(f"/trips/{trip.id}?f=cover_type")
     assert row(ctx, trip.id) is None and dict(row(ctx, other.id)) == before
     assert c.get(f"/covers/{digest}.jpg").status_code == 200
-    said = {key: flashed(c, send(c, trip.id, body)) for key, body in (
-        ("cover_heic", HEIC), ("cover_type", GIF),
-    )}
+    said = {
+        key: flashed(c, send(c, trip.id, body))
+        for key, body in (("cover_heic", HEIC), ("cover_type", GIF))
+    }
     assert said == {
         "cover_heic": "That photo is HEIC — upload a JPEG, PNG or WebP",
         "cover_type": "That file is not a JPEG, PNG or WebP photo",
@@ -289,27 +296,31 @@ def test_heic_and_what_is_no_photo_are_refused_with_their_toasts(tmp_path, monke
 
 
 def test_a_photo_over_ten_megabytes_is_refused_and_stores_nothing(tmp_path, monkeypatch, base):
-    """Ten megabytes are taken; one byte more is refused with its toast. A body counted past the
-    cap as it arrives, and one declaring more, are refused once the cap is reached or before a
-    byte is read; past the body limit of every form the answer is the limit's own."""
+    """Ten megabytes are taken; one byte more is refused with its toast. A phone's 12 MB photo,
+    sent as a browser sends it, comes back to its trip with the same toast, whether its length
+    is declared (answered before a byte is read) or it is counted as it arrives (answered once
+    the cap is reached); only a body declaring more than COVER_LIMIT, far past any photo, gets
+    the body limit's own answer."""
     c, ctx = client_for(tmp_path, monkeypatch, base=base)
     trip = seed_trip(ctx)
     padded = JPEG + b"x" * (uploads.MAX_BYTES - len(JPEG))
-    r = send(c, trip.id, padded + b"x")
-    assert r.headers["location"] == c.url(f"/trips/{trip.id}?f=cover_big")
+    big = c.url(f"/trips/{trip.id}?f=cover_big")
+    for body in (padded + b"x", JPEG + b"x" * (12 * 2**20)):
+        r = send(c, trip.id, body)
+        assert r.headers["location"] == big, len(body)
     assert row(ctx, trip.id) is None
     assert flashed(c, r) == "That photo is larger than 10 MB"
+    assert views.BODY_CAP + LIMIT < 12 * 2**20 < app.COVER_LIMIT
     query = f"trip={trip.id}"
     piece = b"x" * 65536
-    big = c.url(f"/trips/{trip.id}?f=cover_big")
-    for length in (None, str(views.BODY_CAP + 1)):
+    for length in (None, str(views.BODY_CAP + 1), str(12 * 2**20), str(app.COVER_LIMIT)):
         status, said, taken = post_as_it_arrives(
-            c, query, endless(a_part(JPEG), piece, 2 * views.BODY_CAP), length=length
+            c, query, endless(a_part(JPEG), piece, 12 * 2**20), length=length
         )
         assert (status, said["location"]) == (303, big), length
         assert taken <= views.BODY_CAP + len(piece) and (length is None or taken == 0), taken
     status, _, taken = post_as_it_arrives(
-        c, query, endless(a_part(JPEG), piece, 2**20), length=str(views.BODY_CAP + LIMIT + 1)
+        c, query, endless(a_part(JPEG), piece, 2**20), length=str(app.COVER_LIMIT + 1)
     )
     assert (status, taken) == (413, 0)
     assert row(ctx, trip.id) is None
@@ -418,8 +429,6 @@ def test_remove_takes_the_photo_away_and_keeps_automatic_ones_off(tmp_path, monk
     c.post(url, headers=SAME)
     assert (row(ctx, trip.id)["source"], row(ctx, trip.id)["upload"]) == ("removed", None)
     assert CoverStore(ctx.ledger).next_upload() is None
-
-
 
 
 # ----------------------------------------------------------------------------- showing
@@ -579,10 +588,11 @@ def test_shared_pages_and_recently_deleted_never_show_a_photo(tmp_path, monkeypa
 def test_the_sheet_offers_a_photo_and_find_photo_only_with_covers_on(
     tmp_path, monkeypatch, base, covers
 ):
-    """The trip's ⋯ sheet holds the place and the photo under one heading: the place's form,
-    which finds a photo too only with automatic covers on (and then says where it looks), the
-    form to upload one (a JPEG, a PNG or a WebP, named for what it asks), and Remove photo once
-    there is a photo, or one on its way or refused, to remove."""
+    """The trip's ⋯ sheet holds the place and the photo under one heading: the place's form
+    (Save place), whose help says, only with automatic covers on, that a new place finds a
+    photo and where; the form to upload one (a JPEG, a PNG or a WebP, named for what it asks);
+    and Remove photo, asked to be confirmed, once there is a photo, or one on its way or
+    refused, to remove."""
     on = covers == "wikimedia"
     env = {"TRIPBOX_COVERS": covers}
     c, ctx = client_for(tmp_path, monkeypatch, base=base, env=env)
@@ -595,8 +605,15 @@ def test_the_sheet_offers_a_photo_and_find_photo_only_with_covers_on(
     forms = {n.attrs["action"]: n for n in within(part) if n.tag == "form"}
     place = forms[c.url(f"/trips/{trip.id}/place")]
     (button,) = [n for n in within(place) if n.tag == "button"]
-    assert button.text() == ("Save place and find photo" if on else "Save place"), covers
-    assert ("Wikipedia" in tree.by_id("place-help").text()) is on, covers
+    assert (button.text(), place.attrs["class"]) == ("Save place", "row"), covers
+    assert "Wikipedia" not in tree.by_id("place-help").text(), covers
+    (field,) = [n for n in within(place) if n.tag == "input"]
+    helps = ["place-help", "photo-help"] if on else ["place-help"]
+    assert field.attrs["aria-describedby"].split() == helps, covers
+    found_help = tree.by_id("photo-help")
+    assert (found_help is not None) is on, covers
+    if on:
+        assert found_help.text() == FINDS, covers
     upload = forms[c.url(f"/covers/upload?trip={trip.id}")]
     assert (upload.attrs["method"], upload.attrs["enctype"]) == ("post", "multipart/form-data")
     (field,) = [n for n in within(upload) if n.tag == "input"]
@@ -613,6 +630,7 @@ def test_the_sheet_offers_a_photo_and_find_photo_only_with_covers_on(
         (part,) = [n for n in page.nodes if n.attrs.get("aria-labelledby") == "photo-head"]
         held = [n for n in within(part) if n.attrs.get("action") == remove]
         assert [n.text() for n in held] in ([], ["Remove photo"])
+        assert all(n.attrs.get("data-confirm") == REMOVE_PHOTO for n in held)
         return bool(held)
 
     assert not offered()
@@ -701,7 +719,7 @@ def test_where_photos_come_from_is_named_only_in_a_credit_or_with_covers_on(
 ):
     """With automatic covers off (the default), a Wikimedia photo found while they were on still
     shows with its credit, and that line is the only part of any page that names Wikimedia or
-    Wikipedia or offers to find a photo. With them on, the place's form and its help say so."""
+    Wikipedia or says a place finds a photo. With them on, the place's help says so."""
     c, ctx = client_for(tmp_path, monkeypatch, base=base)
     assert ctx.settings.covers == "off"
     trip = seed_trip(ctx)
@@ -710,13 +728,96 @@ def test_where_photos_come_from_is_named_only_in_a_credit_or_with_covers_on(
         r = c.get(path)
         assert r.status_code == 200, path
         rest = unescape(re.sub(r'<p class="credit">.*?</p>', "", r.text, flags=re.S)).lower()
-        for word in ("wikipedia", "wikimedia", "find photo"):
+        for word in ("wikipedia", "wikimedia", "finds a photo"):
             assert word not in rest, (path, word)
     assert credit_of(c.get(f"/trips/{trip.id}").text).text().endswith("· Wikimedia Commons")
+    assert FINDS not in c.get(f"/trips/{trip.id}").text
     on, ctx = client_for(
         tmp_path / "on", monkeypatch, base=base, env={"TRIPBOX_COVERS": "wikimedia"}
     )
     trip = seed_trip(ctx)
     page = on.get(f"/trips/{trip.id}").text
-    assert ">Save place and find photo</button>" in page
-    assert "A free photo of it is looked up on Wikipedia." in page
+    assert ">Save place</button>" in page and f'id="photo-help">{FINDS}</p>' in page
+
+
+def test_the_dates_over_a_photo_sit_on_a_scrim_dark_enough_for_any_photo():
+    """The scrim under the hero's text is at least .6 black from the bottom to where the text
+    begins (its top padding is the fade), so white text on it keeps 4.5:1 even over a white
+    photo, for one line or two, in both schemes."""
+    css = (STATIC / "app.css").read_text()
+    (rule,) = re.findall(r"\.hero\.has-photo \.hero-text \{([^}]*)\}", css)
+    said = declarations(rule)
+    top = said["padding"].split()[0]
+    stops = re.findall(r"rgba\(0,0,0,([.\d]+)\)\s*([^,)]*\)?)", said["background"])
+    assert [a for a, _ in stops] == [".75", ".6", "0"], stops
+    assert stops[1][1] == f"calc(100% - {top})", stops  # the faint part is the padding alone
+    assert stops[0][1] == ""  # .75 at the bottom
+    darkest_under_text = min(float(a) for a, _ in stops[:2])
+    grey = round(255 * (1 - darkest_under_text))
+    assert contrast("#ffffff", f"#{grey:02x}{grey:02x}{grey:02x}") >= 4.5
+    (dates,) = re.findall(r"\.hero\.has-photo \.dates \{([^}]*)\}", css)
+    assert declarations(dates)["color"] == "#fff"
+
+
+def test_a_photo_on_its_way_marks_the_hero_for_the_script_to_load_again(
+    tmp_path, monkeypatch, base
+):
+    """The trip page's hero always names its trip; only while the owner's photo waits for the
+    worker does it carry the mark the script loads the page again for. A ready, refused,
+    removed or Wikimedia row, and no row, carry none."""
+    c, ctx = client_for(tmp_path, monkeypatch, base=base)
+    trip = seed_trip(ctx)
+    cv = CoverStore(ctx.ledger)
+
+    def hero() -> dict:
+        (section,) = [n for n in Tree(c.get(f"/trips/{trip.id}").text).nodes
+                      if "hero" in n.attrs.get("class", "").split()]
+        assert section.attrs["data-trip"] == str(trip.id)
+        return section.attrs
+
+    assert "data-cover-pending" not in hero()
+    cv.upload(trip.id, JPEG)
+    assert "data-cover-pending" in hero()
+    cv.fail_upload(trip.id, "unreadable")
+    assert "data-cover-pending" not in hero()
+    cv.upload(trip.id, JPEG)
+    assert "data-cover-pending" in hero()
+    ready(ctx, trip.id)
+    assert "data-cover-pending" not in hero()
+    cv.remove(trip.id)
+    assert "data-cover-pending" not in hero()
+    ctx.trips.set_place(trip.id, "Elsewhere")
+    found(ctx, trip.id)
+    assert "data-cover-pending" not in hero()
+
+
+def test_the_script_loads_a_trip_again_while_its_photo_is_on_its_way():
+    """While the hero is marked, the script loads the page again every 5 s, at most 6 times for
+    that trip in this tab (counted in sessionStorage, every touch of it caught, and no reload
+    at all when the count cannot be kept), never on a saved copy, never while a sheet or an
+    inline form is open, a field has focus or the tab is hidden; a page of the trip without
+    the mark ends the count."""
+    js = (STATIC / "app.js").read_text()
+    start = js.index("const hero = $(\".hero[data-trip]\");")
+    block = js[start : js.index("// ---- share page")]
+    assert "if (hero && !savedAt) {" in block
+    assert "const COVER_MS = 5000;" in block and "const COVER_TRIES = 6;" in block
+    assert 'const tries = "tripbox" + base + ":cover-reloads:" + hero.dataset.trip;' in block
+    assert (
+        "const kept = (use) => { try { return use(window.sessionStorage); }"
+        " catch (e) { return null; } };"
+    ) in block
+    assert js.count("sessionStorage") == 1  # that one touch, inside its try
+    assert 'if (!hero.hasAttribute("data-cover-pending")) {' in block
+    assert "kept((s) => s.removeItem(tries));" in block
+    assert 'const busy = document.hidden || !!$("details[open]") ||' in block
+    assert 'document.activeElement.matches("input, textarea, select"));' in block
+    assert "if (busy) { setTimeout(again, COVER_MS); return; }" in block
+    assert "const done = kept((s) => Number(s.getItem(tries)) || 0);" in block
+    assert "if (done === null || done >= COVER_TRIES) return;" in block
+    assert "kept((s) => { s.setItem(tries, String(done + 1)); return true; });" in block
+    assert "if (counted !== true) return;" in block
+    assert block.count("location.reload();") == 1
+    assert block.count("setTimeout(again, COVER_MS);") == 2  # the first wait, and a busy one
+    order = ("const busy", "const done", "if (done === null", "const counted", "location.reload();")
+    assert [block.index(x) for x in order] == sorted(block.index(x) for x in order)
