@@ -171,6 +171,30 @@ def test_lodging_car_train_mapping():
     assert all(is_complete(r) for r in ex.reservations)
 
 
+def test_every_traveller_s_train_seat_is_kept_on_the_shared_leg():
+    def train(name: str, seat: str) -> dict:
+        return {
+            "@type": "TrainReservation",
+            "reservationNumber": "T5",
+            "underName": {"name": name},
+            "reservationFor": {
+                "@type": "TrainTrip",
+                "trainNumber": "9031",
+                "departureStation": {"name": "Philadelphia Example Station"},
+                "arrivalStation": {"name": "New York Example Station"},
+                "departureTime": "2027-06-25T10:10:00-04:00",
+                "arrivalTime": "2027-06-25T11:40:00-04:00",
+            },
+            "reservedTicket": {"ticketedSeat": {"seatNumber": seat}},
+        }
+
+    ex = map_jsonld([train("Alex Sample", "4A"), train("Pat Sample", "4B")])
+    (t,) = ex.reservations
+    (leg,) = t.segments
+    assert leg.seats == ["4A", "4B"]
+    assert leg.passengers == ["Alex Sample", "Pat Sample"]
+
+
 def test_incomplete_flight_is_flagged():
     o = flight_obj("X", None)
     del o["reservationFor"]["departureTime"]

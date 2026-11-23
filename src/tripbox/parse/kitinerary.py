@@ -321,8 +321,8 @@ def map_jsonld(objects: list[dict]) -> Extraction:
                 if isinstance(ticket, dict)
                 else None
             )
-            if seat and str(seat) not in seg.seats:
-                seg.seats.append(str(seat))
+            if seat and str(seat) not in leg.seats:
+                leg.seats.append(str(seat))
         else:
             log.debug("ignoring kitinerary object of type %s", t)
     reservations = list(groups.values())
