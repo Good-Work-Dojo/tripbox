@@ -257,7 +257,7 @@ ROADMAP_LINES = (
     "sign in with airtrail", "tripit", "pdfs for every provider", "webhook",
     "other providers' authentication headers", "ferry", "more languages", "more than one user",
     "outlook", "patched airtrail image", "`export` command", "table of models",
-    "importable gmail filters", "per-model prices", "forward-only sender list",
+    "importable gmail filters", "prices for more than one model", "forward-only sender list",
     "claim on a message's row", "last_poll_ok", "mail backfill --quiet", "field-length limits",
     "structured-data email", "without `--recorded`", "parser that reads a model's answer",
     "image signing", "cover photos",

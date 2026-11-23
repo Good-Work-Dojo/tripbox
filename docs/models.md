@@ -98,7 +98,8 @@ eval: 30 of 30 emails right
   when no reader was asked, as for an email from a sender that is not allowed), and how many
   of its fields were right of how many there are (`-` when none were expected). Under a failing
   one come what was wanted and what was read.
-- `parsers:` counts the emails each reader read; `none` is the ones nothing read.
+- `parsers:` counts the emails each reader read; `none` is the ones no reader was asked about
+  (such as mail from a sender that is not allowed).
 - `answers:` counts the corpus's answers by where they came from: `hand-written`, `recorded` from
   a real model, and `not asked`, for emails no model is asked about. Every answer in the corpus is
   hand-written; none was recorded from a real model.

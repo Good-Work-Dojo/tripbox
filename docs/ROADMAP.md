@@ -25,7 +25,8 @@ not a commitment. If one matters to you, say so in an issue: that is how it move
 ## Mail and the model
 
 - An importable Gmail filters file; today the recipe is pasted into Gmail's filter form.
-- A file of per-model prices, in place of the one setting.
+- Prices for more than one model of your own: a `config/prices.yaml` beside the shipped table, in
+  place of the one `TRIPBOX_LLM_PRICE_USD_PER_MTOK` setting.
 - A forward-only sender list for the Gmail recipe.
 - A claim on a message's row, so that two readings at once cannot double its log rows or ask the
   model twice.

@@ -2,7 +2,9 @@
 
 tripbox is configured with environment variables. With Docker Compose they come from a `.env`
 file next to `compose.yaml` (copy `.env.example` and edit it); a literal `$` in a value is written
-`$$` there. Every setting has a default or is optional until the feature that uses it is wanted.
+`$$` there. Compose prefers a variable your shell exports over `.env` for the page's settings (the
+worker and the bot read `.env` alone): unset it, or set it the same, before `docker compose up`.
+Every setting has a default or is optional until the feature that uses it is wanted.
 
 ## Features
 
@@ -128,7 +130,7 @@ and one that was still waiting to be sent keeps its place whatever its day.
 | `TRIPBOX_AIRTRAIL_URL` | empty | The address AirTrail answers at, as the worker reaches it, such as `http://flightlog.example:3000`: AirTrail in another container by its service name (which works only when both stacks share a Docker network that you join them to, in a `compose.override.yaml`, shown in [AirTrail](airtrail.md#switching-it-on)), or this computer's address on your network; not `localhost`, which is the worker's own container. |
 | `TRIPBOX_AIRTRAIL_API_KEY` | empty | An API key made in AirTrail under its security settings (secret). |
 | `TRIPBOX_AIRTRAIL_PUBLIC_URL` | empty | The address you open AirTrail at in a browser, such as `https://flightlog.example`. While AirTrail is on, the trips list links to it ("Flight log"); unset, the list shows no such link. It is only a link: on its own it neither turns AirTrail on nor leaves it half configured. A value that is not an `http://` or `https://` address with a host is a problem of the link alone: `tripbox doctor` lists it and the list shows no link, but AirTrail stays as the other settings make it. |
-| `TRIPBOX_AIRTRAIL_DRY_RUN` | `true` | While `true`, nothing is written to AirTrail: every booking is still filed in its trip, a flight that would go to AirTrail waits, and what would be sent is logged once. Set `false` to send flights: the ones that waited go with the next message tripbox handles. On its own it neither turns AirTrail on nor leaves it half configured, and with AirTrail off it changes nothing. |
+| `TRIPBOX_AIRTRAIL_DRY_RUN` | `true` | While `true`, nothing is written to AirTrail: every booking is still filed in its trip, a flight that would go to AirTrail waits, and what would be sent is logged once. Set `false` to send flights: the ones that waited go with the worker's next sync pass, within seconds of the worker restarting. On its own it neither turns AirTrail on nor leaves it half configured, and with AirTrail off it changes nothing. |
 
 ## Notifications
 

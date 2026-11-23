@@ -19,8 +19,9 @@ internet would let whoever came first choose it.
   ends that browser's. Settings can end every session.
 - Ten wrong passwords within 15 minutes close the sign-in to everyone but a browser that has
   signed in before (it carries a second cookie), so a stranger's guesses never lock you out; a
-  new browser may have to wait up to 15 minutes. The count is kept for those two groups, never
-  for an address.
+  new browser waits until the guessing has stopped for 15 minutes: sign in from a browser that
+  has signed in before, or restart the page (`docker compose restart web`), which empties the
+  count. The count is kept for those two groups, never for an address.
 - The cookie's name and `Secure` flag follow `TRIPBOX_BASE_URL`: over https it is a `__Secure-`
   cookie.
 
@@ -114,7 +115,8 @@ The defences are structural; they do not depend on a model behaving.
 ## Share links and saved copies
 
 A share link shows what you ticked (names, addresses, seats and times by default; codes and notes
-when ticked) and the trip's title, to anyone who has the link. It works until 7 days after the
+when ticked), and always the trip's title and dates, and each booking's route and flight number or
+the hotel's or car company's name, to anyone who has the link. It works until 7 days after the
 trip ends, and at least 30 days after it was made, and it does not work while its trip is deleted.
 You can end one at once: **Revoke** on the trip's share page or in Settings. Because a trip's end
 can move (a changed booking, a merge), a lapsed link can work again, unless you revoked it. A

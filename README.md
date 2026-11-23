@@ -230,8 +230,8 @@ senders do not) are read with no model. That data survives a Gmail filter's forw
 original and an uploaded `.eml` of the original, and is lost when you forward an email by hand or
 paste its text from a screen. So with no model, let a filter forward your mail, or attach the
 original, or upload its `.eml`; an email forwarded by hand will wait. On the project's own corpus of
-invented emails the extractor reads only a few and a model nearly all the rest; one is read by
-nothing (the counts are in the scorecard in
+invented emails the extractor reads only a few and a model all the rest; the one email from a sender
+that is not allowed is read by nobody (the counts are in the scorecard in
 [models](docs/models.md#reading-how-a-model-does-tripbox-eval)).
 For the rest, tripbox can ask a model: `anthropic` (the default; give it a key), `openai` (OpenAI's
 service or any server that speaks its API, such as one you run) or `none`. What is sent is the
@@ -265,7 +265,8 @@ read it once, when they start. See [the flight log](docs/airtrail.md).
   nobody vouched for waits for your look before it reaches the flight log.
 - Nothing is ever deleted in AirTrail, and what is not printed in an email is never invented.
 - The page loads nothing from another site and tells search engines to keep away.
-- A share link shows only what you ticked, to anyone who has the link.
+- A share link shows the trip's bookings and dates, and of their details only what you ticked,
+  to anyone who has the link.
 
 The full list, with what has and has not been tried, is in [the security notes](docs/security.md).
 

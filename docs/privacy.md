@@ -53,8 +53,9 @@ sent to any model.
 
 The page asks for a password, or for a login proxy or Cloudflare Access to vouch for you; see
 [security](security.md). It tells search engines to keep away. A share link is the exception, by
-your choice: whoever has the link sees the trip it shows, with only the fields you ticked (names,
-addresses, seats and times by default; codes and notes when ticked), and a trip's title always.
+your choice: whoever has the link sees the trip it shows, with the fields you ticked (names,
+addresses, seats and times by default; codes and notes when ticked), and always the trip's title
+and dates, and each booking's route and flight number or the hotel's or car company's name.
 You can end a link at once with **Revoke**, on the trip's share page or in Settings.
 A login proxy's own log sees a share link's address.
 
