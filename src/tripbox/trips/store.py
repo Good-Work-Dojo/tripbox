@@ -28,6 +28,7 @@ from types import SimpleNamespace
 from tripbox import util
 from tripbox.ledger import Ledger
 from tripbox.trips import grouping
+from tripbox.trips.covers import CoverStore
 from tripbox.util import merge_payload, now_iso, parse_iso
 from tripbox.validate import checks
 from tripbox.validate.keys import draft_key, is_draft, own_draft_key, real_key
@@ -520,6 +521,7 @@ class TripStore:
         self.home = tuple(a.upper() for a in home_airports)
         self.book = book if book is not None else PassengerBook.empty()
         self.airports = airports if airports is not None else Airports()
+        self.covers = CoverStore(ledger)
 
     def airtrail_on(self) -> bool:
         """Whether a flight log is kept: the ledger's `kv` row `airtrail` says `on`."""
@@ -2108,7 +2110,12 @@ class TripStore:
     def set_place(self, trip_id: int, place: str | None) -> Trip:
         """The city the trip is about: bookings there on nearby dates prefer this trip (the
         same-place grouping). The title is the owner's and stays."""
-        self.led.trips.update(trip_id, place=_clean_text(place, "place"))
+        clean = _clean_text(place, "place")
+        with self._tx():
+            row = self.led.trips.get(trip_id)
+            self.led.trips.update(trip_id, place=clean)
+            if row is not None and row["place"] != clean:
+                self.covers.place_changed(trip_id, clean)
         return self.get(trip_id)  # type: ignore[return-value]
 
     def merge(self, src_id: int, dst_id: int) -> Trip:
@@ -2126,6 +2133,7 @@ class TripStore:
                     dst_id,
                     notes="\n\n".join(x for x in (dst["notes"], src["notes"]) if x),
                 )
+            self.covers.merged(src_id, dst_id)
             self.recompute_range(src_id)
             self.recompute_range(dst_id)
         return self.get(dst_id)  # type: ignore[return-value]

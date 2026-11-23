@@ -850,7 +850,6 @@ def test_set_place_sets_the_city_and_keeps_the_title():
     t = st.set_place(trip.id, "  King   of Prussia ")
     assert t.place == "King of Prussia" and t.title == "Philadelphia"
     assert st.set_place(trip.id, "   ").place is None
-    assert not hasattr(st, "set_cover") and not hasattr(st, "retry_missing_covers")
 
 
 def hotel_item(pnr="HOTEL1", dep="2027-06-22", arr="2027-06-25"):
