@@ -9,8 +9,10 @@ decodes and fetches nothing, so the web container can import it."""
 from __future__ import annotations
 
 import datetime as dt
+import functools
 import json
 import sqlite3
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -62,6 +64,18 @@ _CLEARED: dict[str, Any] = {
 }
 
 
+def _writes[F: Callable[..., Any]](fn: F) -> F:
+    """The method runs in one ledger transaction (joining an open one), so its check and its
+    write cannot be split by another process's commit."""
+
+    @functools.wraps(fn)
+    def run(self: CoverStore, *a: Any, **kw: Any) -> Any:
+        with self.led.transaction():
+            return fn(self, *a, **kw)
+
+    return run  # type: ignore[return-value]
+
+
 class CoverStore:
     def __init__(self, ledger: Ledger) -> None:
         self.led = ledger
@@ -95,11 +109,13 @@ class CoverStore:
         return None
 
     # ------------------------------------------------------------------ the owner's photo
+    @_writes
     def upload(self, trip_id: int, data: bytes) -> None:
         """An owner row waiting for the worker, replacing whatever the trip had."""
         self.repo.put(trip_id, source="owner", state="pending", place=None, **_CLEARED)
         self.repo.put(trip_id, upload=data)
 
+    @_writes
     def remove(self, trip_id: int) -> None:
         self.repo.put(trip_id, source="removed", state="none", place=None, **_CLEARED)
 
@@ -107,16 +123,19 @@ class CoverStore:
         row = self.repo.pending_upload()
         return (row["trip_id"], row["upload"]) if row and row["upload"] else None
 
+    @_writes
     def finish_upload(self, trip_id: int, large: bytes, small: bytes, digest: str) -> None:
         self.repo.put(
             trip_id, state="ready", large=large, small=small, digest=digest, upload=None,
             error=None,
         )
 
+    @_writes
     def fail_upload(self, trip_id: int, code: str) -> None:
         self.repo.put(trip_id, state="failed", error=code, upload=None)
 
     # ------------------------------------------------------------------ trip changes
+    @_writes
     def place_changed(self, trip_id: int, place: str | None) -> None:
         """A new place: an automatic cover (or a removal) goes, so the place is looked up
         afresh. The owner's photo stays."""
@@ -124,12 +143,19 @@ class CoverStore:
         if row is not None and row["source"] in ("wikimedia", "removed"):
             self.repo.delete(trip_id)
 
+    @_writes
     def merged(self, src_trip_id: int, dst_trip_id: int) -> None:
         """Called before the source trip goes: the destination keeps its own cover; with none,
-        it takes the source's."""
-        if self.repo.get(src_trip_id) is None:
+        it takes the source's. An owner's photo on the source replaces an automatic cover or a
+        removal on the destination."""
+        src = self.repo.get(src_trip_id)
+        if src is None:
             return
-        if self.repo.get(dst_trip_id) is None:
+        dst = self.repo.get(dst_trip_id)
+        if dst is not None and src["source"] == "owner" and dst["source"] != "owner":
+            self.repo.delete(dst_trip_id)
+            dst = None
+        if dst is None:
             self.repo.move(src_trip_id, dst_trip_id)
         else:
             self.repo.delete(src_trip_id)
@@ -170,6 +196,7 @@ class CoverStore:
         row = self.repo.get(trip_id)
         return row is None or row["source"] == "wikimedia"
 
+    @_writes
     def found(
         self,
         trip_id: int,
@@ -189,6 +216,7 @@ class CoverStore:
             credit_json=json.dumps(credit, sort_keys=True),
         )
 
+    @_writes
     def none_found(self, trip_id: int, place: str, until: dt.datetime) -> None:
         if not self._open_for_lookup(trip_id, place):
             return
@@ -197,6 +225,7 @@ class CoverStore:
             **{**_CLEARED, "retry_after": _iso(until)},
         )
 
+    @_writes
     def lookup_failed(
         self, trip_id: int, place: str, code: str, retry_after: dt.datetime
     ) -> None:

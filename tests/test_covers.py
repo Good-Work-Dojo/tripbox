@@ -36,8 +36,7 @@ def a_trip(st, place="Philadelphia"):
 
 
 def found(cv, tid, place="Philadelphia", digest="d1"):
-    with cv.led.transaction():
-        cv.found(tid, place, b"L" + digest.encode(), b"S" + digest.encode(), digest, CREDIT)
+    cv.found(tid, place, b"L" + digest.encode(), b"S" + digest.encode(), digest, CREDIT)
 
 
 def test_get_is_none_without_a_row():
@@ -76,8 +75,7 @@ def test_finish_upload_makes_it_ready_and_drops_the_raw_bytes():
     st, cv, led = rig()
     tid = a_trip(st)
     cv.upload(tid, b"raw")
-    with led.transaction():
-        cv.finish_upload(tid, b"big", b"sm", "dg")
+    cv.finish_upload(tid, b"big", b"sm", "dg")
     c = cv.get(tid)
     assert (c.source, c.state, c.digest) == ("owner", "ready", "dg")
     assert cv.next_upload() is None
@@ -88,8 +86,7 @@ def test_fail_upload_records_the_code_and_leaves_the_queue():
     st, cv, led = rig()
     tid = a_trip(st)
     cv.upload(tid, b"raw")
-    with led.transaction():
-        cv.fail_upload(tid, "heic")
+    cv.fail_upload(tid, "heic")
     c = cv.get(tid)
     assert (c.state, c.error) == ("failed", "heic")
     assert cv.next_upload() is None
@@ -99,8 +96,7 @@ def test_reupload_replaces_images_and_lets_the_old_digest_go():
     st, cv, _ = rig()
     tid = a_trip(st)
     cv.upload(tid, b"one")
-    with cv.led.transaction():
-        cv.finish_upload(tid, b"L", b"S", "old")
+    cv.finish_upload(tid, b"L", b"S", "old")
     cv.upload(tid, b"two")
     assert cv.image("old", "large") is None
     assert cv.get(tid).digest is None
@@ -180,11 +176,10 @@ def test_due_lookups_respects_retry_after_and_limit():
     for n in range(4):
         ids.append(another(st, f"2027-{n + 7:02d}-10T08:20", f"P{n}"))
     past, future = NOW - dt.timedelta(hours=1), NOW + dt.timedelta(hours=1)
-    with led.transaction():
-        cv.none_found(ids[1], "Philadelphia", past)
-        cv.none_found(ids[2], "Philadelphia", future)
-        cv.lookup_failed(ids[3], "Philadelphia", "http_429", past)
-        cv.lookup_failed(ids[4], "Philadelphia", "http_429", future)
+    cv.none_found(ids[1], "Philadelphia", past)
+    cv.none_found(ids[2], "Philadelphia", future)
+    cv.lookup_failed(ids[3], "Philadelphia", "http_429", past)
+    cv.lookup_failed(ids[4], "Philadelphia", "http_429", future)
     want = [(i, "Philadelphia") for i in ids]
     got = cv.due_lookups(want, NOW, 10)
     assert got == [(ids[0], "Philadelphia"), (ids[1], "Philadelphia"), (ids[3], "Philadelphia")]
@@ -192,8 +187,7 @@ def test_due_lookups_respects_retry_after_and_limit():
     assert cv.due_lookups([(ids[0], "  ")], NOW, 2) == []
     assert cv.get(ids[3]).error == "http_429"
     assert led.covers.get(ids[3])["attempts"] == 1
-    with led.transaction():
-        cv.lookup_failed(ids[3], "Philadelphia", "http_429", future)
+    cv.lookup_failed(ids[3], "Philadelphia", "http_429", future)
     assert led.covers.get(ids[3])["attempts"] == 2
 
 
@@ -236,3 +230,61 @@ def test_credit_round_trips_as_json_and_none_when_absent():
     assert json.loads(led.covers.get(tid)["credit_json"]) == CREDIT
     cv.remove(tid)
     assert cv.get(tid).credit is None
+
+
+def test_merge_moves_a_wikimedia_cover_with_its_own_place():
+    st, cv, _ = rig()
+    a = a_trip(st, "Boston")
+    b = another(st, "2027-09-01T08:20", "OTHER1")
+    found(cv, a, "Boston", "da")
+    st.merge(a, b)
+    assert (cv.get(b).digest, cv.get(b).place) == ("da", "Boston")
+
+
+def test_merge_an_owner_photo_replaces_an_automatic_cover_or_removal():
+    st, cv, led = rig()
+    a = a_trip(st)
+    b = another(st, "2027-09-01T08:20", "OTHER1")
+    cv.upload(a, b"mine")
+    found(cv, b, "Philadelphia", "db")
+    st.merge(a, b)
+    assert (cv.get(b).source, cv.get(b).state) == ("owner", "pending")
+    assert [r["trip_id"] for r in led.covers.all_for_lookup()] == [b]
+    c = another(st, "2027-10-01T08:20", "OTHER2")
+    d = another(st, "2027-11-01T08:20", "OTHER3")
+    cv.upload(c, b"mine")
+    cv.remove(d)
+    st.merge(c, d)
+    assert cv.get(d).source == "owner"
+
+
+def test_merge_an_owner_destination_keeps_its_photo_over_a_source_owner_photo():
+    st, cv, _ = rig()
+    a = a_trip(st)
+    b = another(st, "2027-09-01T08:20", "OTHER1")
+    cv.upload(a, b"src")
+    cv.upload(b, b"dst")
+    st.merge(a, b)
+    assert cv.next_upload() == (b, b"dst")
+
+
+def test_a_rolled_back_upload_or_remove_leaves_no_row():
+    st, cv, led = rig()
+    tid = a_trip(st)
+    for write in (lambda: cv.upload(tid, b"x"), lambda: cv.remove(tid)):
+        try:
+            with led.transaction():
+                write()
+                raise RuntimeError("boom")
+        except RuntimeError:
+            pass
+        assert cv.get(tid) is None
+
+
+def test_a_lookup_answer_never_overwrites_an_owner_row_written_just_before():
+    st, cv, _ = rig()
+    tid = a_trip(st)
+    cv.upload(tid, b"mine")
+    cv.none_found(tid, "Philadelphia", NOW)
+    cv.lookup_failed(tid, "Philadelphia", "http_500", NOW)
+    assert (cv.get(tid).source, cv.get(tid).state) == ("owner", "pending")
