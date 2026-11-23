@@ -731,3 +731,20 @@ def test_bot_answers_even_when_airtrail_is_unreachable(monkeypatch, tmp_path):
             bot.handle_update({"update_id": 6, "callback_query": malformed})
             assert tg.api_calls[-1] == ("answerCallbackQuery", {"id": "cq2", "text": "bad button"})
 
+
+
+def test_a_paste_whose_reading_fails_closes_the_paste(monkeypatch, tmp_path):
+    """A paste whose reading raises is logged and answered like any failed update, and the paste
+    closes, so the next text is not read as an itinerary."""
+    with filing() as ctx:
+        bot, tg = bot_for(ctx, tmp_path)
+        assert "Send the itinerary" in said(bot, tg, "/paste")
+
+        def breaks(*args, **kwargs):
+            raise RuntimeError("the reading broke")
+
+        monkeypatch.setattr(botmod, "process_text", breaks)
+        pasted = {"update_id": 9, "message": {"chat": {"id": CHAT}, "text": "an itinerary"}}
+        monkeypatch.setattr(tg, "api", lambda method, **params: [pasted])
+        bot.poll_once()
+        assert not ctx.ledger.kv.get(KV_PASTE)

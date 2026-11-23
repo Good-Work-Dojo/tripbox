@@ -135,9 +135,14 @@ class Bot:
         if text.startswith("/"):
             self._command(text)
         elif self._paste_pending():
-            # cleared once the text is read: a bot stopped while reading it is handed the same
-            # text again on restart, which is then still the paste
-            self._ingest_text(text)
+            # cleared once the text is read, or its reading failed: a bot stopped while reading
+            # it (SystemExit, no Exception) is handed the same text again on restart, which is
+            # then still the paste
+            try:
+                self._ingest_text(text)
+            except Exception:
+                self.ctx.ledger.kv.set(KV_PASTE, "")
+                raise
             self.ctx.ledger.kv.set(KV_PASTE, "")
         else:
             self.tg.send("Not a command. /paste first if that was an itinerary, or /help.")
