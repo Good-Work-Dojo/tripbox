@@ -98,6 +98,16 @@ KEYS: tuple[Key, ...] = (
         note="Comma-separated codes of airports you live near: a trip is titled by another one.",
         example="MSP",
     ),
+    # the page offers "Find photo" only when this is on; the worker is what looks photos up
+    Key(
+        "TRIPBOX_COVERS",
+        "core",
+        "off",
+        web=True,
+        field="covers",
+        note="Finds a freely licensed photo of each trip's place on Wikimedia: off or wikimedia.",
+        example="wikimedia",
+    ),
     Key("TRIPBOX_DATA_DIR", "core", "/app/data", web=True, field="data_dir"),
     Key("TRIPBOX_ARCHIVE_DIR", "core", "/app/archive", field="archive_dir"),
     Key("TRIPBOX_LOGS_DIR", "core", "/app/logs", web=True, field="logs_dir"),
@@ -883,6 +893,7 @@ MAIL_FILINGS = ("labels", "none")
 LLM_PROVIDERS = ("anthropic", "openai", "none")
 # The flight-data services enrichment can ask (TRIPBOX_ENRICH).
 ENRICH_SERVICES = ("aeroapi",)
+COVER_SOURCES = ("off", "wikimedia")
 
 AUTHS = ("password", "proxy", "cloudflare", "none")
 # The logins under which saved copies are on unless TRIPBOX_OFFLINE says otherwise: the page sees
@@ -1314,6 +1325,12 @@ _CHECKS: dict[str, _Check] = {
         None,
         "not an http:// or https:// address with a host",
         "use your topic's address, such as https://ntfy.example/trips",
+    ),
+    "covers": _Check(
+        _one_of(COVER_SOURCES),
+        "{} is not off or wikimedia",
+        "not off or wikimedia",
+        "use wikimedia to find photos, or off",
     ),
     "enrich": _Check(
         _service,
@@ -1766,6 +1783,7 @@ class Settings:
     # where its port is published, while inside the container it listens on every interface
     listen: tuple[str, int]
     source_url: str  # where the page's source code is, which its about line links
+    covers: Literal["off", "wikimedia"]  # where automatic cover photos come from
     # saved copies for offline use (TRIPBOX_OFFLINE); unset: on with the page's own password and
     # with no login, off behind a login proxy or Cloudflare, whose sign-out the page cannot see
     offline: bool
@@ -1903,6 +1921,7 @@ class Settings:
             base_url=v["base_url"],
             listen=v["listen"],
             source_url=v["source_url"],
+            covers=v["covers"],
             offline=v["tripbox_auth"] in OFFLINE_BY_DEFAULT
             if v["offline"] is None
             else v["offline"],

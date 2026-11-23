@@ -46,6 +46,7 @@ services:
     environment:
       TZ: "${TZ:-UTC}"
       TRIPBOX_HOME_AIRPORTS: "${TRIPBOX_HOME_AIRPORTS:-}"
+      TRIPBOX_COVERS: "${TRIPBOX_COVERS:-}"
       TRIPBOX_DATA_DIR: /app/data
       TRIPBOX_LOGS_DIR: /app/logs
       TRIPBOX_CONFIG_DIR: /app/config

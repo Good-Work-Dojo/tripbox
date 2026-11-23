@@ -8,7 +8,7 @@ The record is JSON: `pid` and `host` (the process that writes it), `started_at` 
 (UTC, ISO-8601 to the second), `busy` (true while a part that may run long is under way: reading
 an upload, a sync pass), `stopped_at` (when the worker stopped and gave the ledger up; null while
 it runs), `features` (each of mail, model, airtrail, notifications and enrichment: on, off or
-invalid), `last` (each of poll, enrich, sync and uploads: null until it first ends, then
+invalid), `last` (each of poll, enrich, sync, uploads and covers: null until it first ends, then
 `at`, `ok` and `code`, a word such as `exit_1`, `timeout`, `outage` or `key_rejected`, never a
 message), `mailbox` (the address mail is read from while mail is on, else null: the one setting
 it carries, which only a signed-in page shows), `waiting` (how many messages wait for the model,

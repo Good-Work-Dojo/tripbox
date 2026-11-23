@@ -4,7 +4,8 @@
 writes the status record the page reads (`status`), takes one waiting upload through the
 pipeline, runs one sync pass with the flight log, and starts `poll` and `enrich` as processes
 of their own when they are due: `poll` at once and then every POLL_SECONDS, `enrich` once a
-night at NIGHTLY in the configured zone while enrichment is on. A child is never waited for
+night at NIGHTLY in the configured zone while enrichment is on. With `TRIPBOX_COVERS=wikimedia`
+a beat also looks up the photos of a few places (`covers`). A child is never waited for
 inside a beat, never started twice at a time, and killed once it runs past its time. A part of
 a beat that breaks is logged and recorded as that part's code, and the beat goes on. One
 worker runs on a ledger at a time: `Worker.start` refuses while another's record is live, and a
@@ -29,9 +30,13 @@ from dataclasses import dataclass
 from typing import Any
 from zoneinfo import ZoneInfo
 
+import httpx2
+
 from tripbox import status, uploads, util
 from tripbox.pipeline import run
 from tripbox.pipeline.run import Context, MessageResult
+from tripbox.trips import coverimage, wikimedia
+from tripbox.trips.covers import CoverStore
 from tripbox.trips.store import stamp
 
 log = logging.getLogger("tripbox.worker")
@@ -42,7 +47,11 @@ BEAT_SECONDS, POLL_SECONDS, POLL_TIMEOUT, ENRICH_TIMEOUT = 5, 300, 900, 900
 NIGHTLY = dt.time(3, 30)  # in the configured zone
 TIMEOUTS = {"poll": POLL_TIMEOUT, "enrich": ENRICH_TIMEOUT}
 FEATURES = ("mail", "model", "airtrail", "notifications", "enrichment")  # in the record
-PARTS = ("poll", "enrich", "sync", "uploads")  # the record's `last`
+PARTS = ("poll", "enrich", "sync", "uploads", "covers")  # the record's `last`
+# Photo lookups: at most this many places a beat; a place with no photo is asked again after
+# NONE_DAYS; a failed one waits LOOKUP_BACKOFF, doubling with each failure up to LOOKUP_BACKOFF_MAX
+LOOKUPS_PER_BEAT, NONE_DAYS = 2, 30
+LOOKUP_BACKOFF, LOOKUP_BACKOFF_MAX = dt.timedelta(minutes=5), dt.timedelta(hours=24)
 STOP_SECONDS = 5  # how long a child has to end once told to, when the worker stops
 SOURCE = "upload"  # the source of a message that came as an upload
 # `poll`'s exit when it read the mailbox (or had none) and a message failed, recorded as the code
@@ -149,8 +158,11 @@ class Worker:
         spawn: Callable[[list[str]], Any] = subprocess.Popen,
         clock: Callable[[], dt.datetime] = util.now,
         sleep: Callable[[float], None] = time.sleep,
+        transport: httpx2.BaseTransport | None = None,
     ) -> None:
         self.ctx = ctx
+        self._transport = transport
+        self._http: httpx2.Client | None = None  # built when the first lookup is due
         self.spawn = spawn
         self.clock = clock
         self.sleep = sleep
@@ -239,6 +251,9 @@ class Worker:
         """Give the ledger up: this process's record says it stopped, so no worker reads as
         running and one started at once (a recreated container, on another host) is not
         refused. Another process's live record is left as it is."""
+        if self._http is not None:
+            self._http.close()
+            self._http = None
         now = self.clock()
         try:
             with self.ctx.ledger.transaction():
@@ -273,6 +288,7 @@ class Worker:
         try:
             self._record()
             self._part("uploads", self._uploads)
+            self._part("covers", self._covers)
             self._part("sync", self._sync)
             self._record()  # before a child starts, so one taken over starts none
             for command in TIMEOUTS:
@@ -308,6 +324,79 @@ class Worker:
             self._record(busy=True)  # a model may take a minute to read it
         state = take_upload(self.ctx)
         return None if state is None else (state != "failed", state)
+
+    def _covers(self) -> tuple[bool, str] | None:
+        """One waiting owner photo, then (with automatic covers on) up to LOOKUPS_PER_BEAT
+        places looked up. None when nothing was done; else `done`, or the code of the last
+        thing that failed."""
+        cv = CoverStore(self.ctx.ledger)
+        failed: str | None = None
+        did = False
+        waiting = cv.next_upload()
+        if waiting is not None:
+            did = True
+            self._record(busy=True)  # a large photo takes a moment to decode
+            trip_id, data = waiting
+            try:
+                made = coverimage.process(data)
+            except coverimage.CoverImageError as exc:
+                cv.fail_upload(trip_id, exc.code)
+                failed = exc.code
+            except Exception:  # noqa: BLE001 - a photo that cannot be read never stops the worker
+                log.exception("the cover photo of trip #%s could not be read", trip_id)
+                cv.fail_upload(trip_id, "unreadable")
+                failed = "unreadable"
+            else:
+                cv.finish_upload(trip_id, made.large, made.small, made.digest)
+        if self.ctx.settings.covers == "wikimedia":
+            now = self.clock()
+            trips = [(t.id, t.place) for t in self.ctx.trips.all_trips() if t.place]
+            due = cv.due_lookups(trips, now, LOOKUPS_PER_BEAT)
+            if due:
+                self._record(busy=True)  # each lookup may take its HTTP timeouts
+            for trip_id, place in due:
+                did = True
+                failed = self._look_up(cv, trip_id, place, now) or failed
+        if not did:
+            return None
+        return (False, failed) if failed else (True, "done")
+
+    def _look_up(self, cv: CoverStore, trip_id: int, place: str, now: dt.datetime) -> str | None:
+        """Give one trip's place a cover: copied from a trip at the same place, else asked of
+        Wikimedia. Answers the code of a failure, else None. Any exception from the lookup is a
+        failure to try again later, so no escape makes the trip due on the next beat."""
+        same = cv.same_place_ready(place, exclude=trip_id)
+        if same is not None and same.digest and same.credit is not None:
+            large, small = cv.image(same.digest, "large"), cv.image(same.digest, "small")
+            if large and small:
+                cv.found(trip_id, place, large, small, same.digest, same.credit)
+                return None
+        try:
+            found = wikimedia.find(place, http=self._client())
+            made = coverimage.process(found.data) if found is not None else None
+        except coverimage.CoverImageError:  # what Wikimedia gave is no usable picture
+            found, made = None, None
+        except Exception as exc:  # noqa: BLE001 - see above
+            code = exc.code if isinstance(exc, wikimedia.Transient) else "error"
+            if code == "error":
+                log.exception("the photo lookup for trip #%s failed", trip_id)
+            row = self.ctx.ledger.covers.get(trip_id)
+            tries = row["attempts"] if row is not None and row["source"] == "wikimedia" else 0
+            wait = min(LOOKUP_BACKOFF * 2**min(tries, 20), LOOKUP_BACKOFF_MAX)
+            cv.lookup_failed(trip_id, place, code, now + wait)
+            return code
+        if found is None or made is None:
+            cv.none_found(trip_id, place, now + dt.timedelta(days=NONE_DAYS))
+        else:
+            cv.found(trip_id, place, made.large, made.small, made.digest, found.credit)
+        return None
+
+    def _client(self) -> httpx2.Client:
+        if self._http is None:
+            self._http = wikimedia.client(
+                self.ctx.settings.source_url, transport=self._transport
+            )
+        return self._http
 
     def _sync(self) -> tuple[bool, str] | None:
         """One pass (none when no flight log is kept): `done`, or why it ended early."""

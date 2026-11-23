@@ -642,7 +642,6 @@ def test_a_bad_flight_log_address_is_a_problem_of_the_link_alone():
     "name, value",
     [
         ("TRIPBOX_PUBLIC_ORIGIN", "https://trips.example.com"),  # TRIPBOX_BASE_URL took its place
-        ("TRIPBOX_COVERS", "true"),  # every trip shows its coloured tile: nothing is looked up
     ],
 )
 def test_a_retired_name_is_a_problem_of_names_that_stops_nothing(
@@ -663,13 +662,24 @@ def test_a_retired_name_is_a_problem_of_names_that_stops_nothing(
     assert name not in KEY_BY_NAME
     assert s.features == Settings.from_env({"TRIPBOX_AUTH": "none"}).features
     assert s.base_url == "http://localhost:8110" and s.link_base is None
-    assert not any("cover" in field.name for field in dataclasses.fields(Settings))
     for name, value in retired.items():
         monkeypatch.setenv(name, value)
     monkeypatch.setenv("TRIPBOX_DATA_DIR", str(tmp_path / "data"))
     monkeypatch.setenv("TRIPBOX_LOGS_DIR", str(tmp_path / "logs"))
     monkeypatch.setenv("TRIPBOX_CONFIG_DIR", str(CONFIG_DIR))
     assert cli.main(["trips", "list"]) == 0
+
+
+def test_covers_default_off_and_take_off_or_wikimedia():
+    key = KEY_BY_NAME["TRIPBOX_COVERS"]
+    assert (key.feature, key.default, key.web, key.secret) == ("core", "off", True, False)
+    assert Settings.from_env({"TRIPBOX_AUTH": "none"}).covers == "off"
+    for given, want in (("wikimedia", "wikimedia"), (" Wikimedia ", "wikimedia"), ("off", "off")):
+        s = Settings.from_env({"TRIPBOX_AUTH": "none", "TRIPBOX_COVERS": given})
+        assert (s.covers, list(s.problems)) == (want, [])
+    s = Settings.from_env({"TRIPBOX_AUTH": "none", "TRIPBOX_COVERS": "true"})
+    assert s.covers == "off"
+    assert [(p.key, p.feature) for p in s.problems] == [("TRIPBOX_COVERS", "core")]
 
 
 def test_the_fixtures_folder_is_no_setting(tmp_path, monkeypatch):

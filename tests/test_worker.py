@@ -292,12 +292,16 @@ class Spawner:
 
 
 def a_worker(
-    ctx: run.Context, at: dt.datetime, **spawner
+    ctx: run.Context, at: dt.datetime, *, transport=None, **spawner
 ) -> tuple[worker.Worker, Clock, Spawner]:
-    """A worker over `ctx` whose clock stands at `at`, and the processes it starts."""
+    """A worker over `ctx` whose clock stands at `at`, and the processes it starts; `transport`
+    answers the photo lookups."""
     clock = Clock(at)
     spawn = Spawner(clock, **spawner)
-    return worker.Worker(ctx, spawn=spawn, clock=clock, sleep=clock.tick), clock, spawn
+    made = worker.Worker(
+        ctx, spawn=spawn, clock=clock, sleep=clock.tick, transport=transport
+    )
+    return made, clock, spawn
 
 
 def beat(w: worker.Worker) -> None:
@@ -363,7 +367,13 @@ def test_a_beat_writes_the_status_record_with_codes_only(tmp_path):
     w, clock, spawn = a_worker(ctx, at)
     start(w)
     first = status.read(ctx.ledger)
-    assert first["last"] == {"poll": None, "enrich": None, "sync": None, "uploads": None}
+    assert first["last"] == {
+        "poll": None,
+        "enrich": None,
+        "sync": None,
+        "uploads": None,
+        "covers": None,
+    }
     assert first["started_at"] == first["beat_at"] == stamp(at)
     clock.tick(5)
     beat(w)
@@ -398,6 +408,7 @@ def test_a_beat_writes_the_status_record_with_codes_only(tmp_path):
         "sync": {"at": beat_at, "ok": False, "code": "key_rejected"},
         "poll": None,  # started, not ended
         "enrich": None,
+        "covers": None,  # no photo waits and none is being looked up
     }
     assert ctx.ledger.uploads.get(token)["state"] == "filed"
     assert ctx.ledger.kv.get("airtrail_key_rejected") and ctx.airtrail.sent == []
