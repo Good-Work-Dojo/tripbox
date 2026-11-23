@@ -2,7 +2,8 @@
 {# Additional terms: see NOTICE -#}
 <li>
   <a class="card {{ 'cancelled' if c.trip.cancelled }}" href="{{ base }}/trips/{{ c.trip.id }}">
-    <div class="cover tile tile-{{ c.trip.id % 8 }}" aria-hidden="true"><span>{{ c.trip.title[:1]|upper }}</span></div>
+    {% if c.photo %}<div class="cover photo" aria-hidden="true"><img src="{{ base }}/covers/{{ c.photo }}-s.jpg" alt="" loading="lazy" width="64" height="64"></div>
+    {% else %}<div class="cover tile tile-{{ c.trip.id % 8 }}" aria-hidden="true"><span>{{ c.trip.title[:1]|upper }}</span></div>{% endif %}
     <div class="card-body">
       <div class="card-title">{{ c.trip.title }}{% if c.trip.cancelled %} <span class="chip chip-red">Cancelled</span>{% endif %}{% if c.to_check %} <span class="chip chip-amber">{{ c.to_check }} to check</span>{% endif %}</div>
       <div class="card-dates">{{ c.range }}</div>

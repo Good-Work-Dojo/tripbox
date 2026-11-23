@@ -80,10 +80,23 @@ select:focus-visible, textarea:focus-visible { outline: 2px solid var(--primary)
 .tile-5 { background: linear-gradient(135deg, #06b6d4, #0e7490); }
 .tile-6 { background: linear-gradient(135deg, #f97316, #c2410c); }
 .tile-7 { background: linear-gradient(135deg, #64748b, #334155); }
+/* a trip's cover photo in the tile's place, cut to its shape (an <img>, never a style) */
+.cover.photo { overflow: hidden; background: var(--band); }
+.cover.photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
 /* ---- trip page */
 .hero { display: flex; align-items: center; gap: 14px; padding: 12px 0 4px; }
 .dates { font-size: 16px; color: var(--muted); }
+/* with a photo: as wide as the page, its dates in white on a dark scrim that keeps them at 4.5:1
+   or more over any photo, the same in both schemes */
+.hero.has-photo { position: relative; display: block; padding: 0; margin: 12px 0 4px; border-radius: var(--radius-lg); overflow: hidden; }
+.hero.has-photo .cover { width: 100%; height: auto; aspect-ratio: 16 / 10; max-height: 300px; border-radius: 0; }
+.hero.has-photo .hero-text { position: absolute; left: 0; right: 0; bottom: 0; padding: 32px 12px 10px;
+                             background: linear-gradient(to top, rgba(0,0,0,.75), rgba(0,0,0,.6) 50%, rgba(0,0,0,0)); }
+.hero.has-photo .dates { color: #fff; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,.6); overflow-wrap: anywhere; }
+.credit { margin: 6px 2px 0; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.credit a { color: inherit; text-decoration: underline; }
+.cover-note { margin: 8px 0 0; }
 .notes { margin-top: 8px; }
 .notes-text { white-space: pre-wrap; overflow-wrap: anywhere; padding: 10px 12px; border-radius: var(--radius-lg); background: var(--band); margin-bottom: 6px; }
 details.inline > summary { list-style: none; display: inline-block; }
@@ -137,6 +150,12 @@ details.item-menu > summary { color: var(--muted); font-size: 20px; line-height:
 /* anchored to the row's right edge and as wide as the row, so the select + Move row never
    runs off a phone screen (the summary sits at the row's left) */
 details.item-menu .sheet { left: auto; right: 0; width: min(calc(100vw - 2 * var(--gutter)), 360px); }
+/* the trip's sheet sits in the sticky header: taller than the screen, it scrolls on its own */
+details.menu .sheet { max-height: calc(100vh - 88px); max-height: calc(100dvh - 88px); overflow-y: auto; overscroll-behavior: contain; }
+/* the place and the photo, one part of the trip's sheet under its own small heading */
+.sheet-part { display: flex; flex-direction: column; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.sheet-head { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.sheet-part .small, .sheet-part .col { margin: 0; }
 .row { display: flex; gap: 8px; }
 .col { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 input[type="text"], input[type="password"], select, textarea { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); }

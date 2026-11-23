@@ -17,11 +17,20 @@
         <input type="text" name="title" value="{{ trip.title }}" maxlength="80" required aria-label="Trip name">
         <button type="submit" class="btn">Rename</button>
       </form>
-      <form method="post" action="{{ base }}/trips/{{ trip.id }}/place" class="row">
-        <input type="text" name="place" value="{{ trip.place or '' }}" placeholder="City" maxlength="80" aria-label="Place" aria-describedby="place-help">
-        <button type="submit" class="btn">Save place</button>
-      </form>
-      <p class="muted small" id="place-help">The city this trip is about. Bookings there on nearby dates join this trip.</p>
+      <section class="sheet-part" aria-labelledby="photo-head">
+        <h2 class="sheet-head" id="photo-head">Place and photo</h2>
+        <form method="post" action="{{ base }}/trips/{{ trip.id }}/place" class="{{ 'col' if find_photo else 'row' }}">
+          <input type="text" name="place" value="{{ trip.place or '' }}" placeholder="City" maxlength="80" aria-label="Place" aria-describedby="place-help">
+          <button type="submit" class="btn">{{ 'Save place and find photo' if find_photo else 'Save place' }}</button>
+        </form>
+        <p class="muted small" id="place-help">The city this trip is about. Bookings there on nearby dates join this trip.{% if find_photo %} A free photo of it is looked up on Wikipedia.{% endif %}</p>
+        {% include "_photo_form.html" %}
+        {% if photo.removable %}
+        <form method="post" action="{{ base }}/trips/{{ trip.id }}/cover/remove">
+          <button type="submit" class="btn link danger">Remove photo</button>
+        </form>
+        {% endif %}
+      </section>
       {% if others %}
       <form method="post" action="{{ base }}/trips/{{ trip.id }}/merge" class="row" data-confirm="Merge this trip into the chosen one?">
         <select name="into" required aria-label="Merge into">
@@ -40,13 +49,22 @@
   </details>
 </header>
 <main class="page">
-  <section class="hero">
-    <div class="cover big tile tile-{{ trip.id % 8 }}" aria-hidden="true"><span>{{ trip.title[:1]|upper }}</span></div>
+  <section class="hero{{ ' has-photo' if photo.digest }}">
+    {% if photo.digest %}<div class="cover big photo" aria-hidden="true"><img src="{{ base }}/covers/{{ photo.digest }}.jpg" alt="" width="1600" height="1000"></div>
+    {% else %}<div class="cover big tile tile-{{ trip.id % 8 }}" aria-hidden="true"><span>{{ trip.title[:1]|upper }}</span></div>{% endif %}
     <div class="hero-text">
       <div class="dates">{{ range }}{% if to_check %} <span class="chip chip-amber">{{ to_check }} to check</span>{% endif %}</div>
       {% if trip.cancelled %}<span class="chip chip-red">Cancelled</span>{% endif %}
     </div>
   </section>
+  {% if photo.credit %}<p class="credit">Photo: {% for part in photo.credit %}{% if not loop.first %} · {% endif %}{% if part.href %}<a href="{{ part.href }}" target="_blank" rel="noopener noreferrer">{{ part.text }}</a>{% else %}{{ part.text }}{% endif %}{% endfor %}</p>{% endif %}
+  {% if photo.pending %}<p class="muted small cover-note">Photo on its way — it shows in a few seconds.</p>{% endif %}
+  {% if photo.failed %}
+  <div class="notice cover-note">
+    <p>That photo could not be used ({{ photo.failed }}).</p>
+    {% include "_photo_form.html" %}
+  </div>
+  {% endif %}
   <section class="notes">
     {% if trip.notes %}
     <h2 class="section">Notes</h2>

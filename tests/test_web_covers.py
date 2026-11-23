@@ -7,21 +7,26 @@ trip page as decoration, with a Wikimedia photo's credit; never on a shared page
 deleted."""
 
 import asyncio
+import datetime as dt
 import hashlib
 import io
 import re
 import signal
+from html import unescape
 
+import pytest
 from helpers.web import PEER, client_for
 from PIL import Image
 from test_coverimage import phone_jpeg
 from test_web_login import as_cookie, fresh, get, session_of, sign_in
 from test_web_login import page as password_page
 from test_web_uploads import endless
-from test_web_views import POLICY, seed_past, seed_trip
+from test_web_views import POLICY, Node, Tree, seed_past, seed_trip
 from test_worker import a_worker, beat, start
 
 from tripbox import uploads, util
+from tripbox.ledger import repo
+from tripbox.trips import shares
 from tripbox.trips.covers import CoverStore
 from tripbox.web import views
 from tripbox.web.middleware import LIMIT
@@ -413,3 +418,305 @@ def test_remove_takes_the_photo_away_and_keeps_automatic_ones_off(tmp_path, monk
     c.post(url, headers=SAME)
     assert (row(ctx, trip.id)["source"], row(ctx, trip.id)["upload"]) == ("removed", None)
     assert CoverStore(ctx.ledger).next_upload() is None
+
+
+
+
+# ----------------------------------------------------------------------------- showing
+def within(node: Node):
+    """Every element inside `node`, in page order."""
+    for child in node.children:
+        if isinstance(child, Node):
+            yield child
+            yield from within(child)
+
+
+def classed(tree: Tree, name: str) -> list[Node]:
+    return [n for n in tree.nodes if name in n.attrs.get("class", "").split()]
+
+
+def images(tree: Tree) -> list[Node]:
+    return [n for n in tree.nodes if n.tag == "img"]
+
+
+def decorative(img: Node) -> bool:
+    """An image a screen reader skips: no text of its own, inside a cover hidden from it."""
+    covers = [n for n in img.ancestors() if "cover" in n.attrs.get("class", "").split()]
+    return img.attrs.get("alt") == "" and bool(covers) and covers[0].attrs["aria-hidden"] == "true"
+
+
+def credit_of(page: str) -> Node:
+    (line,) = classed(Tree(page), "credit")
+    return line
+
+
+def test_the_card_and_the_hero_show_a_ready_photo_as_decoration(tmp_path, monkeypatch, base):
+    """The list's card shows the small photo and the trip's page the large one, each an image a
+    screen reader skips, sized before it loads (the card's loaded only once it is near); every
+    other trip keeps its tile, and so does a trip whose photo is not ready."""
+    c, ctx = client_for(tmp_path, monkeypatch, base=base)
+    trip = seed_trip(ctx)
+    seed_past(ctx, 2)
+    others = [t for t in ctx.trips.all_trips() if t.id != trip.id]
+    for path in ("/", f"/trips/{trip.id}"):
+        assert images(Tree(c.get(path).text)) == [], path  # tiles alone
+    digest = ready(ctx, trip.id)
+    CoverStore(ctx.ledger).upload(others[0].id, JPEG)  # on its way: still the tile
+    listing = Tree(c.get("/").text)
+    (card,) = images(listing)
+    assert card.attrs["src"] == c.url(f"/covers/{digest}-s.jpg") and decorative(card)
+    assert card.attrs["loading"] == "lazy" and card.attrs["width"] == card.attrs["height"] == "64"
+    link = next(n for n in card.ancestors() if n.tag == "a")
+    assert link.attrs["href"] == c.url(f"/trips/{trip.id}") and trip.title in link.text()
+    assert sorted(n.attrs["class"] for n in classed(listing, "tile")) == sorted(
+        f"cover tile tile-{t.id % 8}" for t in others
+    )
+    page = c.get(f"/trips/{trip.id}").text
+    (hero,) = images(Tree(page))
+    assert hero.attrs["src"] == c.url(f"/covers/{digest}.jpg") and decorative(hero)
+    assert "loading" not in hero.attrs and {"width", "height"} <= set(hero.attrs)
+    assert 'class="hero has-photo"' in page and "tile-" not in page
+    assert c.get(hero.attrs["src"].removeprefix(base)).content == LARGE
+    assert images(Tree(c.get(f"/trips/{others[0].id}").text)) == []
+
+
+def test_a_photo_on_its_way_says_so_and_one_that_failed_says_why(tmp_path, monkeypatch, base):
+    """While the worker has not read the owner's photo the page says it is on its way (the tile
+    stays); one it could not use says why, with the form to send another. A photo the worker
+    is still looking for, or found none of, says nothing."""
+    c, ctx = client_for(tmp_path, monkeypatch, base=base)
+    trip = seed_trip(ctx)
+    cv = CoverStore(ctx.ledger)
+    on_its_way = "Photo on its way — it shows in a few seconds."
+    cv.upload(trip.id, JPEG)
+    page = c.get(f"/trips/{trip.id}").text
+    assert f'<p class="muted small cover-note">{on_its_way}</p>' in page
+    assert images(Tree(page)) == [] and "could not be used" not in page
+    for code, why in (
+        ("unreadable", "it could not be read"),
+        ("too_many_pixels", "it has more than 40 million pixels"),
+        ("wrong_type", "it is not a JPEG, PNG or WebP"),
+        ("something new", "it could not be read"),
+    ):
+        cv.upload(trip.id, JPEG)
+        cv.fail_upload(trip.id, code)
+        tree = Tree(c.get(f"/trips/{trip.id}").text)
+        (note,) = classed(tree, "cover-note")
+        assert note.text().startswith(f"That photo could not be used ({why}). "), code
+        (form,) = [n for n in within(note) if n.tag == "form"]
+        assert form.attrs["action"] == c.url(f"/covers/upload?trip={trip.id}"), code
+        assert [n.attrs.get("name") for n in within(form) if n.tag == "input"] == ["photo"]
+        assert on_its_way not in tree.root.text() and images(tree) == [], code
+    cv.remove(trip.id)
+    ctx.trips.set_place(trip.id, "Example City")
+    soon = util.now() + dt.timedelta(minutes=5)
+    for write in (
+        lambda: cv.lookup_failed(trip.id, "Example City", "unavailable", soon),
+        lambda: cv.none_found(trip.id, "Example City", soon),
+    ):
+        write()
+        page = c.get(f"/trips/{trip.id}").text
+        assert "cover-note" not in page and images(Tree(page)) == []
+
+
+def test_a_wikimedia_photo_carries_its_credit_as_text(tmp_path, monkeypatch, base):
+    """A Wikimedia photo's credit line names its author and licence and Wikimedia Commons, each
+    as text (an author's markup is shown, never run), the licence and the source linked to their
+    pages in a new tab that is sent no address; an address that is no web page's is not linked.
+    An owner's photo has no credit."""
+    c, ctx = client_for(tmp_path, monkeypatch, base=base)
+    trip = seed_trip(ctx)
+    found(ctx, trip.id)
+    line = credit_of(c.get(f"/trips/{trip.id}").text)
+    assert line.text() == "Photo: Sample Author · CC BY-SA 4.0 · Wikimedia Commons"
+    links = {n.text(): n.attrs for n in within(line) if n.tag == "a"}
+    assert {k: v["href"] for k, v in links.items()} == {
+        "CC BY-SA 4.0": CREDIT["licence_url"],
+        "Wikimedia Commons": CREDIT["source_url"],
+    }
+    assert {(v["target"], v["rel"]) for v in links.values()} == {("_blank", "noopener noreferrer")}
+    hostile = {
+        "artist": '<script>alert("x")</script> & <b>Sample</b>',
+        "licence": "CC BY 4.0<img src=x>",
+        "source_url": " //commons.example.org/wiki/File:x.jpg",
+    }
+    for odd in ("javascript:alert(1)", "data:text/html,x", "ftp://example.org/x", "/covers/x",
+                "https://", "https:x", "https://exa mple.org/x"):
+        found(ctx, trip.id, {**hostile, "licence_url": odd})
+        page = c.get(f"/trips/{trip.id}").text
+        line = credit_of(page)
+        assert list(within(line)) == [], odd
+        assert line.text() == (
+            'Photo: <script>alert("x")</script> & <b>Sample</b> · CC BY 4.0<img src=x>'
+            " · Wikimedia Commons"
+        ), odd
+        assert "<script>alert" not in page and "&lt;script&gt;" in page, odd
+        assert images(Tree(page))[0].attrs["src"].startswith(c.url("/covers/")), odd
+    found(ctx, trip.id, {"artist": "", "licence": "", "licence_url": "", "source_url": ""})
+    assert credit_of(c.get(f"/trips/{trip.id}").text).text() == "Photo: Wikimedia Commons"
+    ready(ctx, trip.id)
+    assert classed(Tree(c.get(f"/trips/{trip.id}").text), "credit") == []
+
+
+def test_shared_pages_and_recently_deleted_never_show_a_photo(tmp_path, monkeypatch, base):
+    c, ctx = client_for(tmp_path, monkeypatch, base=base)
+    trip = seed_trip(ctx)
+    seed_past(ctx, 1)
+    found(ctx, trip.id)
+    link = shares.create(ctx.ledger, trip.id, shares.FIELDS)
+    shared = c.get(f"/s/{link.token}")
+    assert shared.status_code == 200 and trip.title in shared.text
+    assert "<img" not in shared.text and "/covers/" not in shared.text
+    assert "Wikimedia" not in shared.text and "Photo:" not in shared.text
+    other = next(t for t in ctx.trips.all_trips() if t.id != trip.id)
+    ready(ctx, other.id, LARGE + b"?")
+    ctx.trips.delete_trip(other.id)
+    gone = c.get("/deleted").text
+    assert f'class="cover tile tile-{other.id % 8}"' in gone and "<img" not in gone
+
+
+@pytest.mark.parametrize("covers", ["off", "wikimedia"])
+def test_the_sheet_offers_a_photo_and_find_photo_only_with_covers_on(
+    tmp_path, monkeypatch, base, covers
+):
+    """The trip's ⋯ sheet holds the place and the photo under one heading: the place's form,
+    which finds a photo too only with automatic covers on (and then says where it looks), the
+    form to upload one (a JPEG, a PNG or a WebP, named for what it asks), and Remove photo once
+    there is a photo, or one on its way or refused, to remove."""
+    on = covers == "wikimedia"
+    env = {"TRIPBOX_COVERS": covers}
+    c, ctx = client_for(tmp_path, monkeypatch, base=base, env=env)
+    trip = seed_trip(ctx)
+    tree = Tree(c.get(f"/trips/{trip.id}").text)
+    assert tree.by_id("photo-head").text() == "Place and photo"
+    (part,) = [n for n in tree.nodes if n.attrs.get("aria-labelledby") == "photo-head"]
+    menu = next(n for n in part.ancestors() if n.tag == "details")
+    assert "menu" in menu.attrs["class"].split(), covers
+    forms = {n.attrs["action"]: n for n in within(part) if n.tag == "form"}
+    place = forms[c.url(f"/trips/{trip.id}/place")]
+    (button,) = [n for n in within(place) if n.tag == "button"]
+    assert button.text() == ("Save place and find photo" if on else "Save place"), covers
+    assert ("Wikipedia" in tree.by_id("place-help").text()) is on, covers
+    upload = forms[c.url(f"/covers/upload?trip={trip.id}")]
+    assert (upload.attrs["method"], upload.attrs["enctype"]) == ("post", "multipart/form-data")
+    (field,) = [n for n in within(upload) if n.tag == "input"]
+    assert (field.attrs["type"], field.attrs["name"]) == ("file", "photo"), covers
+    assert field.attrs["accept"] == "image/jpeg,image/png,image/webp"
+    assert "required" in field.attrs
+    assert tree.name_of(field) == "Choose a photo", covers
+    assert [n.text() for n in within(upload) if n.tag == "button"] == ["Upload photo"]
+    remove = c.url(f"/trips/{trip.id}/cover/remove")
+    cv = CoverStore(ctx.ledger)
+
+    def offered() -> bool:
+        page = Tree(c.get(f"/trips/{trip.id}").text)
+        (part,) = [n for n in page.nodes if n.attrs.get("aria-labelledby") == "photo-head"]
+        held = [n for n in within(part) if n.attrs.get("action") == remove]
+        assert [n.text() for n in held] in ([], ["Remove photo"])
+        return bool(held)
+
+    assert not offered()
+    cv.upload(trip.id, JPEG)
+    assert offered(), covers  # on its way
+    cv.fail_upload(trip.id, "unreadable")
+    assert offered(), covers  # refused by the worker
+    ready(ctx, trip.id)
+    assert offered(), covers
+    cv.remove(trip.id)
+    assert not offered(), covers
+    ctx.trips.set_place(trip.id, "Elsewhere")
+    found(ctx, trip.id)
+    assert offered(), covers  # a Wikimedia photo
+    cv.none_found(trip.id, "Elsewhere", util.now())
+    assert not offered(), covers  # none was found: nothing to remove
+
+
+@pytest.mark.parametrize("covers", ["off", "wikimedia"])
+def test_saving_a_place_says_a_photo_is_looked_for_only_when_one_is(
+    tmp_path, monkeypatch, base, covers
+):
+    """With automatic covers on, a place saved that changes it, and leaves the trip with no
+    photo of the owner's, comes back saying a photo is looked for; the same place again, a
+    place taken off, a trip with the owner's photo, and every save with covers off say only
+    that the place was saved."""
+    on = covers == "wikimedia"
+    env = {"TRIPBOX_COVERS": covers}
+    c, ctx = client_for(tmp_path, monkeypatch, base=base, env=env)
+    trip = seed_trip(ctx)
+    url = f"/trips/{trip.id}/place"
+
+    def saved(place: str) -> str:
+        r = c.post(url, data={"place": place}, headers=SAME, follow_redirects=False)
+        assert r.status_code == 303
+        return r.headers["location"].removeprefix(c.url(f"/trips/{trip.id}?f="))
+
+    assert saved("King of Prussia") == ("place_photo" if on else "place"), covers
+    assert saved("King of Prussia") == "place", covers
+    found(ctx, trip.id)
+    assert saved("Philadelphia") == ("place_photo" if on else "place"), covers
+    assert saved("") == "place", covers
+    ready(ctx, trip.id)
+    assert saved("Pittsburgh") == "place", covers
+    assert row(ctx, trip.id)["source"] == "owner"
+    assert views.FLASH["place_photo"] == "Place saved — looking for a photo"
+
+
+def test_the_pages_read_no_photo_bytes_and_one_row_for_every_card(tmp_path, monkeypatch, base):
+    """The list and a trip's page read the covers without their images (the list in one pass
+    for every card), and the content policy and the inline-style rule hold on a page with a
+    photo and its credit."""
+    c, ctx = client_for(tmp_path, monkeypatch, base=base)
+    trip = seed_trip(ctx)
+    seed_past(ctx, 3)
+    for t in ctx.trips.all_trips():
+        ready(ctx, t.id, LARGE + str(t.id).encode())
+    CoverStore(ctx.ledger).remove(trip.id)
+    ctx.trips.set_place(trip.id, "Elsewhere")
+    found(ctx, trip.id)
+    passes = []
+    whole = repo.Covers.all_for_lookup
+
+    def refused(*args, **kw):
+        raise AssertionError("a page read a cover's images")
+
+    def counted(self):
+        passes.append(1)
+        return whole(self)
+
+    monkeypatch.setattr(repo.Covers, "get", refused)
+    monkeypatch.setattr(repo.Covers, "by_digest", refused)
+    monkeypatch.setattr(repo.Covers, "all_for_lookup", counted)
+    listing = c.get("/")
+    assert listing.status_code == 200 and len(images(Tree(listing.text))) == 4
+    assert passes == [1]
+    page = c.get(f"/trips/{trip.id}")
+    assert page.status_code == 200 and len(classed(Tree(page.text), "credit")) == 1
+    for r in (listing, page):
+        assert r.headers["content-security-policy"] == POLICY
+        assert not re.search(r"\sstyle\s*=", r.text)
+
+
+def test_where_photos_come_from_is_named_only_in_a_credit_or_with_covers_on(
+    tmp_path, monkeypatch, base
+):
+    """With automatic covers off (the default), a Wikimedia photo found while they were on still
+    shows with its credit, and that line is the only part of any page that names Wikimedia or
+    Wikipedia or offers to find a photo. With them on, the place's form and its help say so."""
+    c, ctx = client_for(tmp_path, monkeypatch, base=base)
+    assert ctx.settings.covers == "off"
+    trip = seed_trip(ctx)
+    found(ctx, trip.id)
+    for path in ("/", f"/trips/{trip.id}", f"/trips/{trip.id}/share", "/deleted", "/settings"):
+        r = c.get(path)
+        assert r.status_code == 200, path
+        rest = unescape(re.sub(r'<p class="credit">.*?</p>', "", r.text, flags=re.S)).lower()
+        for word in ("wikipedia", "wikimedia", "find photo"):
+            assert word not in rest, (path, word)
+    assert credit_of(c.get(f"/trips/{trip.id}").text).text().endswith("· Wikimedia Commons")
+    on, ctx = client_for(
+        tmp_path / "on", monkeypatch, base=base, env={"TRIPBOX_COVERS": "wikimedia"}
+    )
+    trip = seed_trip(ctx)
+    page = on.get(f"/trips/{trip.id}").text
+    assert ">Save place and find photo</button>" in page
+    assert "A free photo of it is looked up on Wikipedia." in page

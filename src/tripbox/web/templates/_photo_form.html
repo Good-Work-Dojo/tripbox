@@ -1,0 +1,9 @@
+{# SPDX-License-Identifier: AGPL-3.0-only -#}
+{# Additional terms: see NOTICE -#}
+{#- The form that uploads the owner's own cover photo for `trip`: a JPEG, a PNG or a WebP (for
+this list a phone hands over a JPEG), the trip in the address so that a body refused before it is
+read still comes back to it. -#}
+<form method="post" action="{{ base }}/covers/upload?trip={{ trip.id }}" enctype="multipart/form-data" class="col photo-form">
+  <label class="field"><span>Choose a photo</span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required></label>
+  <button type="submit" class="btn">Upload photo</button>
+</form>

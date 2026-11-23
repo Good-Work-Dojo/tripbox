@@ -15,6 +15,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from starlette.datastructures import UploadFile
 from starlette.exceptions import HTTPException
@@ -28,6 +29,7 @@ from tripbox.ledger import Ledger
 from tripbox.trips import coversniff, grouping, ical, shares
 from tripbox.trips import display as displaymod
 from tripbox.trips import format as fmt
+from tripbox.trips.covers import Cover
 from tripbox.trips.format import ICON
 from tripbox.trips.store import DRY_RUN_KV, Trip, TripItem, TripStore, editable_value
 from tripbox.util import parse_iso, today_local
@@ -58,9 +60,17 @@ FLASH = {  # ?f=<key> after a redirect → one toast; app.js then strips it from
     "cover_type": "That file is not a JPEG, PNG or WebP photo",
     "cover_big": "That photo is larger than 10 MB",
     "cover_removed": "Photo removed",
+    "place_photo": "Place saved — looking for a photo",
 }
 # The kinds of picture an owner's cover photo may be (`coversniff.sniff`); a HEIC one is told so
 COVER_KINDS = ("jpeg", "png", "webp")
+# Why the worker could not make the owner's photo into a cover (`coverimage.CoverImageError`), as
+# the trip's page says it; any other word reads as the first
+COVER_FAILED = {
+    "unreadable": "it could not be read",
+    "too_many_pixels": "it has more than 40 million pixels",
+    "wrong_type": "it is not a JPEG, PNG or WebP",
+}
 # Where a flight stands with the flight log (its sync state), said only while one is kept; a
 # flight it holds nothing for (`off`) says nothing.
 SYNC_LINE = {
@@ -280,8 +290,17 @@ def _next_up(trip: Trip, items: list[TripItem], home, now: dt.datetime) -> str:
     return ""
 
 
-def card(c: Ctx, trip: Trip, *, now: dt.datetime, with_next: bool, to_check: int = 0) -> dict:
-    """A trip's card on the list; `to_check` is how many of its bookings have a check open."""
+def card(
+    c: Ctx,
+    trip: Trip,
+    *,
+    now: dt.datetime,
+    with_next: bool,
+    to_check: int = 0,
+    cover: Cover | None = None,
+) -> dict:
+    """A trip's card on the list; `to_check` is how many of its bookings have a check open, and
+    `photo` the digest of its ready cover (the tile without one)."""
     items = c.store.items(trip.id)
     return {
         "trip": trip,
@@ -291,7 +310,55 @@ def card(c: Ctx, trip: Trip, *, now: dt.datetime, with_next: bool, to_check: int
         "next": _next_up(trip, items, c.home, now) if with_next else "",
         "year": int(trip.start_date[:4]),
         "to_check": to_check,
+        "photo": _ready(cover),
     }
+
+
+def _ready(cover: Cover | None) -> str | None:
+    """The digest of a cover the page can show, None for the tile."""
+    return cover.digest if cover is not None and cover.state == "ready" else None
+
+
+def _web_page(value: object) -> str | None:
+    """An address a credit links to, only when it is a web page's: http or https, with a host
+    and no space or control character in it."""
+    address = str(value or "").strip()
+    if not address or any(ch.isspace() or not ch.isprintable() for ch in address):
+        return None
+    try:
+        parts = urlsplit(address)
+    except ValueError:
+        return None
+    return address if parts.scheme in ("http", "https") and parts.hostname else None
+
+
+def _photo(cover: Cover | None) -> dict:
+    """What a trip's page shows of its cover: the ready photo's `digest` (else the tile); a
+    Wikimedia photo's `credit`, its parts each as text, the licence and the source linked to
+    their pages; whether the owner's photo is `pending`, or why the worker could not use it
+    (`failed`); and whether there is a photo to remove (the owner's, in any state, or a ready
+    one)."""
+    out: dict = {"digest": _ready(cover), "credit": [], "pending": False, "failed": ""}
+    out["removable"] = cover is not None and (cover.source == "owner" or cover.state == "ready")
+    if cover is None:
+        return out
+    if cover.source == "owner":
+        out["pending"] = cover.state == "pending"
+        if cover.state == "failed":
+            out["failed"] = COVER_FAILED.get(cover.error or "", COVER_FAILED["unreadable"])
+    elif out["digest"] and cover.source == "wikimedia":
+        credit = cover.credit or {}
+        parts = [
+            (credit.get("artist"), None),
+            (credit.get("licence"), credit.get("licence_url")),
+            ("Wikimedia Commons", credit.get("source_url")),
+        ]
+        out["credit"] = [
+            {"text": str(text).strip(), "href": _web_page(href)}
+            for text, href in parts
+            if str(text or "").strip()
+        ]
+    return out
 
 
 def _sync_line(ti: TripItem, c: Ctx) -> str:
@@ -547,8 +614,11 @@ def index(request: Request) -> Response:
         now = clock.astimezone().replace(tzinfo=None)  # wall time in the process zone
         record = worker_status.read(c.ledger)
         marked = c.store.flag_counts()
+        covers = c.store.covers.all()  # every card's, in one pass
         upcoming = [
-            card(c, t, now=now, with_next=True, to_check=marked.get(t.id, 0))
+            card(
+                c, t, now=now, with_next=True, to_check=marked.get(t.id, 0), cover=covers.get(t.id)
+            )
             for t in c.store.upcoming(today)
         ]
         past_all = c.store.past(today, limit=None)
@@ -556,7 +626,9 @@ def index(request: Request) -> Response:
         past: list[dict] = []
         prev_year = today.year
         for t in past_all if show_all else past_all[:PAST_LIMIT]:
-            cd = card(c, t, now=now, with_next=False, to_check=marked.get(t.id, 0))
+            cd = card(
+                c, t, now=now, with_next=False, to_check=marked.get(t.id, 0), cover=covers.get(t.id)
+            )
             cd["year_header"] = str(cd["year"]) if cd["year"] != prev_year else ""
             prev_year = cd["year"]
             past.append(cd)
@@ -596,6 +668,8 @@ def _trip_options(trips: list[Trip]) -> list[dict]:
 
 
 def trip(request: Request) -> Response:
+    """A trip's page: its photo or tile, its notes, its days and their bookings, and its ⋯ sheet
+    (the place and the photo, which finds one too while automatic covers are on)."""
     with _ctx(request) as c:
         t = _trip_or_404(c, request.path_params["trip_id"])
         items = c.store.items(t.id)
@@ -605,6 +679,8 @@ def trip(request: Request) -> Response:
             "trip.html",
             {
                 "trip": t,
+                "photo": _photo(c.store.covers.get(t.id)),
+                "find_photo": c.settings.covers == "wikimedia",
                 "range": fmt.date_range(t.start_date, t.end_date),
                 "days": _days(c, items),
                 "people": _people(items, c.book),
@@ -1047,13 +1123,21 @@ async def edit_item(request: Request) -> Response:
 
 async def save_place(request: Request) -> Response:
     """The city the trip is about, as the owner typed it (empty: none): bookings there on nearby
-    dates join this trip. The trip keeps its title and its tile."""
+    dates join this trip, and a new one takes an automatic photo away (`set_place`). The trip
+    keeps its title. While automatic covers are on, a new place that leaves the trip with no
+    photo of the owner's is looked up by the worker, and the toast says so."""
     form = await _form(request)
     with _ctx(request) as c:
         t = _trip_or_404(c, request.path_params["trip_id"])
         trip = c.store.set_place(t.id, form.get("place", ""))
         log.info("place trip #%s -> %r", t.id, (trip.place or "")[:80])
-        return _back(request, t.id, "place")
+        looked_up = (
+            c.settings.covers == "wikimedia"
+            and bool(trip.place)
+            and trip.place != t.place
+            and c.store.covers.get(t.id) is None
+        )
+        return _back(request, t.id, "place_photo" if looked_up else "place")
 
 
 async def set_status(request: Request) -> Response:

@@ -22,6 +22,7 @@ from tripbox import util
 from tripbox.notify.telegram import check_keyboard
 from tripbox.trips import format as fmt
 from tripbox.trips import grouping
+from tripbox.trips.covers import CoverStore
 from tripbox.validate import checks
 from tripbox.validate.keys import is_draft
 from tripbox.web import views
@@ -741,9 +742,11 @@ def test_status_toggle_from_the_item_menu(tmp_path, monkeypatch, base):
     assert c.post(url, data={"status": "cancelled"}, headers=hdr).status_code == 404
 
 
-# What a page of an install that keeps no flight log, reads no mailbox and has no model never
-# names, and the promise of a number of minutes
-NOT_HERE = ("flight log", "airtrail", "telegram", "wikipedia", "mailbox")
+# What a page of an install that keeps no flight log, reads no mailbox, has no model and finds
+# no photo (automatic covers off) never names, and the promise of a number of minutes. Where
+# photos come from is named only while automatic covers are on, or in the credit line of a photo
+# found before they were turned off (`test_web_covers`).
+NOT_HERE = ("flight log", "airtrail", "telegram", "wikipedia", "wikimedia", "find photo", "mailbox")
 MINUTES = re.compile(r"\b\d+\s*(?:minutes?|mins?)\b", re.IGNORECASE)
 STATUS_CARD = re.compile(r'<dl class="status-card">.*?</dl>', re.S)
 
@@ -755,11 +758,11 @@ def without_the_cards_labels(html: str) -> str:
 
 
 def test_no_page_names_what_the_install_does_not_have(tmp_path, monkeypatch, base):
-    """With no flight log, no mail and no model, no page, no confirmation a page asks and no
-    toast names a flight log, AirTrail, Telegram, Wikipedia or a mailbox, or promises a number
-    of minutes. The one exception is the status card's labels: a first run's list shows the
-    card, whose row for each feature names it to say it is off; its sentences, like every other
-    part of every page, name nothing the install lacks."""
+    """With no flight log, no mail, no model and no automatic covers, no page, no confirmation a
+    page asks and no toast names a flight log, AirTrail, Telegram, Wikipedia, Wikimedia, Find
+    photo or a mailbox, or promises a number of minutes. The one exception is the status card's
+    labels: a first run's list shows the card, whose row for each feature names it to say it is
+    off; its sentences, like every other part of every page, name nothing the install lacks."""
     from tripbox import worker
     from tripbox.web import card
 
@@ -830,9 +833,14 @@ def test_the_flight_log_link_needs_a_flight_log_and_its_address(tmp_path, monkey
         assert "invalid" not in {f.state for f in ctx.settings.features}, (kept, address)
 
 
-def test_saving_a_place_keeps_the_tile(tmp_path, monkeypatch, base):
+def test_saving_a_place_keeps_the_tile_until_a_photo_is_ready(tmp_path, monkeypatch, base):
     """The trip's ⋯ sheet sets the city the trip is about, which bookings there on nearby dates
-    join; the trip keeps its title and its coloured tile, and nothing is looked up anywhere."""
+    join; the trip keeps its title, and with automatic covers off (the default) nothing is
+    looked up: with no photo the page shows its coloured tile and no image, and only once a
+    photo is ready (the owner's, here) an image in the tile's place, never an inline style. The
+    photo lives in its own table, never on the trip."""
+    from test_web_covers import ready  # it imports this module
+
     c, ctx = client_for(tmp_path, monkeypatch, base=base)
     seed_trip(ctx)
     st = ctx.trips
@@ -853,6 +861,7 @@ def test_saving_a_place_keeps_the_tile(tmp_path, monkeypatch, base):
     shown = c.get("/trips/10?f=place").text
     assert 'data-flash="Place saved"' in shown and tile in shown
     assert "<img" not in shown and " style=" not in shown
+    assert ctx.ledger.covers.all_for_lookup() == []  # nothing was looked up
     r = c.post(url, data={"place": "   "}, headers=hdr, follow_redirects=False)
     assert r.headers["location"] == c.url("/trips/10?f=place") and st.get(10).place is None
     assert tile in c.get("/trips/10").text
@@ -860,6 +869,11 @@ def test_saving_a_place_keeps_the_tile(tmp_path, monkeypatch, base):
     assert c.post("/trips/10/cover", data={"place": "X"}, headers=hdr).status_code in (404, 405)
     assert st.get(10).place is None
     assert not [f.name for f in dataclasses.fields(t) if "cover" in f.name]
+    digest = ready(ctx, 10)
+    shown = c.get("/trips/10").text
+    assert tile not in shown and 'class="cover big photo"' in shown
+    assert f'<img src="{c.url(f"/covers/{digest}.jpg")}" alt=""' in shown
+    assert " style=" not in shown
 
 
 def test_edit_page_renders_prefilled_fields_for_hotel_and_car(tmp_path, monkeypatch, base):
@@ -1276,6 +1290,9 @@ def test_every_control_outside_the_edit_form_has_a_name(tmp_path, monkeypatch, b
     other = next(t for t in st.all_trips() if t.id != trip.id)
     st.remove_item(st.item_by_key("car|CAR123").id)
     st.delete_trip(other.id)
+    covers = CoverStore(ctx.ledger)
+    covers.upload(trip.id, b"\xff\xd8\xff cut short")
+    covers.fail_upload(trip.id, "unreadable")  # its note holds a second upload form
     landed = c.post("/add/paste", data={"text": "A confirmation."}, headers=HDR)
     pages = {"an upload": landed.text}
     for path in (
@@ -1310,24 +1327,34 @@ def test_every_control_outside_the_edit_form_has_a_name(tmp_path, monkeypatch, b
     assert sum(n.tag in ("input", "select", "textarea", "button", "summary") for n in controls) > 20
 
 
-def test_a_trips_tile_letter_is_no_part_of_its_name(tmp_path, monkeypatch, base):
-    """The tile's initial on a trip's card, its page's hero and its row in Recently deleted is
-    decoration: hidden from a screen reader, so a card's link is named by its title first."""
+def test_a_trips_tile_letter_and_photo_are_no_part_of_its_name(tmp_path, monkeypatch, base):
+    """The tile's initial and the photo in its place, on a trip's card, its page's hero and its
+    row in Recently deleted, are decoration: hidden from a screen reader (an image with no text
+    of its own, inside the hidden cover), so a card's link is named by its title first."""
+    from test_web_covers import ready  # it imports this module
+
     c, ctx = client_for(tmp_path, monkeypatch, base=base)
     trip = seed_trip(ctx)
     seed_past(ctx, 2)
     st = ctx.trips
     st.delete_trip(next(t for t in st.all_trips() if t.id != trip.id).id)
-    seen = 0
-    for path in ("/", f"/trips/{trip.id}", "/deleted"):
-        tree = Tree(c.get(path).text)
-        covers = [n for n in tree.nodes if "cover" in n.attrs.get("class", "").split()]
-        assert covers and all(n.attrs.get("aria-hidden") == "true" for n in covers), path
-        seen += len(covers)
-    assert seen >= 4
-    link = c.url(f"/trips/{trip.id}")
-    card = next(n for n in Tree(c.get("/").text).nodes if n.attrs.get("href") == link)
-    assert trip.title in card.text()
+    for photo in (False, True):
+        if photo:
+            ready(ctx, trip.id)
+        seen = images = 0
+        for path in ("/", f"/trips/{trip.id}", "/deleted"):
+            tree = Tree(c.get(path).text)
+            covers = [n for n in tree.nodes if "cover" in n.attrs.get("class", "").split()]
+            assert covers and all(n.attrs.get("aria-hidden") == "true" for n in covers), path
+            seen += len(covers)
+            for img in (n for n in tree.nodes if n.tag == "img"):
+                assert img.attrs.get("alt") == "", (path, img.attrs)
+                assert any(n in covers for n in img.ancestors()), (path, img.attrs)
+                images += 1
+        assert seen >= 4 and images == (2 if photo else 0), photo
+        link = c.url(f"/trips/{trip.id}")
+        card = next(n for n in Tree(c.get("/").text).nodes if n.attrs.get("href") == link)
+        assert trip.title in card.text(), photo
 
 
 def described_by(tree: Tree, node: Node) -> str:
