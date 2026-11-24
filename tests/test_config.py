@@ -722,6 +722,19 @@ def test_an_older_yes_or_no_for_covers_is_read_as_off_and_stops_nothing(
     assert said == [f"config: {s.problems[0]}"]
 
 
+@pytest.mark.parametrize("given", ["yeſ", " YEſ ", "falſe"])
+def test_a_spelling_of_yes_or_no_outside_ascii_is_a_bad_value_for_covers(given):
+    """Only the plain ASCII words an older version wrote are read as off: a value that is one of
+    them only by Unicode's case folding (a long s folds to s) is a bad value like any other, a
+    core problem that shows nothing of it."""
+    s = Settings.from_env({"TRIPBOX_AUTH": "none", "TRIPBOX_COVERS": given})
+    assert s.covers == "off"
+    assert [(str(p), p.feature, p.stops) for p in s.problems] == [
+        ("TRIPBOX_COVERS: not off or wikimedia — use wikimedia to find photos, or off", "core",
+         True)
+    ]
+
+
 def test_the_fixtures_folder_is_no_setting(tmp_path, monkeypatch):
     """The folder saved mail was once copied into is no setting: its name is a problem of names
     like any other tripbox does not know, whatever its value, and stops no command."""

@@ -434,9 +434,10 @@ KEY_BY_NAME: dict[str, Key] = {k.name: k for k in KEYS}
 # Keys that only change what is shown: a bad value is a problem of its own (listed, logged, the
 # field takes its default), never counted when its feature's state is worked out
 DISPLAY_ONLY: tuple[str, ...] = ("TRIPBOX_AIRTRAIL_PUBLIC_URL", "TRIPBOX_SOURCE_URL")
-# Values only an older version wrote, by key (case and spacing aside): read as the key's default,
-# with a problem that stops nothing (`ConfigProblem.stops`), so an upgrade never stops on a line
-# left over, and its fix. 1.0.1 knew no TRIPBOX_COVERS, so a yes or no there stopped nothing.
+# Values only an older version wrote, by key (ASCII case and spacing aside): read as the key's
+# default, with a problem that stops nothing (`ConfigProblem.stops`), so an upgrade never stops on
+# a line left over, and its fix. 1.0.1 knew no TRIPBOX_COVERS, so a yes or no there stopped
+# nothing.
 FORMER_VALUES: dict[str, tuple[frozenset[str], str]] = {
     "TRIPBOX_COVERS": (
         frozenset({"true", "false", "yes", "no", "on", "1", "0"}),
@@ -1451,7 +1452,9 @@ class _Reader:
         key = _KEY_BY_FIELD[field]
         former = FORMER_VALUES.get(key.name)
         given = self.raw(field).strip()
-        if former is not None and given.casefold() in former[0]:
+        # ASCII alone, as an older version wrote it: a word that is a former one only by
+        # Unicode's case rules (a long s) is a bad value like any other
+        if former is not None and given.isascii() and given.lower() in former[0]:
             what = f"{_shown(given)} is from an older version"
             self.problems.append(ConfigProblem(key.name, what, former[1], key.feature, False))
             return c.check(key.default)
