@@ -51,8 +51,9 @@ are also kept in an AirTrail flight log. One image runs three roles: `web`, `wor
   and `restore` only a `config.PATH_KEYS` one's), a web problem stops `web`, any other invalid feature is left off and logged; a bad value of a
   `config.DISPLAY_ONLY` key (a link shown), or a value only an older version took
   (`config.FORMER_VALUES`, read as the default), is a problem that turns nothing off and stops
-  nothing (`ConfigProblem.stops`); `tripbox doctor` lists them. The page listens on `TRIPBOX_LISTEN`, loopback only with no login, as is `web --host`
-  outside the image (`TRIPBOX_IN_IMAGE`). In `compose.yaml` `web` passes `--host 0.0.0.0` and
+  nothing (`ConfigProblem.stops`); `tripbox doctor` lists them. The page listens on
+  `TRIPBOX_LISTEN`, loopback only with no login, as is `web --host` outside the image
+  (`TRIPBOX_IN_IMAGE`). In `compose.yaml` `web` passes `--host 0.0.0.0` and
   mounts `data`, `logs`, `config` (ro); `bot` adds `archive`; `worker` also `backups`.
   `.env.example` is `config.env_example()`'s output, never edited by hand.
 - Folders: `files.problems` checks each as the process uses it (a probe file made and removed;
