@@ -30,12 +30,15 @@ fact lives. The facts about the code, for people who change it, are in
 6. **Trips.** `trips/grouping.py` puts bookings into trips by their dates and places. A booking
    with no date waits in **Unsorted**.
 7. **The page.** `web/` is a Starlette application that renders trips from the ledger, takes
-   bookings to read (stored, for the worker), edits, share links and settings. It reads the
-   ledger and never talks to the mailbox, the model or AirTrail.
+   bookings to read and cover photos (stored, for the worker), edits, share links and settings.
+   It reads the ledger, never decodes an image and never talks to the mailbox, the model,
+   AirTrail or Wikimedia.
 8. **The worker.** `worker.py` is one process that beats every five seconds: it records its
-   status for the page, reads one waiting upload, runs a sync pass for AirTrail and starts the
-   mail poll and, at 03:30 in your zone while enrichment is on, the enrichment as processes of
-   their own.
+   status for the page, reads one waiting upload, makes one waiting cover photo into two resized
+   JPEGs (`trips/coverimage.py`) and, with `TRIPBOX_COVERS=wikimedia`, looks up a few places'
+   photos on Wikipedia and Wikimedia Commons (`trips/wikimedia.py`), runs a sync pass for
+   AirTrail and starts the mail poll and, at 03:30 in your zone while enrichment is on, the
+   enrichment as processes of their own.
 
 Optional ends: `write/` keeps your flights in AirTrail; `notify/` sends a notice for each message
 to Telegram or ntfy; `enrich/` fills in landed flights from a flight-data service.
@@ -59,7 +62,9 @@ flight-data or notification credential and no raw email. `tests/test_compose.py`
 page holds no mailbox or AirTrail key, so it cannot read mail or write to AirTrail itself, even if
 it is broken into. It can queue an upload for the worker and change trips in the ledger, and the
 worker treats both as the owner's own, so a page that is broken into could cause a write there
-indirectly.
+indirectly. It can also hand the worker an image to decode: the worker opens only JPEG, PNG and
+WebP (told by their first bytes, decoded by Pillow) and refuses one over 40 million pixels
+before decoding it.
 
 ## The folders
 
@@ -82,6 +87,8 @@ indirectly.
 - **Trips:** the ledger's `trips`; the list and every trip's text come from `trips/format.py`.
 - **Share links, sessions, display choices, the worker's record:** small tables and `kv` rows in
   the same ledger.
+- **Cover photos:** the ledger's `covers` table, one row per trip holding its two JPEGs, written
+  only through `trips/covers.py`, which holds the rules.
 - **What AirTrail knows:** the ledger keeps, for each flight, what AirTrail was last told and its
   id there. The airports and airlines come from the table that ships with tripbox, and AirTrail is
   asked only for its own ids.
