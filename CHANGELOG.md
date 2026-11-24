@@ -4,6 +4,22 @@ All notable changes to tripbox are written here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-11-23
+
+### Fixed
+
+- Cover photos were refused for almost every place, because Wikimedia serves its thumbnails from
+  `thumb.wikimedia.org`, which tripbox did not download from. A photo now comes from
+  `upload.wikimedia.org` or `thumb.wikimedia.org`, and from nowhere else.
+- The places 1.1.0 marked as having no photo are looked up again, once, when the worker first
+  starts, at the usual pace of two a minute. A photo you uploaded, a found one and a removed one
+  stay as they are.
+- A photo whose download is redirected to an address that cannot be read is taken as no photo,
+  instead of failing the lookup.
+- An older yes or no for `TRIPBOX_COVERS` is recognised in plain ASCII alone: a look-alike
+  spelling (`yeſ`, with a long s) is a bad value like any other, instead of a problem that named
+  no value.
+
 ## [1.1.0] - 2026-11-23
 
 ### Added
