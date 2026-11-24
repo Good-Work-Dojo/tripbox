@@ -130,7 +130,8 @@ def _on_image_host(url: httpx2.URL) -> bool:
 
 def _download(http: httpx2.Client, url: str) -> bytes | None:
     """The image at `url`, at most MAX_BYTES, fetched only from IMAGE_HOSTS: an address
-    elsewhere, or a redirect off them (or past MAX_REDIRECTS), is no image."""
+    elsewhere or that cannot be read, or a redirect off them (or past MAX_REDIRECTS), is no
+    image."""
     try:
         at = httpx2.URL(url)
     except (httpx2.InvalidURL, TypeError, ValueError):
@@ -142,7 +143,10 @@ def _download(http: httpx2.Client, url: str) -> bytes | None:
                 return None
             with http.stream("GET", at, follow_redirects=False) as r:
                 if r.has_redirect_location:
-                    at = r.url.join(r.headers["location"])
+                    try:
+                        at = r.url.join(r.headers["location"])
+                    except (httpx2.InvalidURL, TypeError, ValueError):
+                        return None
                     continue
                 _check(r)
                 if r.status_code >= 300:

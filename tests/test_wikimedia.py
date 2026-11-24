@@ -313,6 +313,16 @@ def test_a_redirect_is_followed_only_between_wikimedias_image_hosts():
             assert seen[-1] == first, away
 
 
+@pytest.mark.parametrize("location", ["/a\x00b.jpg", "http://[::1"])
+def test_a_redirect_to_an_address_that_cannot_be_read_is_none(location):
+    """A Location header that is no address is no image: nothing is fetched after it, and
+    nothing is raised."""
+    seen = []
+    assert find("S", http=redirecting({f"{THUMB}/x.jpg": location}, seen,
+                                      first=f"{THUMB}/x.jpg")) is None
+    assert seen[2:] == [f"{THUMB}/x.jpg"]
+
+
 def test_a_redirect_that_never_ends_is_none():
     seen = []
     loop = {f"{THUMB}/x.jpg": f"{UPLOAD}/y.jpg", f"{UPLOAD}/y.jpg": f"{THUMB}/x.jpg"}
