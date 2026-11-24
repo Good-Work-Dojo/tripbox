@@ -186,8 +186,10 @@ class Worker:
         record of another process (its pid or its host differs) is live (`status.live`); else
         what a worker that stopped left being read waits again (but an upload read
         `uploads.MAX_READINGS` times, which is given up), with no model set up the mail
-        that waits for one waits for it to be set up (`run.wait_for_a_model`), and this
-        process's record is written. From then on SIGTERM ends the worker (`run` returns 0)."""
+        that waits for one waits for it to be set up (`run.wait_for_a_model`), on a ledger not
+        yet rechecked the places found with no photo are due again
+        (`CoverStore.recheck_none_found`), and this process's record is written. From then on
+        SIGTERM ends the worker (`run` returns 0)."""
         now = self.clock()
         led = self.ctx.ledger
         with led.transaction():
@@ -195,6 +197,7 @@ class Worker:
                 raise WorkerRunning(RUNNING)
             requeued = led.uploads.requeue()
             gone = run.wait_for_a_model(led, "no_model") if self.ctx.model is None else 0
+            rechecked = CoverStore(led).recheck_none_found()
             self.started_at = now
             self._write(now)
         back, given_up = requeued
@@ -205,6 +208,8 @@ class Worker:
             log.info("uploads left being read: %s", ", ".join(said))
         if gone:
             log.info("%d message(s) wait for a model to be set up", gone)
+        if rechecked:
+            log.info("%d place(s) found with no photo are looked up again", rechecked)
         self._next_enrich = self._nightly(now)
         signal.signal(signal.SIGTERM, self._terminated)
         log.info("the worker started (pid %s)", self.pid)

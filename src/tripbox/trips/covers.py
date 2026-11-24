@@ -19,6 +19,12 @@ from dataclasses import dataclass
 from typing import Any, Literal, NamedTuple
 
 from tripbox.ledger import Ledger
+from tripbox.util import now_iso
+
+# The kv row that says the recheck has run on this ledger (`CoverStore.recheck_none_found`): 1.1.0
+# refused every thumbnail on thumb.wikimedia.org, so the places it found no photo for are
+# looked up once more
+RECHECK_KV = "covers_recheck_1_1_1"
 
 
 @dataclass(frozen=True)
@@ -236,6 +242,23 @@ class CoverStore:
                 continue
             out.append((trip_id, place))
         return out
+
+    @_writes
+    def recheck_none_found(self) -> int:
+        """Once per ledger (until RECHECK_KV is written): every Wikimedia row that found no
+        photo goes, so its place is due again and is looked up at the usual pace. An owner's
+        photo, a found one, a failed lookup's backoff and a removal stay. How many went."""
+        if self.led.kv.get(RECHECK_KV) is not None:
+            return 0
+        gone = [
+            row["trip_id"]
+            for row in self.repo.all_for_lookup()
+            if row["source"] == "wikimedia" and row["state"] == "none"
+        ]
+        for trip_id in gone:
+            self.repo.delete(trip_id)
+        self.led.kv.set(RECHECK_KV, now_iso())
+        return len(gone)
 
     def _open_for_lookup(self, trip_id: int, place: str) -> bool:
         """Whether an answer for this place may be stored: the trip still exists with that

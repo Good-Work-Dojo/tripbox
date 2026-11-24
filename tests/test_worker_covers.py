@@ -13,6 +13,7 @@ from PIL import Image
 from test_trips_store import outbound
 from test_worker import a_worker, beat, context, start
 
+from tripbox import util
 from tripbox.trips import coverimage, wikimedia
 from tripbox.trips.covers import CoverStore
 
@@ -309,3 +310,45 @@ def test_a_photo_that_is_no_image_is_none_found(tmp_path, monkeypatch):
     clock.tick(5)
     beat(w)
     assert cv.get(tid).state == "none"
+
+
+def test_places_kept_with_no_photo_are_looked_up_again_once(tmp_path):
+    """A ledger 1.1.0 wrote kept almost every place as having no photo (it refused every
+    thumbnail on thumb.wikimedia.org). The first worker to start on it looks each of them up
+    again, at the usual pace of LOOKUPS_PER_BEAT a batch; an owner's photo, a found photo and a
+    removal stay as they were, and a worker started later looks up nothing again."""
+    wiki = Wiki(missing={"Ccc"})
+    ctx = context(tmp_path, TRIPBOX_COVERS="wikimedia")
+    cv = CoverStore(ctx.ledger)
+    places = ("Aaa", "Bbb", "Ccc", "Ddd", "Eee", "Fff")
+    ids = {
+        p: a_trip(ctx, p, dep=f"2027-{n + 3:02d}-01T09:00", pnr=f"PNR00{n}")
+        for n, p in enumerate(places)
+    }
+    with util.clock_at(AT - dt.timedelta(days=1)):  # as 1.1.0 left them
+        for p in ("Aaa", "Bbb", "Ccc"):
+            cv.none_found(ids[p], p, AT + dt.timedelta(days=29))
+        theirs, mine = coverimage.process(jpeg((320, 200))), coverimage.process(jpeg((200, 320)))
+        cv.found(ids["Ddd"], "Ddd", theirs.large, theirs.small, theirs.digest, {"artist": "A"})
+        cv.finish_upload(cv.upload(ids["Eee"], b"raw"), mine.large, mine.small, mine.digest)
+        cv.remove(ids["Fff"])
+    rows = "SELECT * FROM covers WHERE trip_id IN (?, ?, ?) ORDER BY trip_id"
+    others = (ids["Ddd"], ids["Eee"], ids["Fff"])
+    kept = [tuple(r) for r in ctx.ledger.conn.execute(rows, others)]
+    w, clock, _ = a_worker(ctx, AT, transport=httpx2.MockTransport(wiki))
+    start(w)
+    clock.tick(5)
+    beat(w)
+    assert len(wiki.lookups()) == 2
+    clock.tick(60)
+    beat(w)
+    assert sorted(r.url.params["titles"] for r in wiki.lookups()) == ["Aaa", "Bbb", "Ccc"]
+    assert [cv.get(ids[p]).state for p in ("Aaa", "Bbb", "Ccc")] == ["ready", "ready", "none"]
+    assert [tuple(r) for r in ctx.ledger.conn.execute(rows, others)] == kept
+    later = clock() + dt.timedelta(minutes=5)
+    again, clock, _ = a_worker(ctx, later, transport=httpx2.MockTransport(wiki))
+    start(again)
+    for _ in range(3):
+        clock.tick(60)
+        beat(again)
+    assert len(wiki.lookups()) == 3 and cv.get(ids["Ccc"]).state == "none"

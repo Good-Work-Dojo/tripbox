@@ -125,7 +125,9 @@ are also kept in an AirTrail flight log. One image runs three roles: `web`, `wor
   (`wikimedia`, the image from `upload.wikimedia.org` alone) outside any transaction: an
   upload's answer is written only while its trip still waits for those bytes (`covers.Pending`),
   a lookup's only while the place is the same and no owner's photo came. The web serves bytes
-  and never imports `PIL` or `httpx2`.
+  and never imports `PIL` or `httpx2`. A worker that starts on a ledger with no `kv` row
+  `covers.RECHECK_KV` deletes every `wikimedia` row in `none` once, then writes it (1.1.0 refused
+  every thumbnail), so those places are looked up again at the usual pace.
 - Dedupe order in `pipeline/run.py`: sha256 of the raw bytes → Message-ID of an already-handled copy
   → the booking in the trip store. A model's answer is stored with its message
   (`messages.answer_json`, before the demo's date shift): a replay reads it back

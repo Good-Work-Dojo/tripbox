@@ -8,7 +8,7 @@ from test_trips_store import HOME, outbound
 
 from tripbox import util
 from tripbox.ledger import Ledger
-from tripbox.trips.covers import CoverStore
+from tripbox.trips.covers import RECHECK_KV, CoverStore
 from tripbox.trips.store import TripStore
 
 NOW = dt.datetime(2027, 6, 1, 12, 0, tzinfo=dt.UTC)
@@ -441,3 +441,33 @@ def test_a_lookup_answer_never_overwrites_an_owner_row_written_just_before():
     cv.none_found(tid, "Philadelphia", NOW)
     cv.lookup_failed(tid, "Philadelphia", "http_500", NOW)
     assert (cv.get(tid).source, cv.get(tid).state) == ("owner", "pending")
+
+
+def test_the_places_found_with_no_photo_are_looked_up_again_once():
+    """1.1.0 refused every thumbnail on thumb.wikimedia.org and kept its place as having no
+    photo for NONE_DAYS. The recheck deletes each Wikimedia row that found none, so its place is
+    due again; it leaves an owner's photo, a found one, a failed lookup's backoff and a removal
+    as they are, and once it has run (`RECHECK_KV`) it deletes nothing again."""
+    st, cv, led = rig()
+    kinds = ("none", "ready", "owner", "pending", "failed", "removed")
+    ids = {how: another(st, f"2027-{n + 7:02d}-10T08:20", f"P{n}") for n, how in enumerate(kinds)}
+    for how, tid in ids.items():
+        st.set_place(tid, f"Place {how}")
+    later = NOW + dt.timedelta(days=29)
+    cv.none_found(ids["none"], "Place none", later)
+    found(cv, ids["ready"], "Place ready")
+    cv.finish_upload(cv.upload(ids["owner"], b"mine"), b"big", b"sm", "do")
+    cv.upload(ids["pending"], b"waiting")
+    cv.lookup_failed(ids["failed"], "Place failed", "http_5xx", later)
+    cv.remove(ids["removed"])
+    rows = "SELECT * FROM covers ORDER BY trip_id"
+    kept = [tuple(r) for r in led.conn.execute(rows) if r["trip_id"] != ids["none"]]
+    assert led.kv.get(RECHECK_KV) is None
+    assert cv.recheck_none_found() == 1
+    assert [tuple(r) for r in led.conn.execute(rows)] == kept
+    shown = [(tid, f"Place {how}") for how, tid in ids.items()]
+    assert cv.due_lookups(shown, NOW, 10) == [(ids["none"], "Place none")]
+    assert led.kv.get(RECHECK_KV)
+    cv.none_found(ids["none"], "Place none", later)  # found with no photo since the recheck
+    assert cv.recheck_none_found() == 0
+    assert cv.get(ids["none"]).state == "none" and cv.due_lookups(shown, NOW, 10) == []
