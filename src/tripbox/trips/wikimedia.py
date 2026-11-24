@@ -3,7 +3,8 @@
 """Find a freely licensed photo of a place on Wikipedia and Wikimedia Commons (httpx2).
 
 The page image of the place's English Wikipedia article is looked up on Commons; it is kept only
-when its licence is free (CC0, public domain, CC BY, CC BY-SA), then downloaded with a size cap.
+when its licence is free (CC0, public domain, CC BY, CC BY-SA), then downloaded with a size cap
+from Wikimedia's upload host alone (`UPLOAD_HOST`, over https).
 `None` means nothing usable exists; `Transient` means ask again later. Only the worker imports
 this module: the web container makes no outbound request."""
 
@@ -26,6 +27,9 @@ WIKIPEDIA_API = "https://en.wikipedia.org/w/api.php"
 COMMONS_API = "https://commons.wikimedia.org/w/api.php"
 FREE_LICENCE = re.compile(r"^(cc0|pd|pd-.*|cc-by-[0-9.]+|cc-by-sa-[0-9.]+)$")
 NOT_FOUND = (404, 410)  # the one refusal that settles a lookup as none
+# The one host an image is downloaded from, over https; a redirect is followed only on it
+UPLOAD_HOST = "upload.wikimedia.org"
+MAX_REDIRECTS = 3
 
 
 class Transient(Exception):
@@ -111,22 +115,45 @@ def _value(meta: dict, key: str) -> str:
     return str(entry.get("value", "")) if isinstance(entry, dict) else ""
 
 
+def _on_upload_host(url: httpx2.URL) -> bool:
+    """An https address on Wikimedia's upload host, its own port, with no login in it."""
+    return (
+        url.scheme == "https"
+        and url.host == UPLOAD_HOST
+        and url.port in (None, 443)
+        and not url.userinfo
+    )
+
+
 def _download(http: httpx2.Client, url: str) -> bytes | None:
+    """The image at `url`, at most MAX_BYTES, fetched only from UPLOAD_HOST: an address
+    elsewhere, or a redirect off it (or past MAX_REDIRECTS), is no image."""
+    try:
+        at = httpx2.URL(url)
+    except (httpx2.InvalidURL, TypeError, ValueError):
+        return None
     data = bytearray()
     try:
-        with http.stream("GET", url) as r:
-            _check(r)
-            if r.status_code >= 400:
+        for _ in range(MAX_REDIRECTS + 1):
+            if not _on_upload_host(at):
                 return None
-            for chunk in r.iter_bytes():
-                data += chunk
-                if len(data) > MAX_BYTES:
+            with http.stream("GET", at, follow_redirects=False) as r:
+                if r.has_redirect_location:
+                    at = r.url.join(r.headers["location"])
+                    continue
+                _check(r)
+                if r.status_code >= 300:
                     return None
+                for chunk in r.iter_bytes():
+                    data += chunk
+                    if len(data) > MAX_BYTES:
+                        return None
+                return bytes(data) or None
     except httpx2.TimeoutException as exc:
         raise Transient("timeout") from exc
     except httpx2.HTTPError as exc:
         raise Transient("network") from exc
-    return bytes(data) or None
+    return None
 
 
 def find(place: str, *, http: httpx2.Client) -> Found | None:

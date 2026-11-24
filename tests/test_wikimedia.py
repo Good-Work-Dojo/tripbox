@@ -218,3 +218,72 @@ def test_missing_artist_is_unknown_and_pd_may_lack_a_licence_url():
     commons = commons_with(Artist={"value": " <i></i> "}, LicenseUrl={"value": ""})
     got = find("S", http=build(commons=commons))
     assert got.credit["artist"] == "Unknown author" and got.credit["licence_url"] == ""
+
+
+def commons_at(thumburl):
+    commons = commons_with()
+    commons["query"]["pages"][0]["imageinfo"][0]["thumburl"] = thumburl
+    return commons
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://upload.wikimedia.org/x.jpg",
+        "https://upload.example.org/x.jpg",
+        "https://upload.wikimedia.org.example.org/x.jpg",
+        "https://upload.wikimedia.org:8443/x.jpg",
+        "https://someone@upload.wikimedia.org/x.jpg",
+        "ftp://upload.wikimedia.org/x.jpg",
+        "/x.jpg",
+        "not an address",
+    ],
+)
+def test_an_image_anywhere_but_wikimedias_upload_host_is_never_fetched(url):
+    """Only an https address on upload.wikimedia.org is downloaded: whatever else the answer
+    names is no photo, and no request goes to it."""
+    seen = []
+    assert find("S", http=build(commons=commons_at(url), seen=seen)) is None
+    assert [r.url.host for r in seen] == ["en.wikipedia.org", "commons.wikimedia.org"]
+
+
+def redirecting(locations, seen):
+    """Wikipedia and Commons as `build` answers them; the upload host sends each image path in
+    `locations` on to its address, and answers the image at any other."""
+    inner = build()._transport
+
+    def handler(request):
+        seen.append(str(request.url))
+        if request.url.host == "upload.wikimedia.org" and request.url.path in locations:
+            return httpx2.Response(302, headers={"location": locations[request.url.path]})
+        if request.url.host.endswith(("wikipedia.org", "wikimedia.org")):
+            return inner.handle_request(request)
+        return httpx2.Response(200, content=b"\xff\xd8elsewhere")
+
+    return client("", transport=httpx2.MockTransport(handler))
+
+
+def test_a_redirect_is_followed_only_on_the_upload_host():
+    seen = []
+    on_host = {"/x.jpg": "/y.jpg", "/y.jpg": "https://upload.wikimedia.org/z.jpg"}
+    assert find("S", http=redirecting(on_host, seen)).data == IMAGE
+    assert seen[2:] == [
+        "https://upload.wikimedia.org/x.jpg",
+        "https://upload.wikimedia.org/y.jpg",
+        "https://upload.wikimedia.org/z.jpg",
+    ]
+    for away in (
+        "https://elsewhere.example.org/x.jpg",
+        "http://upload.wikimedia.org/x.jpg",
+        "//elsewhere.example.org/x.jpg",
+    ):
+        seen = []
+        assert find("S", http=redirecting({"/x.jpg": away}, seen)) is None, away
+        assert seen[-1] == "https://upload.wikimedia.org/x.jpg", away
+
+
+def test_a_redirect_that_never_ends_is_none():
+    seen = []
+    loop = {"/x.jpg": "/y.jpg", "/y.jpg": "/x.jpg"}
+    assert find("S", http=redirecting(loop, seen)) is None
+    assert len(seen) <= 2 + 1 + wikimedia.MAX_REDIRECTS
