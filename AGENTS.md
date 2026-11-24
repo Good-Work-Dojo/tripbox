@@ -118,6 +118,14 @@ are also kept in an AirTrail flight log. One image runs three roles: `web`, `wor
   (`ledger-before-v<n>-<UTC>.db`), else none runs. A table is rebuilt with `db.rebuild_table`
   (beside, copy, drop, rename; its `sqlite_sequence` row kept), never renamed first.
   `trip_items.trip_id` is NULL exactly when `start_at` is (a booking with no date has no trip).
+- Covers: the ledger's `covers` table (schema 2) holds each trip's two JPEG BLOBs, written only
+  by `ledger.repo.Covers`; the rules live in `trips/covers.py` (an owner's upload beats a found
+  photo; a merge counts only an owner's or a ready photo as a cover; remove; Save place looks
+  again; backoff). The worker decodes (`coverimage`, Pillow: JPEG, PNG, WebP) and fetches
+  (`wikimedia`, the image from `upload.wikimedia.org` alone) outside any transaction: an
+  upload's answer is written only while its trip still waits for those bytes (`covers.Pending`),
+  a lookup's only while the place is the same and no owner's photo came. The web serves bytes
+  and never imports `PIL` or `httpx2`.
 - Dedupe order in `pipeline/run.py`: sha256 of the raw bytes → Message-ID of an already-handled copy
   → the booking in the trip store. A model's answer is stored with its message
   (`messages.answer_json`, before the demo's date shift): a replay reads it back
@@ -336,10 +344,6 @@ are also kept in an AirTrail flight log. One image runs three roles: `web`, `wor
   saves it; without `--recorded` it asks the model). On the working tree, run it as `narrow.sh`
   does, in the image `ci.sh` built: `-v "$PWD:/repo:ro" -w /repo -e PYTHONPATH=/repo/src`,
   then `python -m tripbox eval --recorded`.
-- Covers: the `covers` table of the ledger (schema 2) holds each trip's two JPEG BLOBs, written only
-  by `ledger.repo.Covers`; the rules (owner upload beats a found photo, merge, remove, backoff) live
-  in `trips/covers.py`. Decoding (`coverimage`, Pillow) and fetching (`wikimedia`) happen only in
-  the worker; the web serves bytes and never imports `PIL` or `httpx2`.
 - `tripbox work` is the worker (`worker.Worker`): one long-lived process that beats every 5 s.
   A beat writes its status record (JSON in `kv` row `worker`, words and counts: `features`,
   `last`, `mailbox` if mail's login is an address, `waiting` by reason, `dry_run`; the page
@@ -347,7 +351,9 @@ are also kept in an AirTrail flight log. One image runs three roles: `web`, `wor
   stopped), reads one waiting upload (`worker.take_upload`: the owner's own input; a PDF as an
   email carrying it, `uploads.as_email`, dated when handed in, so every reading is one message;
   a nameless paste that reads as an email with no booking is read again as text; what it came
-  to is `uploads.came_to`'s on every reading), runs a sync pass, and starts `poll`
+  to is `uploads.came_to`'s on every reading), one waiting cover photo and, with
+  `TRIPBOX_COVERS=wikimedia`, at most `LOOKUPS_PER_BEAT` places' photos once a minute
+  (`worker._covers`), runs a sync pass, and starts `poll`
   (at once, then every 5 minutes, killed after 15, past a message's reading; two kills running
   are told once; the resume pass follows new mail) and `enrich` (03:30 in the configured zone
   while enrichment is on, killed after 15 minutes) as processes of their own, never waited for
