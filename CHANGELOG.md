@@ -4,6 +4,25 @@ All notable changes to tripbox are written here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-11-23
+
+### Added
+
+- Cover photos. With `TRIPBOX_COVERS=wikimedia` the worker finds a freely licensed photo of a
+  trip's place on Wikipedia and Wikimedia Commons and the page shows it, with its credit. Off by
+  default; see the privacy page.
+- Upload your own cover from a phone or a computer, in the trip's "Place and photo" sheet (JPEG,
+  PNG or WebP up to 10 MB; HEIC is refused). It is resized and stripped of its metadata, GPS
+  position included, and always wins over a found photo.
+- **Find photo**: saving a trip's place looks for a photo again. A cover can be removed.
+
+### Changed
+
+- The ledger is schema 2, with a table for covers. The first start upgrades it and keeps a copy
+  beside it as `data/ledger-before-v2-<time>.db`.
+- Pillow is added, to resize covers in the worker.
+- New setting `TRIPBOX_COVERS` (`off` or `wikimedia`).
+
 ## [1.0.1] - 2026-11-23
 
 Fixes from a review of the whole of 1.0.0.
