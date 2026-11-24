@@ -125,8 +125,8 @@ network a route cuts, `internetdisconnected`, after proving the cut reaches a re
 worker itself makes, else `could not test: …`: the worker's scope is the base; the first trip,
 opened online, reloads offline as its saved copy, with its title, the banner and every control
 disabled and its cover photo loaded (`naturalWidth` above 0; `--expect-covers` makes a trip with no
-cover a failure), photographed as `offline-copy` after the ledger's pages; a trip never opened gives the
-no-copy page and a form posted from the copy the refusal; no store holds a page under `/login`,
+cover a failure), photographed as `offline-copy` after the ledger's pages; a trip never opened
+gives the no-copy page and a form posted from the copy the refusal; no store holds a page under `/login`,
 `/s/`, `/settings` or `/add`; after a sign-out from Settings the trip has no copy and the pages
 store is empty; Chromium's `Page.getAppManifest` reports no error). The summary ends `checks: N of M
 ok`, then one `<name>: <detail>` line for each check that is not ok, which fails the run (`screens:
