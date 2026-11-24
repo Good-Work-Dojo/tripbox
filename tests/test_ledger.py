@@ -1326,19 +1326,25 @@ def test_the_version_and_the_shape_are_read_in_one_statement(tmp_ledger_path):
     assert len(reads) == 1 and "schema_shape" in reads[0]
 
 
-def test_the_released_v1_schema_is_not_edited_in_place():
-    """Version 1 is released: an installed ledger states this shape, so an edit of SCHEMA while
-    SCHEMA_VERSION is 1 makes every installed ledger refuse to open."""
-    released_v1 = "10bd0c645b14"
-    if db.SCHEMA_VERSION == 1:
-        assert db.SCHEMA_SHAPE == released_v1, (
-            "SCHEMA was edited in place, which refuses every installed ledger. Put SCHEMA back,"
-            " bump SCHEMA_VERSION, add a step to MIGRATIONS that makes the change, and add this"
-            f" shape ({released_v1}) as RELEASED_SHAPES[1]."
-        )
-    else:
-        assert db.RELEASED_SHAPES.get(1) == released_v1
-        assert 2 in db.MIGRATIONS
+# The shape each released version's ledger states: a release adds its version here
+RELEASED = {1: "10bd0c645b14", 2: "50dc62d18707"}
+
+
+def test_the_released_schemas_are_not_edited_in_place():
+    """Versions 1 and 2 are released: an installed ledger states its version's shape, so an edit
+    of SCHEMA while SCHEMA_VERSION is a released one makes every installed ledger of it refuse to
+    open. A later version keeps each one's shape in RELEASED_SHAPES and its next step."""
+    assert db.SCHEMA_VERSION >= max(RELEASED)
+    for version, shape in RELEASED.items():
+        if db.SCHEMA_VERSION == version:
+            assert db.SCHEMA_SHAPE == shape, (
+                "SCHEMA was edited in place, which refuses every installed ledger. Put SCHEMA"
+                " back, bump SCHEMA_VERSION, add a step to MIGRATIONS that makes the change, and"
+                f" add this shape ({shape}) as RELEASED_SHAPES[{version}]."
+            )
+        else:
+            assert db.RELEASED_SHAPES.get(version) == shape, version
+            assert version + 1 in db.MIGRATIONS, version
 
 
 V1_SCHEMA = Path(__file__).parent / "data" / "ledger_v1_schema.sql"

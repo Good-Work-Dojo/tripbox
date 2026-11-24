@@ -268,9 +268,9 @@ CREATE TABLE IF NOT EXISTS covers(
 CREATE INDEX IF NOT EXISTS covers_digest ON covers(digest);
 """
 
-# What SCHEMA says, white space aside. Version 1 is released, so an in-place edit of its text is
-# refused by a test and a change goes through a migration. The version alone cannot tell a ledger
-# made before an edit: every ledger states the shape it was written with (`kv` row
+# What SCHEMA says, white space aside. Versions 1 and 2 are released, so an in-place edit of its
+# text is refused by a test and a change goes through a migration. The version alone cannot tell a
+# ledger made before an edit: every ledger states the shape it was written with (`kv` row
 # `schema_shape`), and one stating another shape than its version's (this one's, or an older
 # one's RELEASED_SHAPES), or none, is refused at open.
 SCHEMA_SHAPE: str = hashlib.sha256(re.sub(r"\s+", " ", SCHEMA).encode()).hexdigest()[:12]

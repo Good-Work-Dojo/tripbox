@@ -105,10 +105,10 @@ are also kept in an AirTrail flight log. One image runs three roles: `web`, `wor
   `tripbox-worker`): a rotating handler shared by processes loses lines. Logs and notices mask
   each `secret=True` value (`log.add_secrets()`, `redact()`) and cut email header text at
   `run.SUBJECT_SHOWN`.
-- Ledger schema changes: version 1 is released, so never edit `SCHEMA` in `ledger/db.py` in place
-  (`tests/test_ledger.py::test_the_released_v1_schema_is_not_edited_in_place` fails). Bump
-  `SCHEMA_VERSION`, add a step to `MIGRATIONS` and add the old version's
-  shape to `RELEASED_SHAPES`. Every ledger states its shape (`kv` row `schema_shape` =
+- Ledger schema changes: versions 1 and 2 are released, so never edit `SCHEMA` in `ledger/db.py`
+  in place (`tests/test_ledger.py::test_the_released_schemas_are_not_edited_in_place` fails, its
+  `RELEASED` naming each shape). Bump `SCHEMA_VERSION`, add a step to `MIGRATIONS` and add the
+  old version's shape to `RELEASED_SHAPES`. Every ledger states its shape (`kv` row `schema_shape` =
   `SCHEMA_SHAPE`, a hash of `SCHEMA`); `Ledger.open` refuses, writing nothing, one of this
   version stating another (an in-place edit refuses every older ledger), an older one stating no
   released shape or lacking a step, and a newer one (`OutdatedLedger`, `ledger: …`, exit 2).
