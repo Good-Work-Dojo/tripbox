@@ -61,7 +61,7 @@ class Wiki:
                 "Artist": {"value": "Sample Author"},
             }
             info = {
-                "thumburl": "https://upload.example.org/x.jpg",
+                "thumburl": "https://upload.wikimedia.org/x.jpg",
                 "descriptionurl": "https://commons.example.org/File:X.jpg",
                 "extmetadata": meta,
             }
@@ -241,6 +241,19 @@ def test_a_transient_failure_backs_off_from_five_minutes_doubling_to_a_day(tmp_p
     assert waits[:4] == [300, 600, 1200, 2400]
     assert waits[-1] == 86400 and max(waits) == 86400
     assert w.last["covers"]["ok"] is False
+
+
+def test_a_refused_user_agent_backs_off_instead_of_finding_none(tmp_path):
+    """A 403 from Wikimedia (say, for the User-Agent) is a failure tried again in five minutes,
+    never thirty days of nothing found for every trip."""
+    ctx, w, clock, cv = rig(tmp_path, Wiki(status=403))
+    tid = a_trip(ctx, "Philadelphia")
+    clock.tick(5)
+    beat(w)
+    row = ctx.ledger.covers.get(tid)
+    assert (row["state"], row["error"]) == ("failed", "http_4xx")
+    assert dt.datetime.fromisoformat(row["retry_after"]) == clock() + dt.timedelta(minutes=5)
+    assert w.last["covers"] == {"at": w.last["covers"]["at"], "ok": False, "code": "http_4xx"}
 
 
 def test_none_found_is_asked_again_after_thirty_days(tmp_path):

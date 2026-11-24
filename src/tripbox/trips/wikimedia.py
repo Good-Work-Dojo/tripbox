@@ -25,11 +25,12 @@ ARTIST_MAX = 120
 WIKIPEDIA_API = "https://en.wikipedia.org/w/api.php"
 COMMONS_API = "https://commons.wikimedia.org/w/api.php"
 FREE_LICENCE = re.compile(r"^(cc0|pd|pd-.*|cc-by-[0-9.]+|cc-by-sa-[0-9.]+)$")
+NOT_FOUND = (404, 410)  # the one refusal that settles a lookup as none
 
 
 class Transient(Exception):
-    """A failure worth retrying later; `code` is short: timeout, http_429, http_5xx, bad_json,
-    network."""
+    """A failure worth retrying later; `code` is short: timeout, http_429, http_4xx, http_5xx,
+    bad_json, network."""
 
     def __init__(self, code: str) -> None:
         super().__init__(code)
@@ -70,10 +71,15 @@ def _plain(html: str) -> str:
 
 
 def _check(r: httpx2.Response) -> None:
+    """Only a 404 or a 410 says there is nothing (answered as none by the caller); any other
+    refusal (a 403 for the User-Agent, a 429, a 5xx) is asked again later, so one bad day never
+    keeps every trip without a photo for NONE_DAYS."""
     if r.status_code == 429:
         raise Transient("http_429")
     if r.status_code >= 500:
         raise Transient("http_5xx")
+    if r.status_code >= 400 and r.status_code not in NOT_FOUND:
+        raise Transient("http_4xx")
 
 
 def _api(http: httpx2.Client, url: str, params: dict[str, str]) -> dict:
