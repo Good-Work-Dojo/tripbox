@@ -137,7 +137,24 @@ def test_at_most_two_lookups_a_beat(tmp_path):
     clock.tick(5)
     beat(w)
     assert len(wiki.lookups()) == 2
+    clock.tick(60)
+    beat(w)
+    assert len(wiki.lookups()) == 3
+
+
+def test_lookups_run_in_a_batch_at_most_once_a_minute(tmp_path):
+    wiki = Wiki()
+    ctx, w, clock, cv = rig(tmp_path, wiki)
+    for i, place in enumerate(["Aaa", "Bbb", "Ccc"]):
+        a_trip(ctx, place, dep=f"2027-0{i + 3}-01T09:00", pnr=f"PNR00{i}")
     clock.tick(5)
+    beat(w)
+    assert len(wiki.lookups()) == 2
+    for _ in range(11):  # 55 s later, beat by beat
+        clock.tick(5)
+        beat(w)
+    assert len(wiki.lookups()) == 2
+    clock.tick(5)  # 60 s after the batch
     beat(w)
     assert len(wiki.lookups()) == 3
 
@@ -150,7 +167,7 @@ def test_the_same_place_is_copied_without_network(tmp_path):
     beat(w)
     seen = len(wiki.calls)
     two = a_trip(ctx, " philadelphia ", dep="2027-05-01T09:00", pnr="PNR002")
-    clock.tick(5)
+    clock.tick(60)
     beat(w)
     assert len(wiki.calls) == seen
     a, b = cv.get(one), cv.get(two)

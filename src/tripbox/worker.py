@@ -48,9 +48,9 @@ NIGHTLY = dt.time(3, 30)  # in the configured zone
 TIMEOUTS = {"poll": POLL_TIMEOUT, "enrich": ENRICH_TIMEOUT}
 FEATURES = ("mail", "model", "airtrail", "notifications", "enrichment")  # in the record
 PARTS = ("poll", "enrich", "sync", "uploads", "covers")  # the record's `last`
-# Photo lookups: at most this many places a beat; a place with no photo is asked again after
-# NONE_DAYS; a failed one waits LOOKUP_BACKOFF, doubling with each failure up to LOOKUP_BACKOFF_MAX
-LOOKUPS_PER_BEAT, NONE_DAYS = 2, 30
+# Photo lookups: a batch of at most LOOKUPS_PER_BEAT places, at most once every LOOKUP_SECONDS; a
+# place with no photo is asked again after NONE_DAYS; a failed one waits LOOKUP_BACKOFF, doubling with each failure up to LOOKUP_BACKOFF_MAX
+LOOKUPS_PER_BEAT, LOOKUP_SECONDS, NONE_DAYS = 2, 60, 30
 LOOKUP_BACKOFF, LOOKUP_BACKOFF_MAX = dt.timedelta(minutes=5), dt.timedelta(hours=24)
 STOP_SECONDS = 5  # how long a child has to end once told to, when the worker stops
 SOURCE = "upload"  # the source of a message that came as an upload
@@ -175,6 +175,7 @@ class Worker:
         self._polled_at: dt.datetime | None = None
         self._polls_stopped = 0  # polls stopped for their time since one last ended by itself
         self._next_enrich: dt.datetime | None = None
+        self._looked_up_at: dt.datetime | None = None  # when the last batch of lookups began
         self._stopping = False
         self.taken_over = False  # another worker's live record was found at a beat
 
@@ -326,9 +327,9 @@ class Worker:
         return None if state is None else (state != "failed", state)
 
     def _covers(self) -> tuple[bool, str] | None:
-        """One waiting owner photo, then (with automatic covers on) up to LOOKUPS_PER_BEAT
-        places looked up. None when nothing was done; else `done`, or the code of the last
-        thing that failed."""
+        """One waiting owner photo, then (with automatic covers on, and LOOKUP_SECONDS since the
+        last batch) up to LOOKUPS_PER_BEAT places looked up. None when nothing was done; else
+        `done`, or the code of the last thing that failed."""
         cv = CoverStore(self.ctx.ledger)
         failed: str | None = None
         did = False
@@ -350,9 +351,14 @@ class Worker:
                 cv.finish_upload(trip_id, made.large, made.small, made.digest)
         if self.ctx.settings.covers == "wikimedia":
             now = self.clock()
-            trips = [(t.id, t.place) for t in self.ctx.trips.all_trips() if t.place]
+            waited = self._looked_up_at is not None and (
+                (now - self._looked_up_at).total_seconds() < LOOKUP_SECONDS
+            )
+            trips = [] if waited else [(t.id, t.place) for t in self.ctx.trips.all_trips()]
+            trips = [(i, p) for i, p in trips if p]
             due = cv.due_lookups(trips, now, LOOKUPS_PER_BEAT)
             if due:
+                self._looked_up_at = now
                 self._record(busy=True)  # each lookup may take its HTTP timeouts
             for trip_id, place in due:
                 did = True
