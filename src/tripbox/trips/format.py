@@ -249,6 +249,21 @@ def _airline(p: dict) -> str:
     return (airline.short if airline else None) or p.get("airline_name") or code or "Flight"
 
 
+TRACKER = "https://flightaware.com/live/flight/"
+FLIGHT_NUMBER = re.compile(r"[0-9]{1,4}")  # an airline's flight number: one to four digits
+
+
+def track_url(p: dict) -> str | None:
+    """The flight's page on FlightAware, which names a flight by its airline's ICAO code and its
+    number (`SWA440`, never `WN440`, which it does not find). None for an airline the airline
+    list holds no ICAO code for, and for a number that is not one to four digits."""
+    airline = lists.airlines().get(str(p.get("carrier") or "").strip().upper())
+    number = str(p.get("flight_number") or "").strip()
+    if airline is None or not airline.icao or not FLIGHT_NUMBER.fullmatch(number):
+        return None
+    return f"{TRACKER}{airline.icao}{int(number)}"
+
+
 # ----------------------------------------------------------------------------- per item lines
 def item_lines(
     ti: TripItem,

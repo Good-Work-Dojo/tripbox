@@ -278,7 +278,7 @@ def test_trip_page_timeline(tmp_path, monkeypatch, base):
     maps = "https://maps.apple.com/?q=100%20Example%20Street%2C%20Philadelphia%2C%20PA%2000000"
     assert f'href="{maps}"' in html
     assert 'data-copy="QTWZSV"' in html
-    assert 'href="https://flightaware.com/live/flight/SY9304"' in html
+    assert 'href="https://flightaware.com/live/flight/SCX9304"' in html  # its ICAO code
     assert "2:45 PM" in html and html.count("EDT") >= 2  # the car's times carry Philadelphia's zone
     assert "People" in html and "Alex, Sam, Robin" in html
     assert 'name="title" value="Philadelphia"' in html

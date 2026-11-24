@@ -408,8 +408,7 @@ def present(dl: fmt.DayLine, items: list[TripItem], c: Ctx) -> dict:
         if ti.kind == "flight":
             code = f"{p.get('carrier') or ''} {p.get('flight_number') or ''}".strip()
             out["secondary"] = f"{code} ({fmt._airline(p)})" if code else fmt._airline(p)
-            if p.get("flight_code"):
-                out["track_url"] = f"https://flightaware.com/live/flight/{p['flight_code']}"
+            out["track_url"] = fmt.track_url(p)
         else:
             out["secondary"] = (
                 f"{p.get('provider') or 'Train'} {p.get('train_number') or ''}".strip()

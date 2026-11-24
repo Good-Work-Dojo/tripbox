@@ -5,6 +5,7 @@ import re
 import zoneinfo
 from pathlib import Path
 
+import pytest
 from test_planner import BOOK, items_for
 from test_trips_store import car_item
 
@@ -316,3 +317,35 @@ def test_a_date_only_check_out_comes_before_the_flight_home():
     out = text(st, st.get(trip.id))
     last_day = out.split("Tue Sep 21")[-1]
     assert last_day.index("check-out") < last_day.index("Delta 9246")
+
+
+@pytest.mark.parametrize(
+    ("carrier", "number", "url"),
+    [
+        # FlightAware names a flight by its airline's ICAO code: SY 9304 is SCX9304
+        ("SY", "9304", "https://flightaware.com/live/flight/SCX9304"),
+        ("sy", " 0440 ", "https://flightaware.com/live/flight/SCX440"),
+        ("DL", 692, "https://flightaware.com/live/flight/DAL692"),
+        # no ICAO code known, or no number it can be asked by: no link
+        ("ZZ", "9304", None),
+        ("SY", "9304A", None),
+        ("SY", "９３０４", None),
+        ("SY", "93041", None),
+        ("SY", "", None),
+        (None, "9304", None),
+    ],
+)
+def test_a_flight_is_tracked_by_its_airlines_icao_code(carrier, number, url):
+    assert fmt.track_url({"carrier": carrier, "flight_number": number}) == url
+
+
+def test_a_number_past_what_int_reads_is_no_link_and_no_error():
+    """int() refuses a string of over 4300 digits; a typed number that long shows no link."""
+    assert fmt.track_url({"carrier": "SY", "flight_number": "9" * 5000}) is None
+
+
+def test_the_airline_list_in_the_config_directory_gives_a_tracker_code(tmp_path, monkeypatch):
+    monkeypatch.setenv("TRIPBOX_CONFIG_DIR", str(tmp_path))
+    (tmp_path / "airlines.yaml").write_text("- iata: ZZ\n  name: Example Air\n  icao: exa\n")
+    url = fmt.track_url({"carrier": "ZZ", "flight_number": "12"})
+    assert url == "https://flightaware.com/live/flight/EXA12"
