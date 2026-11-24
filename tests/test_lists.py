@@ -212,6 +212,55 @@ NAMES = {'DL': 'Delta Air Lines',
  'QF': 'Qantas',
  'NZ': 'Air New Zealand'}
 
+ICAO = {'DL': 'DAL',
+ 'UA': 'UAL',
+ 'AA': 'AAL',
+ 'WN': 'SWA',
+ 'B6': 'JBU',
+ 'AS': 'ASA',
+ 'NK': 'NKS',
+ 'F9': 'FFT',
+ 'HA': 'HAL',
+ 'G4': 'AAY',
+ 'SY': 'SCX',
+ 'MX': 'MXY',
+ 'XP': 'VXP',
+ 'AC': 'ACA',
+ 'WS': 'WJA',
+ 'PD': 'POE',
+ 'BA': 'BAW',
+ 'VS': 'VIR',
+ 'LH': 'DLH',
+ 'LX': 'SWR',
+ 'OS': 'AUA',
+ 'AF': 'AFR',
+ 'KL': 'KLM',
+ 'IB': 'IBE',
+ 'EI': 'EIN',
+ 'TP': 'TAP',
+ 'FI': 'ICE',
+ 'N0': 'NBT',
+ 'FR': 'RYR',
+ 'U2': 'EZY',
+ 'VY': 'VLG',
+ 'AM': 'AMX',
+ 'Y4': 'VOI',
+ 'VB': 'VIV',
+ 'CM': 'CMP',
+ 'AV': 'AVA',
+ 'LA': 'LAN',
+ 'EK': 'UAE',
+ 'QR': 'QTR',
+ 'EY': 'ETD',
+ 'TK': 'THY',
+ 'NH': 'ANA',
+ 'JL': 'JAL',
+ 'KE': 'KAL',
+ 'SQ': 'SIA',
+ 'CX': 'CPA',
+ 'QF': 'QFA',
+ 'NZ': 'ANZ'}
+
 
 @pytest.fixture
 def config(tmp_path, monkeypatch):
@@ -226,6 +275,7 @@ def test_the_shipped_lists_hold_what_the_code_held(config):
     assert [w for w, _ in lists.airline_words()] == sorted(CODES, key=lambda w: -len(w))
     assert {a.iata: a.short for a in table.values() if a.short} == SHORT
     assert {a.iata: a.name for a in table.values()} == NAMES
+    assert {a.iata: a.icao for a in table.values()} == ICAO
     assert all(len(a.match) == 1 for a in table.values())
     assert lists.us_states() == STATES
     assert lists.overrides_in_use() == ()
@@ -238,13 +288,15 @@ def test_the_shipped_lists_hold_what_the_code_held(config):
 def test_a_config_airlines_file_adds_and_replaces(config):
     shipped = dict(lists.airlines())
     (config / "airlines.yaml").write_text(
-        "- iata: qx\n  name: Example Air\n  match: [Example Air]\n- iata: DL\n  name: Delta\n"
+        "- iata: qx\n  name: Example Air\n  icao: exa\n  match: [Example Air]\n"
+        "- iata: DL\n  name: Delta\n"
     )
     lists.clear_caches()
     table = lists.airlines()
     assert carrier_from_name("Example Air Flight") == "QX"
     assert table["QX"].name == "Example Air" and table["QX"].match == ("example air",)
     assert table["DL"].name == "Delta" and table["DL"].short == "Delta"
+    assert table["QX"].icao == "EXA" and table["DL"].icao == "DAL"  # a replacement keeps it
     assert carrier_from_name("Delta Air Lines") == "DL"  # the shipped words stay
     assert {k: v for k, v in table.items() if k not in ("QX", "DL")} == {
         k: v for k, v in shipped.items() if k != "DL"
@@ -269,6 +321,9 @@ def test_a_config_states_file_adds_names(config):
         "- iata: QX\n",
         "- iata: QX\n  name: x\n  colour: red\n",
         "- iata: QX\n  name: x\n  match: oops\n",
+        "- iata: QX\n  name: x\n  icao: oops\n",
+        "- iata: QX\n  name: x\n  icao: QX\n",
+        "- iata: QX\n  name: x\n  icao: [EXA]\n",
         "- just text\n",
         "- [unclosed\n",
     ],
@@ -357,3 +412,20 @@ def test_an_iata_that_yaml_does_not_read_as_text_says_to_quote_it(config, value)
     lists.clear_caches()
     (config / lists.AIRLINES_FILE).write_text(f'- iata: "{value[:2]}"\n  name: Example Two\n')
     assert lists.airlines()[value[:2].upper()].name == "Example Two"
+
+
+@pytest.mark.parametrize("value", ["YES", "OFF", "yes", "off", "123"])
+def test_an_icao_that_yaml_does_not_read_as_text_says_to_quote_it(config, value):
+    (config / lists.AIRLINES_FILE).write_text(f"- iata: QX\n  name: Example Air\n  icao: {value}\n")
+    with pytest.raises(lists.ListFileError) as bad:
+        lists.airlines()
+    assert str(bad.value) == (
+        "airlines.yaml: entry QX: icao must be text in quotes"
+        " (YAML reads YES and OFF as true or false)"
+    )
+    lists.clear_caches()
+    if value.isalpha():
+        (config / lists.AIRLINES_FILE).write_text(
+            f'- iata: QX\n  name: Example Air\n  icao: "{value}"\n'
+        )
+        assert lists.airlines()["QX"].icao == value.upper()

@@ -304,30 +304,33 @@ Each of these mistakes is a core problem: it stops every command but `doctor` (w
 
 ### `airlines.yaml` (optional)
 
-tripbox ships a list of airlines: the name, an optional short name used in trip text and the words
-an email uses for the airline (`match`), which turn a printed name such as "Delta" into the code
-`DL` when the email prints no code. `airlines.yaml` in the config directory adds airlines and
-replaces shipped ones. It is a list of entries:
+tripbox ships a list of airlines: the name, an optional short name used in trip text, the
+airline's three-letter ICAO code and the words an email uses for the airline (`match`), which turn
+a printed name such as "Delta" into the code `DL` when the email prints no code. The ICAO code
+makes a flight's Track flight link: FlightAware names a flight by it (`DAL692` for Delta's DL 692),
+so a flight on an airline with no `icao` in the list has no such link. `airlines.yaml` in the
+config directory adds airlines and replaces shipped ones. It is a list of entries:
 
 ```yaml
 - iata: QX
   name: Example Air
   short: Example
+  icao: EXA
   match: [example air]
 - iata: DL
   name: Delta
 ```
 
-- `iata` is two letters or digits and is required; `name` is required; `short` and `match` are
-  optional. An entry whose `iata` is already shipped replaces that airline, but leaves its `short`
-  and `match` as they were when it does not give its own.
+- `iata` is two letters or digits and is required; `name` is required; `short`, `icao` (three
+  letters) and `match` are optional. An entry whose `iata` is already shipped replaces that
+  airline, but leaves its `short`, `icao` and `match` as they were when it does not give its own.
 - A blank `short`, or none, inherits the shipped airline's `short`; a missing `match` inherits its
   `match` words, and `match: []` clears them.
 - Two entries with one code in the file: the last wins.
 - When two airlines share a match word of the same length, the shipped airline wins; a longer word
   always wins over a shorter one (so `air france` is tried before `air`).
-- Write a code that YAML reads as true or false in quotes, such as `iata: "NO"` or `iata: "ON"`;
-  unquoted, the entry is a core problem that says so.
+- Write a code that YAML reads as true or false in quotes, such as `iata: "NO"`, `iata: "ON"` or
+  `icao: "YES"`; unquoted, the entry is a core problem that says so.
 - Any other key, a top level that is not a list, a file that is not valid YAML, or one that is not
   a regular file of at most 64 KiB is a core problem, keyed `airlines.yaml`: it stops every command
   but `doctor` (which lists it), `backup` and `restore`.

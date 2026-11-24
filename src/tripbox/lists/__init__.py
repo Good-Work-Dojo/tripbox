@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Additional terms: see NOTICE
 """Lists that ship as data files: the sender domains the mail gate trusts, the airlines (name,
-short name and the words an email uses for them) and the US state names the address parser must
-not take for a city.
+short name, ICAO code and the words an email uses for them) and the US state names the address
+parser must not take for a city.
 
 The files sit next to this module. A user adds to or replaces two of them from the config
 directory: `airlines.yaml` (entries; an entry with a shipped `iata` replaces that airline) and
@@ -30,8 +30,10 @@ from tripbox.util import read_small_file
 AIRLINES_FILE = "airlines.yaml"
 STATES_FILE = "us_states.txt"
 _IATA = re.compile(r"[A-Za-z0-9]{2}")
-_ENTRY_KEYS = frozenset({"iata", "name", "short", "match"})
+_ICAO = re.compile(r"[A-Za-z]{3}")
+_ENTRY_KEYS = frozenset({"iata", "name", "short", "icao", "match"})
 _IATA_NOT_TEXT = "iata must be text in quotes (YAML reads NO and ON as true or false)"
+_ICAO_NOT_TEXT = "icao must be text in quotes (YAML reads YES and OFF as true or false)"
 
 
 class ListFileError(ValueError):
@@ -50,6 +52,8 @@ class Airline:
     name: str
     short: str | None
     match: tuple[str, ...]
+    # the airline's three-letter ICAO code, which flight trackers name its flights by
+    icao: str | None = None
 
 
 def config_dir() -> Path:
@@ -81,8 +85,8 @@ def trusted_sender_domains() -> tuple[str, ...]:
 
 # ----------------------------------------------------------------------------- airlines
 def _parse_airlines(text: str | bytes, file: str) -> list[dict]:
-    """The entries of an airlines file as dicts with `iata`, `name` and optional `short` and
-    `match`, checked."""
+    """The entries of an airlines file as dicts with `iata`, `name` and optional `short`, `icao`
+    and `match`, checked."""
     try:
         data = yaml.safe_load(text)
     except Exception:  # noqa: BLE001 - YAMLError, or nested too deep (RecursionError)
@@ -103,13 +107,21 @@ def _parse_airlines(text: str | bytes, file: str) -> list[dict]:
             raise ListFileError(file, f"entry {n} has no iata of two letters or digits")
         iata = iata.upper()
         if any(k not in _ENTRY_KEYS for k in entry):
-            raise ListFileError(file, f"entry {iata} has a key other than iata, name, short, match")
+            raise ListFileError(
+                file, f"entry {iata} has a key other than iata, name, short, icao, match"
+            )
         name = entry.get("name")
         if not isinstance(name, str) or not name.strip():
             raise ListFileError(file, f"entry {iata} has no name")
         short = entry.get("short")
         if short is not None and not isinstance(short, str):
             raise ListFileError(file, f"entry {iata} short is not text")
+        icao = entry.get("icao")
+        if icao is not None and not isinstance(icao, str):
+            # unquoted, YES or OFF is a boolean to YAML
+            raise ListFileError(file, f"entry {iata}: {_ICAO_NOT_TEXT}")
+        if icao is not None and not _ICAO.fullmatch(icao):
+            raise ListFileError(file, f"entry {iata} icao is not three letters")
         words = entry.get("match")
         if words is not None and (
             not isinstance(words, list)
@@ -121,6 +133,7 @@ def _parse_airlines(text: str | bytes, file: str) -> list[dict]:
                 "iata": iata,
                 "name": name.strip(),
                 "short": short.strip() or None if short is not None else None,
+                "icao": icao.upper() if icao is not None else None,
                 "match": None if words is None else tuple(w.strip().lower() for w in words),
             }
         )
@@ -131,14 +144,15 @@ def _parse_airlines(text: str | bytes, file: str) -> list[dict]:
 def _airlines(directory: Path) -> dict[str, Airline]:
     table: dict[str, Airline] = {}
     for e in _parse_airlines(_shipped(AIRLINES_FILE), AIRLINES_FILE):
-        table[e["iata"]] = Airline(e["iata"], e["name"], e["short"], e["match"] or ())
+        table[e["iata"]] = Airline(e["iata"], e["name"], e["short"], e["match"] or (), e["icao"])
     raw = _override(directory, AIRLINES_FILE)
     for e in _parse_airlines(raw, AIRLINES_FILE) if raw is not None else ():
         old = table.get(e["iata"])
-        # a replacement that leaves out `short` or `match` keeps the shipped airline's
+        # a replacement that leaves out `short`, `icao` or `match` keeps the shipped airline's
         short = e["short"] if e["short"] is not None else (old.short if old else None)
         match = e["match"] if e["match"] is not None else (old.match if old else ())
-        table[e["iata"]] = Airline(e["iata"], e["name"], short, match)
+        icao = e["icao"] if e["icao"] is not None else (old.icao if old else None)
+        table[e["iata"]] = Airline(e["iata"], e["name"], short, match, icao)
     return table
 
 

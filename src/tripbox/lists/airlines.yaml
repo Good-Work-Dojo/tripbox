@@ -1,159 +1,208 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Additional terms: see NOTICE
-# Airlines: IATA code, name, optional short name (trip text) and the words that name the
-# airline in an email. config/airlines.yaml adds entries and replaces those with the same code.
+# Airlines: IATA code, name, optional short name (trip text), ICAO code (the Track flight link)
+# and the words that name the airline in an email. config/airlines.yaml adds entries and replaces
+# those with the same code.
 - iata: DL
   name: Delta Air Lines
   short: Delta
+  icao: DAL
   match: [delta]
 - iata: UA
   name: United Airlines
   short: United
+  icao: UAL
   match: [united]
 - iata: AA
   name: American Airlines
   short: American
+  icao: AAL
   match: [american]
 - iata: WN
   name: Southwest Airlines
   short: Southwest
+  icao: SWA
   match: [southwest]
 - iata: B6
   name: JetBlue
   short: JetBlue
+  icao: JBU
   match: [jetblue]
 - iata: AS
   name: Alaska Airlines
   short: Alaska
+  icao: ASA
   match: [alaska]
 - iata: NK
   name: Spirit Airlines
   short: Spirit
+  icao: NKS
   match: [spirit]
 - iata: F9
   name: Frontier Airlines
   short: Frontier
+  icao: FFT
   match: [frontier]
 - iata: HA
   name: Hawaiian Airlines
   short: Hawaiian
+  icao: HAL
   match: [hawaiian]
 - iata: G4
   name: Allegiant Air
   short: Allegiant
+  icao: AAY
   match: [allegiant]
 - iata: SY
   name: Sun Country Airlines
   short: Sun Country
+  icao: SCX
   match: [sun country]
 - iata: MX
   name: Breeze Airways
+  icao: MXY
   match: [breeze]
 - iata: XP
   name: Avelo Airlines
+  icao: VXP
   match: [avelo]
 - iata: AC
   name: Air Canada
+  icao: ACA
   match: [air canada]
 - iata: WS
   name: WestJet
+  icao: WJA
   match: [westjet]
 - iata: PD
   name: Porter Airlines
+  icao: POE
   match: [porter]
 - iata: BA
   name: British Airways
+  icao: BAW
   match: [british airways]
 - iata: VS
   name: Virgin Atlantic
+  icao: VIR
   match: [virgin atlantic]
 - iata: LH
   name: Lufthansa
+  icao: DLH
   match: [lufthansa]
 - iata: LX
   name: Swiss International Air Lines
+  icao: SWR
   match: [swiss]
 - iata: OS
   name: Austrian Airlines
+  icao: AUA
   match: [austrian]
 - iata: AF
   name: Air France
+  icao: AFR
   match: [air france]
 - iata: KL
   name: KLM Royal Dutch Airlines
+  icao: KLM
   match: [klm]
 - iata: IB
   name: Iberia
+  icao: IBE
   match: [iberia]
 - iata: EI
   name: Aer Lingus
+  icao: EIN
   match: [aer lingus]
 - iata: TP
   name: TAP Air Portugal
+  icao: TAP
   match: [tap]
 - iata: FI
   name: Icelandair
+  icao: ICE
   match: [icelandair]
 - iata: N0
   name: Norse Atlantic Airways
+  icao: NBT
   match: [norse]
 - iata: FR
   name: Ryanair
+  icao: RYR
   match: [ryanair]
 - iata: U2
   name: easyJet
+  icao: EZY
   match: [easyjet]
 - iata: VY
   name: Vueling
+  icao: VLG
   match: [vueling]
 - iata: AM
   name: Aeroméxico
+  icao: AMX
   match: [aeromexico]
 - iata: Y4
   name: Volaris
+  icao: VOI
   match: [volaris]
 - iata: VB
   name: Viva Aerobus
+  icao: VIV
   match: [viva]
 - iata: CM
   name: Copa Airlines
+  icao: CMP
   match: [copa]
 - iata: AV
   name: Avianca
+  icao: AVA
   match: [avianca]
 - iata: LA
   name: LATAM Airlines
+  icao: LAN
   match: [latam]
 - iata: EK
   name: Emirates
+  icao: UAE
   match: [emirates]
 - iata: QR
   name: Qatar Airways
+  icao: QTR
   match: [qatar]
 - iata: EY
   name: Etihad Airways
+  icao: ETD
   match: [etihad]
 - iata: TK
   name: Turkish Airlines
+  icao: THY
   match: [turkish]
 - iata: NH
   name: All Nippon Airways
+  icao: ANA
   match: [ana]
 - iata: JL
   name: Japan Airlines
+  icao: JAL
   match: [japan airlines]
 - iata: KE
   name: Korean Air
+  icao: KAL
   match: [korean air]
 - iata: SQ
   name: Singapore Airlines
+  icao: SIA
   match: [singapore]
 - iata: CX
   name: Cathay Pacific
+  icao: CPA
   match: [cathay]
 - iata: QF
   name: Qantas
+  icao: QFA
   match: [qantas]
 - iata: NZ
   name: Air New Zealand
+  icao: ANZ
   match: [air new zealand]
