@@ -36,7 +36,7 @@ tripbox has no account, no telemetry and no analytics. It sends nothing to its a
 | AirTrail | `TRIPBOX_AIRTRAIL_URL` and a key are set, and not in a dry run | The flights you are on, and your companions' names and seats as guests; see [the flight log](airtrail.md). |
 | A flight-data service (AeroAPI) | `TRIPBOX_ENRICH=aeroapi` | One lookup per landed flight: the airline, the flight number and the days around it. |
 | Telegram or an ntfy topic | You set one up | A notice for each message handled: what was filed, and what needs a look. |
-| Wikipedia and Wikimedia Commons | `TRIPBOX_COVERS=wikimedia`, for a trip with no cover photo | The worker sends a trip's place names to `en.wikipedia.org` and `commons.wikimedia.org` (at most two places a minute) and downloads the chosen image from `upload.wikimedia.org`. Nothing else goes: no booking, date, name or account. |
+| Wikipedia and Wikimedia Commons | `TRIPBOX_COVERS=wikimedia`, for a trip with no cover photo | The worker sends a trip's place names to `en.wikipedia.org` and `commons.wikimedia.org` (at most two places a minute; each place costs up to three requests, two to the APIs and one image download) and downloads the chosen image from `upload.wikimedia.org`. What goes is the place name, a User-Agent naming tripbox's version and its source address (`TRIPBOX_SOURCE_URL`, else the project's), and, as with any request, your server's IP address. English Wikipedia only; no booking, date, traveller name or account. |
 | Cloudflare | `TRIPBOX_AUTH=cloudflare` | The page fetches Cloudflare's public signing keys. It is the one request the page makes. |
 
 Nothing else makes a request: tripbox's page loads nothing from another site, its airport table

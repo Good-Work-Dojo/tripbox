@@ -49,7 +49,8 @@ TIMEOUTS = {"poll": POLL_TIMEOUT, "enrich": ENRICH_TIMEOUT}
 FEATURES = ("mail", "model", "airtrail", "notifications", "enrichment")  # in the record
 PARTS = ("poll", "enrich", "sync", "uploads", "covers")  # the record's `last`
 # Photo lookups: a batch of at most LOOKUPS_PER_BEAT places, at most once every LOOKUP_SECONDS; a
-# place with no photo is asked again after NONE_DAYS; a failed one waits LOOKUP_BACKOFF, doubling with each failure up to LOOKUP_BACKOFF_MAX
+# place with no photo is asked again after NONE_DAYS; a failed one waits LOOKUP_BACKOFF,
+# doubling with each failure up to LOOKUP_BACKOFF_MAX
 LOOKUPS_PER_BEAT, LOOKUP_SECONDS, NONE_DAYS = 2, 60, 30
 LOOKUP_BACKOFF, LOOKUP_BACKOFF_MAX = dt.timedelta(minutes=5), dt.timedelta(hours=24)
 STOP_SECONDS = 5  # how long a child has to end once told to, when the worker stops

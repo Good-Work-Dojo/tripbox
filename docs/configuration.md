@@ -54,7 +54,7 @@ no forwarded sender.
 |---|---|---|
 | `TZ` | `UTC` | The time zone tripbox works in, an IANA name such as `America/Chicago`. |
 | `TRIPBOX_HOME_AIRPORTS` | empty | Comma-separated three-letter airport codes you live near, such as `MSP,RST`; each must be an airport in the bundled table. A trip is titled by its first destination that is not one of them. |
-| `TRIPBOX_COVERS` | `off` | Where a trip's cover photo comes from when you have not set one: `off` (a coloured tile) or `wikimedia` (the worker looks up a freely licensed photo of the trip's place on Wikipedia and Wikimedia Commons, at most two places a minute, and the page offers "Find photo"). A photo you upload always wins. Any other word is a core problem, which `tripbox doctor` lists. |
+| `TRIPBOX_COVERS` | `off` | Where a trip's cover photo comes from when you have not set one: `off` (a coloured tile) or `wikimedia` (the worker looks up a freely licensed photo of the trip's place on Wikipedia and Wikimedia Commons, at most two places a minute, and the page offers "Find photo"). A photo you upload always wins. Any other word is a core problem: `tripbox doctor` lists it, and every command but `doctor`, `backup` and `restore` (the worker included) refuses to start until it is fixed, so nothing is looked up meanwhile. |
 
 ## Mail
 
