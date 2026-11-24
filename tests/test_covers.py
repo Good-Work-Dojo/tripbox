@@ -183,6 +183,38 @@ def test_set_place_to_the_same_place_keeps_the_cover():
     assert cv.get(tid) is None
 
 
+@pytest.mark.parametrize("how", ["none", "failed", "removed"])
+def test_saving_the_same_place_to_look_again_clears_what_is_no_photo(how):
+    """With automatic covers on (`look_again`), saving the place, unchanged too, clears nothing
+    found, a failed lookup's backoff and a removal, so the worker looks the place up at once;
+    with them off, the row stays."""
+    st, cv, _ = rig()
+    tid = a_trip(st)
+    no_cover(st, cv, tid, how)
+    st.set_place(tid, "Philadelphia")
+    assert cv.get(tid) is not None
+    st.set_place(tid, "Philadelphia", look_again=True)
+    assert cv.get(tid) is None
+    assert cv.due_lookups([(tid, "Philadelphia")], NOW, 2) == [(tid, "Philadelphia")]
+
+
+def test_looking_again_keeps_a_found_photo_and_the_owners():
+    st, cv, led = rig()
+    tid = a_trip(st)
+    found(cv, tid)
+    st.set_place(tid, "Philadelphia", look_again=True)
+    assert (cv.get(tid).source, cv.get(tid).state) == ("wikimedia", "ready")
+    taken = cv.upload(tid, b"mine")
+    st.set_place(tid, "Philadelphia", look_again=True)
+    assert (cv.get(tid).source, cv.get(tid).state) == ("owner", "pending")
+    cv.fail_upload(taken, "unreadable")
+    st.set_place(tid, "Philadelphia", look_again=True)
+    assert (cv.get(tid).source, cv.get(tid).state) == ("owner", "failed")
+    other = another(st, "2027-09-01T08:20", "OTHER1")
+    st.set_place(other, "", look_again=True)
+    assert cv.get(other) is None and len(led.covers.all_for_lookup()) == 1
+
+
 def test_merge_destination_keeps_its_own_cover():
     st, cv, led = rig()
     a = a_trip(st)

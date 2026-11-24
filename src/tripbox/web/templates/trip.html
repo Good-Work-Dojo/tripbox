@@ -24,7 +24,7 @@
           <button type="submit" class="btn">Save place</button>
         </form>
         <p class="muted small" id="place-help">The city this trip is about. Bookings there on nearby dates join this trip.</p>
-        {% if find_photo %}<p class="muted small" id="photo-help">A new place also finds a photo of it on Wikipedia, unless you uploaded your own.</p>{% endif %}
+        {% if find_photo %}<p class="muted small" id="photo-help">Saving the place also finds a photo of it on Wikipedia, unless you uploaded your own.</p>{% endif %}
         {% include "_photo_form.html" %}
         {% if photo.removable %}
         <form method="post" action="{{ base }}/trips/{{ trip.id }}/cover/remove" data-confirm="Remove this photo? An uploaded photo comes back only if you upload it again.">

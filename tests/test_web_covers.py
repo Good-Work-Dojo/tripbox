@@ -39,7 +39,7 @@ KEPT = "private, max-age=31536000, immutable"
 LARGE = b"\xff\xd8\xff\xe0" + b"large picture " * 8
 SMALL = b"\xff\xd8\xff\xe0" + b"small picture " * 4
 # What the place's help adds while automatic covers are on, and what Remove photo asks first
-FINDS = "A new place also finds a photo of it on Wikipedia, unless you uploaded your own."
+FINDS = "Saving the place also finds a photo of it on Wikipedia, unless you uploaded your own."
 REMOVE_PHOTO = "Remove this photo? An uploaded photo comes back only if you upload it again."
 CREDIT = {
     "artist": "Sample Author",
@@ -587,7 +587,7 @@ def test_the_sheet_offers_a_photo_and_find_photo_only_with_covers_on(
     tmp_path, monkeypatch, base, covers
 ):
     """The trip's ⋯ sheet holds the place and the photo under one heading: the place's form
-    (Save place), whose help says, only with automatic covers on, that a new place finds a
+    (Save place), whose help says, only with automatic covers on, that saving it finds a
     photo and where; the form to upload one (a JPEG, a PNG or a WebP, named for what it asks);
     and Remove photo, asked to be confirmed, once there is a photo, or one on its way or
     refused, to remove."""
@@ -651,29 +651,47 @@ def test_the_sheet_offers_a_photo_and_find_photo_only_with_covers_on(
 def test_saving_a_place_says_a_photo_is_looked_for_only_when_one_is(
     tmp_path, monkeypatch, base, covers
 ):
-    """With automatic covers on, a place saved that changes it, and leaves the trip with no
-    photo of the owner's, comes back saying a photo is looked for; the same place again, a
-    place taken off, a trip with the owner's photo, and every save with covers off say only
-    that the place was saved."""
+    """With automatic covers on, saving a place, the same one too, that leaves the trip with no
+    photo comes back saying a photo is looked for: nothing found, a failed lookup and a removal
+    are cleared, so Save place finds a photo. A found photo of the same place and the owner's
+    photo stay; a place taken off and every save with covers off say only that the place was
+    saved, and leave the row as it was."""
     on = covers == "wikimedia"
     env = {"TRIPBOX_COVERS": covers}
     c, ctx = client_for(tmp_path, monkeypatch, base=base, env=env)
     trip = seed_trip(ctx)
     url = f"/trips/{trip.id}/place"
+    cv = CoverStore(ctx.ledger)
+    looked = "place_photo" if on else "place"
 
     def saved(place: str) -> str:
         r = c.post(url, data={"place": place}, headers=SAME, follow_redirects=False)
         assert r.status_code == 303
         return r.headers["location"].removeprefix(c.url(f"/trips/{trip.id}?f="))
 
-    assert saved("King of Prussia") == ("place_photo" if on else "place"), covers
-    assert saved("King of Prussia") == "place", covers
+    assert saved("King of Prussia") == looked, covers
+    assert saved("King of Prussia") == looked, covers  # still none: looked for again
     found(ctx, trip.id)
-    assert saved("Philadelphia") == ("place_photo" if on else "place"), covers
+    assert saved("King of Prussia") == "place", covers
+    assert row(ctx, trip.id)["state"] == "ready"
+    assert saved("Philadelphia") == looked, covers
+    for no_photo in (
+        lambda: cv.none_found(trip.id, "Philadelphia", util.now() + dt.timedelta(days=30)),
+        lambda: cv.lookup_failed(trip.id, "Philadelphia", "http_4xx", util.now()),
+        lambda: cv.remove(trip.id),
+    ):
+        no_photo()
+        assert row(ctx, trip.id) is not None
+        assert saved("Philadelphia") == looked, covers
+        assert (row(ctx, trip.id) is None) is on, covers
     assert saved("") == "place", covers
     ready(ctx, trip.id)
     assert saved("Pittsburgh") == "place", covers
-    assert row(ctx, trip.id)["source"] == "owner"
+    assert saved("Pittsburgh") == "place", covers
+    assert (row(ctx, trip.id)["source"], row(ctx, trip.id)["state"]) == ("owner", "ready")
+    cv.fail_upload(cv.upload(trip.id, JPEG), "unreadable")
+    assert saved("Pittsburgh") == "place", covers
+    assert (row(ctx, trip.id)["source"], row(ctx, trip.id)["state"]) == ("owner", "failed")
     assert views.FLASH["place_photo"] == "Place saved — looking for a photo"
 
 

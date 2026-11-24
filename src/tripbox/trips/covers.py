@@ -179,6 +179,15 @@ class CoverStore:
             self.repo.delete(trip_id)
 
     @_writes
+    def look_again(self, trip_id: int) -> None:
+        """The place saved again while automatic covers are on (Save place finds a photo):
+        nothing found, a failed lookup's backoff or a removal goes, so the worker looks the
+        place up afresh. A ready photo and the owner's stay."""
+        row = self.repo.get(trip_id)
+        if row is not None and not _is_cover(row):
+            self.repo.delete(trip_id)
+
+    @_writes
     def merged(self, src_trip_id: int, dst_trip_id: int) -> None:
         """Called before the source trip goes. Only an owner's photo (in any state) or a ready
         one is a trip's cover: the destination keeps its own, else takes the source's, else has

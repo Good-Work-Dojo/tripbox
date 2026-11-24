@@ -1124,19 +1124,16 @@ async def edit_item(request: Request) -> Response:
 async def save_place(request: Request) -> Response:
     """The city the trip is about, as the owner typed it (empty: none): bookings there on nearby
     dates join this trip, and a new one takes an automatic photo away (`set_place`). The trip
-    keeps its title. While automatic covers are on, a new place that leaves the trip with no
-    photo of the owner's is looked up by the worker, and the toast says so."""
+    keeps its title. While automatic covers are on, saving a place, the same one too, that
+    leaves the trip with no photo has the worker look it up (nothing found, a failed lookup and
+    a removal are cleared: Save place finds a photo), and the toast says so."""
     form = await _form(request)
     with _ctx(request) as c:
         t = _trip_or_404(c, request.path_params["trip_id"])
-        trip = c.store.set_place(t.id, form.get("place", ""))
+        on = c.settings.covers == "wikimedia"
+        trip = c.store.set_place(t.id, form.get("place", ""), look_again=on)
         log.info("place trip #%s -> %r", t.id, (trip.place or "")[:80])
-        looked_up = (
-            c.settings.covers == "wikimedia"
-            and bool(trip.place)
-            and trip.place != t.place
-            and c.store.covers.get(t.id) is None
-        )
+        looked_up = on and bool(trip.place) and c.store.covers.get(t.id) is None
         return _back(request, t.id, "place_photo" if looked_up else "place")
 
 

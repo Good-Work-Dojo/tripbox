@@ -2107,15 +2107,19 @@ class TripStore:
         self.led.trips.update(trip_id, notes=clean or None)
         return self.get(trip_id)  # type: ignore[return-value]
 
-    def set_place(self, trip_id: int, place: str | None) -> Trip:
+    def set_place(self, trip_id: int, place: str | None, *, look_again: bool = False) -> Trip:
         """The city the trip is about: bookings there on nearby dates prefer this trip (the
-        same-place grouping). The title is the owner's and stays."""
+        same-place grouping). The title is the owner's and stays. A new place takes an automatic
+        photo away; with `look_again` (automatic covers on) the same place saved again clears
+        what is no photo, so its photo is looked for again (`CoverStore.look_again`)."""
         clean = _clean_text(place, "place")
         with self._tx():
             row = self.led.trips.get(trip_id)
             self.led.trips.update(trip_id, place=clean)
             if row is not None and row["place"] != clean:
                 self.covers.place_changed(trip_id, clean)
+            elif row is not None and clean and look_again:
+                self.covers.look_again(trip_id)
         return self.get(trip_id)  # type: ignore[return-value]
 
     def merge(self, src_id: int, dst_id: int) -> Trip:
