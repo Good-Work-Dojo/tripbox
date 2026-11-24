@@ -334,6 +334,10 @@ are also kept in an AirTrail flight log. One image runs three roles: `web`, `wor
   saves it; without `--recorded` it asks the model). On the working tree, run it as `narrow.sh`
   does, in the image `ci.sh` built: `-v "$PWD:/repo:ro" -w /repo -e PYTHONPATH=/repo/src`,
   then `python -m tripbox eval --recorded`.
+- Covers: the `covers` table of the ledger (schema 2) holds each trip's two JPEG BLOBs, written only
+  by `ledger.repo.Covers`; the rules (owner upload beats a found photo, merge, remove, backoff) live
+  in `trips/covers.py`. Decoding (`coverimage`, Pillow) and fetching (`wikimedia`) happen only in
+  the worker; the web serves bytes and never imports `PIL` or `httpx2`.
 - `tripbox work` is the worker (`worker.Worker`): one long-lived process that beats every 5 s.
   A beat writes its status record (JSON in `kv` row `worker`, words and counts: `features`,
   `last`, `mailbox` if mail's login is an address, `waiting` by reason, `dry_run`; the page

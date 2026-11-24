@@ -39,6 +39,8 @@ PUBLIC_HOSTS = {
     "schema.org": "the vocabulary of the structured data the sample carries",
     "cloudflareaccess.com": "where a Cloudflare Access team's keys are served",
     "api.telegram.org": "Telegram's bot interface, which the notifier calls",
+    "wikipedia.org": "where the worker looks up a trip's place for a cover photo",
+    "wikimedia.org": "where the worker looks up and downloads freely licensed cover photos",
 }
 EXAMPLE = re.compile(r"(^|\.)example(\.(com|org|net))?$")
 TLDS = "com|org|net|io|dev|app|ai|co|eu|uk|de|fr"
@@ -263,7 +265,7 @@ ROADMAP_LINES = (
     "importable gmail filters", "prices for more than one model", "forward-only sender list",
     "claim on a message's row", "last_poll_ok", "mail backfill --quiet", "field-length limits",
     "structured-data email", "without `--recorded`", "parser that reads a model's answer",
-    "image signing", "cover photos",
+    "image signing",
     "share links that end on a date you choose", "each client address",
     "shared-secret header", "flight tracker", "list of the saved copies", "screen reader",
     "keeps its notes when it is emptied", "dark scheme", "memory limits as settings",

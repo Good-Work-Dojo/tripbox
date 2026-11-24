@@ -117,11 +117,12 @@ bundle of that release from its page on GitHub in place of the latest.
 
 When a release changes how the ledger is stored, the first start copies the ledger beside itself,
 as `data/ledger-before-v<n>-<time>.db`, before it upgrades it, and refuses to upgrade when it
-cannot write the copy. That copy is not an archive: `restore` does not read it. To go back by
-hand after an upgrade, stop tripbox, set the image to the version you came from, move
-`data/ledger.db` (and any `ledger.db-wal` and `ledger.db-shm` beside it) out of the way, copy the
-`ledger-before-…` file to `data/ledger.db`, and start (this route has not been run). A ledger
-from a newer tripbox is refused, untouched, with a message that says so.
+cannot write the copy. That copy is not an archive: `restore` does not read it. To go back by hand
+after an upgrade, stop tripbox, set the image to the version you came from, move `data/ledger.db`
+(and any `ledger.db-wal` and `ledger.db-shm` beside it) out of the way, copy the `ledger-before-…`
+file to `data/ledger.db`, and start (this route has not been run). A ledger from a newer tripbox
+is refused, untouched, with a message that says so. Release 1.1.0 is such a release (schema 2 adds
+cover photos; trips and bookings are not changed).
 
 ## Other ways to run Docker
 

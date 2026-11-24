@@ -89,6 +89,19 @@ By default the compose file publishes the page on `127.0.0.1:8110`, this compute
 - A page deletion is soft: a deleted trip or booking is kept in Recently deleted for 30 days, and
   then erased. The saved email in `archive/` stays.
 
+## Cover photos
+
+- An upload to `POST /covers/upload` is read up to 10 MiB, counted as it arrives. The kind is
+  decided by the file's first bytes, never its name or declared type: JPEG, PNG and WebP are
+  accepted, and HEIC is refused with a message that says so.
+- The page never decodes an image. The worker does, with Pillow, and refuses a picture over 40
+  million pixels. It applies the photo's orientation, then writes two new JPEGs (long edges 1600
+  and 480 px) that carry no metadata: no EXIF, GPS position, XMP or colour profile text.
+- With `TRIPBOX_COVERS=wikimedia` only the worker makes requests, to `en.wikipedia.org`,
+  `commons.wikimedia.org` and `upload.wikimedia.org`, and only a freely licensed image is kept,
+  with its credit. A download over 10 MiB or that is not an image is dropped.
+- Covers are served at `/covers/<hash>.jpg` only behind the login, as private responses.
+
 ## Mail
 
 The defences are structural; they do not depend on a model behaving.

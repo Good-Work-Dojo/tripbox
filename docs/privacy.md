@@ -36,6 +36,7 @@ tripbox has no account, no telemetry and no analytics. It sends nothing to its a
 | AirTrail | `TRIPBOX_AIRTRAIL_URL` and a key are set, and not in a dry run | The flights you are on, and your companions' names and seats as guests; see [the flight log](airtrail.md). |
 | A flight-data service (AeroAPI) | `TRIPBOX_ENRICH=aeroapi` | One lookup per landed flight: the airline, the flight number and the days around it. |
 | Telegram or an ntfy topic | You set one up | A notice for each message handled: what was filed, and what needs a look. |
+| Wikipedia and Wikimedia Commons | `TRIPBOX_COVERS=wikimedia`, for a trip with no cover photo | The worker sends a trip's place names to `en.wikipedia.org` and `commons.wikimedia.org` (at most two places a minute) and downloads the chosen image from `upload.wikimedia.org`. Nothing else goes: no booking, date, name or account. |
 | Cloudflare | `TRIPBOX_AUTH=cloudflare` | The page fetches Cloudflare's public signing keys. It is the one request the page makes. |
 
 Nothing else makes a request: tripbox's page loads nothing from another site, its airport table
@@ -43,6 +44,9 @@ and airline list ship with it, and `tripbox report` builds no network client at 
 link are yours to tap, and your browser then sends the other site what is in the link: a flight
 links to FlightAware, with its flight number, and an address links to the maps site you choose
 in Settings (Apple, Google or OpenStreetMap), with the address.
+
+A cover photo you upload never leaves your install. Its metadata, GPS position included, is removed
+before it is stored, and the ledger keeps only the two resized copies.
 
 The model's provider handles the email under its own terms. Choose a provider you are willing to
 send your confirmations to, or run a model of your own (`TRIPBOX_LLM_PROVIDER=openai` with

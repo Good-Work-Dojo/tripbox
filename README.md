@@ -27,6 +27,9 @@ changed.
   hand loses it: see "Choose a model".
 - Never invents a field: what an email does not print stays empty, and a booking it is unsure of
   is marked **To check** on the page until you have looked.
+- Shows each trip with a cover photo: one you upload from a phone or computer, or, only if you
+  turn it on (`TRIPBOX_COVERS`), a freely licensed one the worker finds for the place, with its
+  credit.
 - Keeps everything in one SQLite file and the emails as they arrived, on your own disk.
 
 It is not a planner: it does not search for flights, suggest places or book anything. It files

@@ -41,8 +41,6 @@ not a commitment. If one matters to you, say so in an issue: that is how it move
 
 ## The page
 
-- Cover photos, fetched by the worker from freely licensed images with their credits. Trips have
-  coloured tiles for now.
 - Share links that end on a date you choose. Today a link works until 7 days after the trip ends,
   and at least 30 days after it was made, or until you revoke it.
 - A throttle bucket for each client address behind a trusted proxy.
