@@ -34,8 +34,9 @@ def a_trip(ctx, place, dep="2027-07-01T09:00", pnr="ABC123"):
 
 
 class Wiki:
-    """A MockTransport standing in for Wikipedia and Commons: every place has a free photo,
-    unless `status` is set (then every request answers it)."""
+    """A MockTransport standing in for Wikipedia and Commons: every place has a free photo, its
+    thumbnail on thumb.wikimedia.org as Commons names it, unless `status` is set (then every
+    request answers it)."""
 
     def __init__(self, status=None, missing=()):
         self.calls: list[httpx2.Request] = []
@@ -61,7 +62,7 @@ class Wiki:
                 "Artist": {"value": "Sample Author"},
             }
             info = {
-                "thumburl": "https://upload.wikimedia.org/x.jpg",
+                "thumburl": "https://thumb.wikimedia.org/x/xa/X.jpg/1600px-X.jpg",
                 "descriptionurl": "https://commons.example.org/File:X.jpg",
                 "extmetadata": meta,
             }

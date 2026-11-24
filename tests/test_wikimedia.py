@@ -226,36 +226,58 @@ def commons_at(thumburl):
     return commons
 
 
+UPLOAD, THUMB = "https://upload.wikimedia.org", "https://thumb.wikimedia.org"
+
+
+@pytest.mark.parametrize("host", [UPLOAD, THUMB])
+def test_an_image_on_either_of_wikimedias_image_hosts_is_found(host):
+    """Commons names a thumbnail on thumb.wikimedia.org and an original on upload.wikimedia.org:
+    either is downloaded, at the address it names."""
+    seen = []
+    got = find("S", http=build(commons=commons_at(f"{host}/a/ab/X.jpg/1600px-X.jpg"), seen=seen))
+    assert got is not None and got.data == IMAGE
+    assert [str(r.url) for r in seen[2:]] == [f"{host}/a/ab/X.jpg/1600px-X.jpg"]
+
+
 @pytest.mark.parametrize(
     "url",
     [
         "http://upload.wikimedia.org/x.jpg",
+        "http://thumb.wikimedia.org/x.jpg",
         "https://upload.example.org/x.jpg",
         "https://upload.wikimedia.org.example.org/x.jpg",
+        "https://thumb.wikimedia.org.evil.example/x.jpg",
         "https://upload.wikimedia.org:8443/x.jpg",
+        "https://thumb.wikimedia.org:8443/x.jpg",
         "https://someone@upload.wikimedia.org/x.jpg",
+        "https://user@thumb.wikimedia.org/x.jpg",
+        "https://commons.wikimedia.org/x.jpg",
+        "https://wikimedia.org/x.jpg",
+        "https://a.thumb.wikimedia.org/x.jpg",
         "ftp://upload.wikimedia.org/x.jpg",
         "/x.jpg",
         "not an address",
     ],
 )
-def test_an_image_anywhere_but_wikimedias_upload_host_is_never_fetched(url):
-    """Only an https address on upload.wikimedia.org is downloaded: whatever else the answer
-    names is no photo, and no request goes to it."""
+def test_an_image_anywhere_but_wikimedias_image_hosts_is_never_fetched(url):
+    """Only an https address on upload.wikimedia.org or thumb.wikimedia.org, on its own port and
+    with no login in it, is downloaded: whatever else the answer names is no photo, and no
+    request goes to it."""
     seen = []
     assert find("S", http=build(commons=commons_at(url), seen=seen)) is None
     assert [r.url.host for r in seen] == ["en.wikipedia.org", "commons.wikimedia.org"]
 
 
-def redirecting(locations, seen):
-    """Wikipedia and Commons as `build` answers them; the upload host sends each image path in
-    `locations` on to its address, and answers the image at any other."""
-    inner = build()._transport
+def redirecting(locations, seen, first=f"{UPLOAD}/x.jpg"):
+    """Wikipedia and Commons as `build` answers them, naming the image at `first`; each address
+    in `locations` sends the request on to its value, and any other image address answers the
+    image."""
+    inner = build(commons=commons_at(first))._transport
 
     def handler(request):
         seen.append(str(request.url))
-        if request.url.host == "upload.wikimedia.org" and request.url.path in locations:
-            return httpx2.Response(302, headers={"location": locations[request.url.path]})
+        if str(request.url) in locations:
+            return httpx2.Response(302, headers={"location": locations[str(request.url)]})
         if request.url.host.endswith(("wikipedia.org", "wikimedia.org")):
             return inner.handle_request(request)
         return httpx2.Response(200, content=b"\xff\xd8elsewhere")
@@ -263,27 +285,36 @@ def redirecting(locations, seen):
     return client("", transport=httpx2.MockTransport(handler))
 
 
-def test_a_redirect_is_followed_only_on_the_upload_host():
+def test_a_redirect_is_followed_only_between_wikimedias_image_hosts():
     seen = []
-    on_host = {"/x.jpg": "/y.jpg", "/y.jpg": "https://upload.wikimedia.org/z.jpg"}
-    assert find("S", http=redirecting(on_host, seen)).data == IMAGE
-    assert seen[2:] == [
-        "https://upload.wikimedia.org/x.jpg",
-        "https://upload.wikimedia.org/y.jpg",
-        "https://upload.wikimedia.org/z.jpg",
-    ]
-    for away in (
-        "https://elsewhere.example.org/x.jpg",
-        "http://upload.wikimedia.org/x.jpg",
-        "//elsewhere.example.org/x.jpg",
-    ):
-        seen = []
-        assert find("S", http=redirecting({"/x.jpg": away}, seen)) is None, away
-        assert seen[-1] == "https://upload.wikimedia.org/x.jpg", away
+    hops = {
+        f"{UPLOAD}/x.jpg": "/y.jpg",
+        f"{UPLOAD}/y.jpg": f"{THUMB}/z.jpg",
+        f"{THUMB}/z.jpg": f"{UPLOAD}/w.jpg",
+    }
+    assert find("S", http=redirecting(hops, seen)).data == IMAGE
+    assert seen[2:] == [f"{UPLOAD}/x.jpg", f"{UPLOAD}/y.jpg", f"{THUMB}/z.jpg", f"{UPLOAD}/w.jpg"]
+    seen = []
+    assert find("S", http=redirecting({f"{THUMB}/x.jpg": f"{UPLOAD}/y.jpg"}, seen,
+                                      first=f"{THUMB}/x.jpg")).data == IMAGE
+    assert seen[2:] == [f"{THUMB}/x.jpg", f"{UPLOAD}/y.jpg"]
+    for first in (f"{UPLOAD}/x.jpg", f"{THUMB}/x.jpg"):
+        for away in (
+            "https://elsewhere.example.org/x.jpg",
+            "http://upload.wikimedia.org/x.jpg",
+            "http://thumb.wikimedia.org/x.jpg",
+            "https://thumb.wikimedia.org.evil.example/x.jpg",
+            "https://user@thumb.wikimedia.org/x.jpg",
+            "https://commons.wikimedia.org/x.jpg",
+            "//elsewhere.example.org/x.jpg",
+        ):
+            seen = []
+            assert find("S", http=redirecting({first: away}, seen, first=first)) is None, away
+            assert seen[-1] == first, away
 
 
 def test_a_redirect_that_never_ends_is_none():
     seen = []
-    loop = {"/x.jpg": "/y.jpg", "/y.jpg": "/x.jpg"}
-    assert find("S", http=redirecting(loop, seen)) is None
-    assert len(seen) <= 2 + 1 + wikimedia.MAX_REDIRECTS
+    loop = {f"{THUMB}/x.jpg": f"{UPLOAD}/y.jpg", f"{UPLOAD}/y.jpg": f"{THUMB}/x.jpg"}
+    assert find("S", http=redirecting(loop, seen, first=f"{THUMB}/x.jpg")) is None
+    assert len(seen) == 2 + 1 + wikimedia.MAX_REDIRECTS

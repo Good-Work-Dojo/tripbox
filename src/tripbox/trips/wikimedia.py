@@ -4,7 +4,7 @@
 
 The page image of the place's English Wikipedia article is looked up on Commons; it is kept only
 when its licence is free (CC0, public domain, CC BY, CC BY-SA), then downloaded with a size cap
-from Wikimedia's upload host alone (`UPLOAD_HOST`, over https).
+from Wikimedia's image hosts alone (`IMAGE_HOSTS`, over https).
 `None` means nothing usable exists; `Transient` means ask again later. Only the worker imports
 this module: the web container makes no outbound request."""
 
@@ -27,8 +27,10 @@ WIKIPEDIA_API = "https://en.wikipedia.org/w/api.php"
 COMMONS_API = "https://commons.wikimedia.org/w/api.php"
 FREE_LICENCE = re.compile(r"^(cc0|pd|pd-.*|cc-by-[0-9.]+|cc-by-sa-[0-9.]+)$")
 NOT_FOUND = (404, 410)  # the one refusal that settles a lookup as none
-# The one host an image is downloaded from, over https; a redirect is followed only on it
-UPLOAD_HOST = "upload.wikimedia.org"
+# The hosts an image is downloaded from, over https: Commons names a thumbnail on
+# thumb.wikimedia.org and an original on upload.wikimedia.org. A redirect is followed only
+# between them.
+IMAGE_HOSTS = frozenset({"upload.wikimedia.org", "thumb.wikimedia.org"})
 MAX_REDIRECTS = 3
 
 
@@ -115,19 +117,20 @@ def _value(meta: dict, key: str) -> str:
     return str(entry.get("value", "")) if isinstance(entry, dict) else ""
 
 
-def _on_upload_host(url: httpx2.URL) -> bool:
-    """An https address on Wikimedia's upload host, its own port, with no login in it."""
+def _on_image_host(url: httpx2.URL) -> bool:
+    """An https address on one of Wikimedia's image hosts, exactly, on its own port, with no
+    login in it."""
     return (
         url.scheme == "https"
-        and url.host == UPLOAD_HOST
+        and url.host in IMAGE_HOSTS
         and url.port in (None, 443)
         and not url.userinfo
     )
 
 
 def _download(http: httpx2.Client, url: str) -> bytes | None:
-    """The image at `url`, at most MAX_BYTES, fetched only from UPLOAD_HOST: an address
-    elsewhere, or a redirect off it (or past MAX_REDIRECTS), is no image."""
+    """The image at `url`, at most MAX_BYTES, fetched only from IMAGE_HOSTS: an address
+    elsewhere, or a redirect off them (or past MAX_REDIRECTS), is no image."""
     try:
         at = httpx2.URL(url)
     except (httpx2.InvalidURL, TypeError, ValueError):
@@ -135,7 +138,7 @@ def _download(http: httpx2.Client, url: str) -> bytes | None:
     data = bytearray()
     try:
         for _ in range(MAX_REDIRECTS + 1):
-            if not _on_upload_host(at):
+            if not _on_image_host(at):
                 return None
             with http.stream("GET", at, follow_redirects=False) as r:
                 if r.has_redirect_location:
