@@ -14,7 +14,9 @@ All notable changes to tripbox are written here. The format follows
 - Upload your own cover from a phone or a computer, in the trip's "Place and photo" sheet (JPEG,
   PNG or WebP up to 10 MB; HEIC is refused). It is resized and stripped of its metadata, GPS
   position included, and always wins over a found photo.
-- **Find photo**: saving a trip's place looks for a photo again. A cover can be removed.
+- With `TRIPBOX_COVERS=wikimedia`, **Save place** finds a photo: a new place replaces a found
+  photo, and the same place saved again looks once more when none was found or the photo was
+  removed. **Remove photo** takes a cover away.
 
 ### Changed
 

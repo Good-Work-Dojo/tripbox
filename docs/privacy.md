@@ -45,8 +45,12 @@ link are yours to tap, and your browser then sends the other site what is in the
 links to FlightAware, with its flight number, and an address links to the maps site you choose
 in Settings (Apple, Google or OpenStreetMap), with the address.
 
-A cover photo you upload never leaves your install. Its metadata, GPS position included, is removed
-before it is stored, and the ledger keeps only the two resized copies.
+A cover photo you upload never leaves your install. The ledger keeps it as it came, its metadata
+and GPS position included, only until the worker reads it: seconds, normally, but for as long as
+the worker is stopped, and a backup taken meanwhile holds it too. Then only two resized copies
+with no metadata remain. The SQLite in the image writes zeros over the space the original took,
+though its bytes can stay in the ledger's write-ahead file (`ledger.db-wal`) until later writes
+reuse that space.
 
 The model's provider handles the email under its own terms. Choose a provider you are willing to
 send your confirmations to, or run a model of your own (`TRIPBOX_LLM_PROVIDER=openai` with

@@ -99,7 +99,9 @@ By default the compose file publishes the page on `127.0.0.1:8110`, this compute
   and 480 px) that carry no metadata: no EXIF, GPS position, XMP or colour profile text.
 - With `TRIPBOX_COVERS=wikimedia` only the worker makes requests, to `en.wikipedia.org`,
   `commons.wikimedia.org` and `upload.wikimedia.org`, and only a freely licensed image is kept,
-  with its credit. A download over 10 MiB or that is not an image is dropped.
+  with its credit. An image is downloaded over https from `upload.wikimedia.org` alone, and a
+  redirect is followed only on that host. A download over 10 MiB or that is not an image is
+  dropped.
 - Covers are served at `/covers/<hash>.jpg` only behind the login, as private responses.
 
 ## Mail

@@ -101,7 +101,7 @@ KEYS: tuple[Key, ...] = (
         note="Comma-separated codes of airports you live near: a trip is titled by another one.",
         example="MSP",
     ),
-    # the page offers "Find photo" only when this is on; the worker is what looks photos up
+    # the page says Save place finds a photo only when this is on; the worker looks photos up
     Key(
         "TRIPBOX_COVERS",
         "core",
