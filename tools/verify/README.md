@@ -127,11 +127,11 @@ opened online, reloads offline as its saved copy, with its title, the banner and
 disabled and its cover photo loaded (`naturalWidth` above 0; `--expect-covers` makes a trip with no
 cover a failure), photographed as `offline-copy` after the ledger's pages; a trip never opened
 gives the no-copy page and a form posted from the copy the refusal; no store holds a page under
-`/login`, `/s/`, `/settings` or `/add`; after a sign-out from Settings the trip has no copy and the pages
-store is empty; Chromium's `Page.getAppManifest` reports no error). The summary ends `checks: N of M
-ok`, then one `<name>: <detail>` line for each check that is not ok, which fails the run (`screens:
-FAIL check <name>`), and `--fail-on-overflow` turns any overflow into a failure. The last line is
-`screens: ok`.
+`/login`, `/s/`, `/settings` or `/add`; after a sign-out from Settings the trip has no copy and
+the pages store is empty; Chromium's `Page.getAppManifest` reports no error). The summary ends
+`checks: N of M ok`, then one `<name>: <detail>` line for each check that is not ok, which fails
+the run (`screens: FAIL check <name>`), and `--fail-on-overflow` turns any overflow into a
+failure. The last line is `screens: ok`.
 
 `covers_seed.py LEDGER_DIR` gives a seeded demo ledger four covers, run in the app's image with no
 network: pictures drawn with Pillow (a wide landscape and a tall portrait, no file from outside)
