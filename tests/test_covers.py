@@ -3,6 +3,7 @@
 import datetime as dt
 import json
 
+import pytest
 from test_trips_store import HOME, outbound
 
 from tripbox import util
@@ -310,6 +311,72 @@ def test_merge_an_owner_photo_replaces_an_automatic_cover_or_removal():
     cv.remove(d)
     st.merge(c, d)
     assert cv.get(d).source == "owner"
+
+
+def no_cover(st, cv, tid, how):
+    """A row that is no cover: nothing found, a lookup that failed, or the owner's removal."""
+    place = st.get(tid).place
+    if how == "none":
+        cv.none_found(tid, place, NOW + dt.timedelta(days=30))
+    elif how == "failed":
+        cv.lookup_failed(tid, place, "http_5xx", NOW + dt.timedelta(days=1))
+    else:
+        cv.remove(tid)
+    assert cv.get(tid) is not None and cv.get(tid).state in ("none", "failed")
+
+
+@pytest.mark.parametrize("how", ["none", "failed", "removed"])
+def test_merge_a_destination_with_no_cover_takes_the_sources(how):
+    """Only an owner's photo or a ready one is a trip's cover: a destination whose row is
+    nothing found, a failed lookup or a removal takes the source's ready photo or owner's photo
+    in its place."""
+    for give in ("ready", "owner"):
+        st, cv, led = rig()
+        a = a_trip(st)
+        b = another(st, "2027-09-01T08:20", "OTHER1")
+        if give == "ready":
+            found(cv, a, digest="da")
+        else:
+            cv.upload(a, b"mine")
+        no_cover(st, cv, b, how)
+        st.merge(a, b)
+        c = cv.get(b)
+        assert (c.source, c.state) == (
+            ("wikimedia", "ready") if give == "ready" else ("owner", "pending")
+        ), (how, give)
+        assert [r["trip_id"] for r in led.covers.all_for_lookup()] == [b]
+
+
+@pytest.mark.parametrize("how", ["none", "failed", "removed"])
+def test_merge_a_source_row_that_is_no_cover_is_dropped(how):
+    """A source's row that is no cover never moves: the destination keeps its own cover, or with
+    none is looked up for its own place, not kept from it by the source's backoff or removal."""
+    st, cv, led = rig()
+    a = a_trip(st, "Boston")
+    b = another(st, "2027-09-01T08:20", "OTHER1")
+    no_cover(st, cv, a, how)
+    st.merge(a, b)
+    assert led.covers.all_for_lookup() == []
+    place = st.get(b).place
+    assert place and cv.due_lookups([(b, place)], NOW, 2) == [(b, place)]
+    st, cv, led = rig()
+    a = a_trip(st, "Boston")
+    b = another(st, "2027-09-01T08:20", "OTHER1")
+    no_cover(st, cv, a, how)
+    found(cv, b, st.get(b).place, "db")
+    st.merge(a, b)
+    assert cv.get(a) is None and (cv.get(b).state, cv.get(b).digest) == ("ready", "db")
+    assert [r["trip_id"] for r in led.covers.all_for_lookup()] == [b]
+
+
+def test_merge_a_destination_keeps_its_own_row_when_neither_is_a_cover():
+    st, cv, led = rig()
+    a = a_trip(st)
+    b = another(st, "2027-09-01T08:20", "OTHER1")
+    no_cover(st, cv, a, "failed")
+    no_cover(st, cv, b, "removed")
+    st.merge(a, b)
+    assert [(r["trip_id"], r["source"]) for r in led.covers.all_for_lookup()] == [(b, "removed")]
 
 
 def test_merge_an_owner_destination_keeps_its_photo_over_a_source_owner_photo():

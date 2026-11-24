@@ -59,6 +59,12 @@ def _cover(row: sqlite3.Row) -> Cover:
     )
 
 
+def _is_cover(row: sqlite3.Row) -> bool:
+    """Whether a row gives its trip a cover: an owner's photo, whatever its state, or a ready
+    one."""
+    return row["source"] == "owner" or row["state"] == "ready"
+
+
 def _iso(when: dt.datetime) -> str:
     return when.isoformat(timespec="seconds")
 
@@ -174,20 +180,26 @@ class CoverStore:
 
     @_writes
     def merged(self, src_trip_id: int, dst_trip_id: int) -> None:
-        """Called before the source trip goes: the destination keeps its own cover; with none,
-        it takes the source's. An owner's photo on the source replaces an automatic cover or a
-        removal on the destination."""
+        """Called before the source trip goes. Only an owner's photo (in any state) or a ready
+        one is a trip's cover: the destination keeps its own, else takes the source's, else has
+        none and is looked up for its own place. An owner's photo on the source also replaces
+        an automatic one on the destination. The source's row never stays, nor moves when it is
+        no cover (nothing found, a failed lookup, a removal: all of its own place)."""
         src = self.repo.get(src_trip_id)
         if src is None:
             return
         dst = self.repo.get(dst_trip_id)
-        if dst is not None and src["source"] == "owner" and dst["source"] != "owner":
-            self.repo.delete(dst_trip_id)
-            dst = None
-        if dst is None:
-            self.repo.move(src_trip_id, dst_trip_id)
-        else:
+        takes = _is_cover(src) and (
+            dst is None
+            or not _is_cover(dst)
+            or (src["source"] == "owner" and dst["source"] != "owner")
+        )
+        if not takes:
             self.repo.delete(src_trip_id)
+            return
+        if dst is not None:
+            self.repo.delete(dst_trip_id)
+        self.repo.move(src_trip_id, dst_trip_id)
 
     # ------------------------------------------------------------------ Wikimedia lookups
     def due_lookups(
