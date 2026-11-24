@@ -117,15 +117,15 @@ def main(argv: list[str]) -> int:
             covers.found(t.id, t.place or t.title, wide.large, wide.small, wide.digest, CREDIT)
             print(f"cover: {t.title}: ready, wikimedia")
         if (t := roles.get("under_way")) is not None:
-            covers.upload(t.id, portrait())
-            covers.finish_upload(t.id, tall.large, tall.small, tall.digest)
+            taken = covers.upload(t.id, portrait())
+            covers.finish_upload(taken, tall.large, tall.small, tall.digest)
             print(f"cover: {t.title}: ready, owner")
         if (t := roles.get("pending")) is not None:
             covers.upload(t.id, landscape())
             print(f"cover: {t.title}: pending, owner")
         if (t := roles.get("failed")) is not None:
-            covers.upload(t.id, b"not a picture")
-            covers.fail_upload(t.id, "unreadable")
+            taken = covers.upload(t.id, b"not a picture")
+            covers.fail_upload(taken, "unreadable")
             print(f"cover: {t.title}: failed, owner")
         if len(roles) != 4:
             print(f"cover: only {len(roles)} of 4 trips found", file=sys.stderr)

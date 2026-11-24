@@ -338,18 +338,19 @@ class Worker:
         if waiting is not None:
             did = True
             self._record(busy=True)  # a large photo takes a moment to decode
-            trip_id, data = waiting
             try:
-                made = coverimage.process(data)
+                made = coverimage.process(waiting.data)
             except coverimage.CoverImageError as exc:
-                cv.fail_upload(trip_id, exc.code)
-                failed = exc.code
+                kept = cv.fail_upload(waiting, exc.code)
+                failed = exc.code if kept else None
             except Exception:  # noqa: BLE001 - a photo that cannot be read never stops the worker
-                log.exception("the cover photo of trip #%s could not be read", trip_id)
-                cv.fail_upload(trip_id, "unreadable")
-                failed = "unreadable"
+                log.exception("the cover photo of trip #%s could not be read", waiting.trip_id)
+                kept = cv.fail_upload(waiting, "unreadable")
+                failed = "unreadable" if kept else None
             else:
-                cv.finish_upload(trip_id, made.large, made.small, made.digest)
+                kept = cv.finish_upload(waiting, made.large, made.small, made.digest)
+            if not kept:  # another upload, Remove photo or a merge came first: theirs stands
+                log.info("the cover photo of trip #%s changed while it was read", waiting.trip_id)
         if self.ctx.settings.covers == "wikimedia":
             now = self.clock()
             waited = self._looked_up_at is not None and (

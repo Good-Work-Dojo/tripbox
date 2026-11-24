@@ -53,8 +53,7 @@ def ready(ctx, trip_id: int, large: bytes = LARGE, small: bytes = SMALL) -> str:
     """An owner's photo the worker has made into a cover; its digest."""
     digest = hashlib.sha256(large).hexdigest()
     cv = CoverStore(ctx.ledger)
-    cv.upload(trip_id, large)
-    cv.finish_upload(trip_id, large, small, digest)
+    cv.finish_upload(cv.upload(trip_id, large), large, small, digest)
     return digest
 
 
@@ -507,8 +506,7 @@ def test_a_photo_on_its_way_says_so_and_one_that_failed_says_why(tmp_path, monke
         ("wrong_type", "it is not a JPEG, PNG or WebP"),
         ("something new", "it could not be read"),
     ):
-        cv.upload(trip.id, JPEG)
-        cv.fail_upload(trip.id, code)
+        cv.fail_upload(cv.upload(trip.id, JPEG), code)
         tree = Tree(c.get(f"/trips/{trip.id}").text)
         (note,) = classed(tree, "cover-note")
         assert note.text().startswith(f"That photo could not be used ({why}). "), code
@@ -634,9 +632,9 @@ def test_the_sheet_offers_a_photo_and_find_photo_only_with_covers_on(
         return bool(held)
 
     assert not offered()
-    cv.upload(trip.id, JPEG)
+    taken = cv.upload(trip.id, JPEG)
     assert offered(), covers  # on its way
-    cv.fail_upload(trip.id, "unreadable")
+    cv.fail_upload(taken, "unreadable")
     assert offered(), covers  # refused by the worker
     ready(ctx, trip.id)
     assert offered(), covers
@@ -776,9 +774,9 @@ def test_a_photo_on_its_way_marks_the_hero_for_the_script_to_load_again(
         return section.attrs
 
     assert "data-cover-pending" not in hero()
-    cv.upload(trip.id, JPEG)
+    taken = cv.upload(trip.id, JPEG)
     assert "data-cover-pending" in hero()
-    cv.fail_upload(trip.id, "unreadable")
+    cv.fail_upload(taken, "unreadable")
     assert "data-cover-pending" not in hero()
     cv.upload(trip.id, JPEG)
     assert "data-cover-pending" in hero()

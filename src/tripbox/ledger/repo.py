@@ -913,6 +913,21 @@ class Covers:
             [trip_id, *fields.values(), ts, ts],
         )
 
+    def settle_upload(self, trip_id: int, read: bytes, /, **fields: Any) -> bool:
+        """Change the fields given on the trip's owner row only while it still waits for exactly
+        the bytes `read` (`updated_at` stamped); never make a row. Whether one was changed: a
+        newer upload, a removal or a merge since the bytes were read leaves none to change."""
+        unknown = set(fields) - self.FIELDS
+        if unknown:
+            raise ValueError(f"not cover fields: {sorted(unknown)}")
+        sets = ", ".join(f"{k}=?" for k in (*fields, "updated_at"))
+        cur = self.c.execute(
+            f"UPDATE covers SET {sets} WHERE trip_id=? AND source='owner' AND state='pending'"
+            " AND upload=?",
+            [*fields.values(), now_iso(), trip_id, read],
+        )
+        return cur.rowcount > 0
+
     def delete(self, trip_id: int) -> None:
         self.c.execute("DELETE FROM covers WHERE trip_id=?", (trip_id,))
 

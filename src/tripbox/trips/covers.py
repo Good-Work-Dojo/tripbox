@@ -2,9 +2,11 @@
 # Additional terms: see NOTICE
 """The rules for a trip's cover photo, over the ledger's `covers` table. A trip has at most one
 cover row. An owner's upload (`source='owner'`) beats a Wikimedia photo; `removed` records that
-the owner took the photo away, which stops automatic lookups until the place changes. Writes
-must run inside a ledger transaction (the repository's put is two statements). This module
-decodes and fetches nothing, so the web container can import it."""
+the owner took the photo away, which stops automatic lookups until the place changes. Each
+writing method runs in one ledger transaction of its own (joining one that is open). The worker
+reads a photo outside any: its answer is written only while the trip still waits for those
+bytes (`Pending`), so what the owner did meanwhile stands. This module decodes and fetches
+nothing, so the web container can import it."""
 
 from __future__ import annotations
 
@@ -14,7 +16,7 @@ import json
 import sqlite3
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, Literal, NamedTuple
 
 from tripbox.ledger import Ledger
 
@@ -28,6 +30,15 @@ class Cover:
     digest: str | None
     credit: dict[str, Any] | None
     error: str | None
+
+
+class Pending(NamedTuple):
+    """An owner's photo waiting for the worker: its trip and its bytes as they came. The bytes
+    are the token its answer is written under (`finish_upload`, `fail_upload`): the same bytes
+    sent again make the same cover."""
+
+    trip_id: int
+    data: bytes
 
 
 def fold(place: str | None) -> str:
@@ -120,29 +131,37 @@ class CoverStore:
 
     # ------------------------------------------------------------------ the owner's photo
     @_writes
-    def upload(self, trip_id: int, data: bytes) -> None:
+    def upload(self, trip_id: int, data: bytes) -> Pending:
         """An owner row waiting for the worker, replacing whatever the trip had."""
         self.repo.put(trip_id, source="owner", state="pending", place=None, **_CLEARED)
         self.repo.put(trip_id, upload=data)
+        return Pending(trip_id, data)
 
     @_writes
     def remove(self, trip_id: int) -> None:
         self.repo.put(trip_id, source="removed", state="none", place=None, **_CLEARED)
 
-    def next_upload(self) -> tuple[int, bytes] | None:
+    def next_upload(self) -> Pending | None:
+        """The oldest owner's photo waiting for the worker."""
         row = self.repo.pending_upload()
-        return (row["trip_id"], row["upload"]) if row and row["upload"] else None
+        return Pending(row["trip_id"], row["upload"]) if row and row["upload"] else None
 
     @_writes
-    def finish_upload(self, trip_id: int, large: bytes, small: bytes, digest: str) -> None:
-        self.repo.put(
-            trip_id, state="ready", large=large, small=small, digest=digest, upload=None,
-            error=None,
+    def finish_upload(self, taken: Pending, large: bytes, small: bytes, digest: str) -> bool:
+        """The photo `taken` made into its cover, if its trip still waits for it (whether it
+        did)."""
+        return self.repo.settle_upload(
+            taken.trip_id, taken.data, state="ready", large=large, small=small, digest=digest,
+            upload=None, error=None,
         )
 
     @_writes
-    def fail_upload(self, trip_id: int, code: str) -> None:
-        self.repo.put(trip_id, state="failed", error=code, upload=None)
+    def fail_upload(self, taken: Pending, code: str) -> bool:
+        """The photo `taken` could not be used (`code`), if its trip still waits for it
+        (whether it did)."""
+        return self.repo.settle_upload(
+            taken.trip_id, taken.data, state="failed", error=code, upload=None
+        )
 
     # ------------------------------------------------------------------ trip changes
     @_writes

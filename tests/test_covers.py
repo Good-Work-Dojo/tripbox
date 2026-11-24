@@ -74,29 +74,83 @@ def test_owner_upload_beats_wikimedia_and_survives_place_change():
 def test_finish_upload_makes_it_ready_and_drops_the_raw_bytes():
     st, cv, led = rig()
     tid = a_trip(st)
-    cv.upload(tid, b"raw")
-    cv.finish_upload(tid, b"big", b"sm", "dg")
+    taken = cv.upload(tid, b"raw")
+    assert taken == cv.next_upload() == (tid, b"raw")
+    assert cv.finish_upload(taken, b"big", b"sm", "dg") is True
     c = cv.get(tid)
     assert (c.source, c.state, c.digest) == ("owner", "ready", "dg")
     assert cv.next_upload() is None
     assert led.covers.get(tid)["upload"] is None
+    assert cv.finish_upload(taken, b"big2", b"sm2", "dg2") is False  # answered once
+    assert cv.get(tid).digest == "dg"
 
 
 def test_fail_upload_records_the_code_and_leaves_the_queue():
     st, cv, led = rig()
     tid = a_trip(st)
-    cv.upload(tid, b"raw")
-    cv.fail_upload(tid, "heic")
+    assert cv.fail_upload(cv.upload(tid, b"raw"), "heic") is True
     c = cv.get(tid)
     assert (c.state, c.error) == ("failed", "heic")
     assert cv.next_upload() is None
+    assert led.covers.get(tid)["upload"] is None
+
+
+def test_an_answer_for_a_photo_the_owner_replaced_meanwhile_changes_nothing():
+    """The worker reads a photo outside any transaction: a second upload sent meanwhile stays
+    waiting, the first one's answer (a cover or a failure) is dropped, and the second is read
+    next. The same bytes sent again are the same photo, so their answer stands."""
+    st, cv, led = rig()
+    tid = a_trip(st)
+    cv.upload(tid, b"photo A")
+    taken = cv.next_upload()
+    cv.upload(tid, b"photo B")
+    assert cv.finish_upload(taken, b"LA", b"SA", "dA") is False
+    assert cv.fail_upload(taken, "unreadable") is False
+    row = led.covers.get(tid)
+    assert (row["source"], row["state"], row["upload"]) == ("owner", "pending", b"photo B")
+    assert (row["digest"], row["large"], row["error"]) == (None, None, None)
+    assert cv.next_upload() == (tid, b"photo B")
+    assert cv.image("dA", "large") is None
+    cv.upload(tid, b"photo B")
+    assert cv.finish_upload(cv.next_upload(), b"LB", b"SB", "dB") is True
+    assert (cv.get(tid).state, cv.get(tid).digest) == ("ready", "dB")
+
+
+def test_an_answer_for_a_photo_the_owner_removed_meanwhile_changes_nothing():
+    """Remove photo while the worker reads it: the trip stays removed, and the photo is never
+    served."""
+    st, cv, led = rig()
+    tid = a_trip(st)
+    taken = cv.upload(tid, b"photo A")
+    cv.remove(tid)
+    assert cv.finish_upload(taken, b"LA", b"SA", "dA") is False
+    assert cv.fail_upload(taken, "unreadable") is False
+    c = cv.get(tid)
+    assert (c.source, c.state, c.digest, c.error) == ("removed", "none", None, None)
+    assert cv.shown_image("dA", "large") is None and cv.image("dA", "large") is None
+    assert cv.next_upload() is None
+
+
+def test_an_answer_for_a_photo_whose_trip_was_merged_meanwhile_changes_nothing():
+    """A merge moves the waiting photo to the trip that stays: the answer for the trip that went
+    is dropped without an error, and the photo is read again for the one that stays."""
+    st, cv, led = rig()
+    a = a_trip(st)
+    b = another(st, "2027-09-01T08:20", "OTHER1")
+    taken = cv.upload(a, b"photo A")
+    st.merge(a, b)
+    assert cv.finish_upload(taken, b"LA", b"SA", "dA") is False
+    assert cv.fail_upload(taken, "unreadable") is False
+    assert cv.get(a) is None and led.covers.get(a) is None
+    assert cv.next_upload() == (b, b"photo A")
+    assert cv.finish_upload(cv.next_upload(), b"LA", b"SA", "dA") is True
+    assert (cv.get(b).source, cv.get(b).state) == ("owner", "ready")
 
 
 def test_reupload_replaces_images_and_lets_the_old_digest_go():
     st, cv, _ = rig()
     tid = a_trip(st)
-    cv.upload(tid, b"one")
-    cv.finish_upload(tid, b"L", b"S", "old")
+    cv.finish_upload(cv.upload(tid, b"one"), b"L", b"S", "old")
     cv.upload(tid, b"two")
     assert cv.image("old", "large") is None
     assert cv.get(tid).digest is None

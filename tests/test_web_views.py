@@ -1300,8 +1300,8 @@ def test_every_control_outside_the_edit_form_has_a_name(tmp_path, monkeypatch, b
     st.remove_item(st.item_by_key("car|CAR123").id)
     st.delete_trip(other.id)
     covers = CoverStore(ctx.ledger)
-    covers.upload(trip.id, b"\xff\xd8\xff cut short")
-    covers.fail_upload(trip.id, "unreadable")  # its note holds a second upload form
+    taken = covers.upload(trip.id, b"\xff\xd8\xff cut short")
+    covers.fail_upload(taken, "unreadable")  # its note holds a second upload form
     landed = c.post("/add/paste", data={"text": "A confirmation."}, headers=HDR)
     pages = {"an upload": landed.text}
     for path in (

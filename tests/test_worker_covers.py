@@ -5,13 +5,15 @@ places a beat are looked up, copied from another trip, or backed off."""
 
 import datetime as dt
 import io
+import logging
 
 import httpx2
+import pytest
 from PIL import Image
 from test_trips_store import outbound
 from test_worker import a_worker, beat, context, start
 
-from tripbox.trips import wikimedia
+from tripbox.trips import coverimage, wikimedia
 from tripbox.trips.covers import CoverStore
 
 AT = dt.datetime(2027, 6, 1, 12, 0, tzinfo=dt.UTC)
@@ -104,6 +106,50 @@ def test_a_bad_upload_ends_failed_with_its_code(tmp_path):
     clock.tick(5)
     beat(w)
     assert (cv.get(tid).state, cv.get(tid).error) == ("failed", "unreadable")
+
+
+@pytest.mark.parametrize("meanwhile", ["upload", "remove", "merge"])
+def test_what_the_owner_does_while_the_worker_reads_a_photo_wins(
+    tmp_path, monkeypatch, caplog, meanwhile
+):
+    """The page writes while the worker decodes: a second upload, Remove photo or a merge. The
+    newest of the owner's actions stands, the beat raises nothing and says so in the log, and a
+    photo still waiting (the second one, or the one the merge moved) is read on the next beat."""
+    ctx, w, clock, cv = rig(tmp_path, covers="off")
+    tid = a_trip(ctx, "Philadelphia")
+    other = a_trip(ctx, "Boston", dep="2027-09-01T09:00", pnr="XYZ789")
+    first, second = jpeg((300, 200)), jpeg((200, 300))
+    acts = {
+        "upload": lambda: cv.upload(tid, second),
+        "remove": lambda: cv.remove(tid),
+        "merge": lambda: ctx.trips.merge(tid, other),
+    }
+    real, pending = coverimage.process, [acts[meanwhile]]
+
+    def reading(data):
+        while pending:
+            pending.pop()()
+        return real(data)
+
+    monkeypatch.setattr(coverimage, "process", reading)
+    cv.upload(tid, first)
+    clock.tick(5)
+    with caplog.at_level(logging.INFO, logger="tripbox.worker"):
+        beat(w)
+    assert w.last["covers"] == {"at": w.last["covers"]["at"], "ok": True, "code": "done"}
+    assert any("changed while it was read" in r.getMessage() for r in caplog.records)
+    shown = ctx.ledger.conn.execute("SELECT trip_id, source, state FROM covers").fetchall()
+    assert real(first).digest not in {c.digest for c in cv.all().values()}
+    if meanwhile == "remove":
+        assert [tuple(r) for r in shown] == [(tid, "removed", "none")]
+    else:
+        held = tid if meanwhile == "upload" else other
+        assert [tuple(r) for r in shown] == [(held, "owner", "pending")]
+        clock.tick(5)
+        beat(w)
+        c = cv.get(held)
+        assert (c.source, c.state) == ("owner", "ready")
+        assert c.digest == real(second if meanwhile == "upload" else first).digest
 
 
 def test_with_covers_off_no_request_is_made(tmp_path):
