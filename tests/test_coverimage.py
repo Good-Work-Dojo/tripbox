@@ -23,14 +23,40 @@ def photo(size=(300, 200)):
     return img
 
 
+# What a phone writes in a JPEG's XMP packet (an APP1 segment of its own): its position again,
+# and its maker
+XMP = (
+    b'<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF'
+    b' xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description'
+    b' xmlns:exif="http://ns.adobe.com/exif/1.0/" xmlns:xmp="http://ns.adobe.com/xap/1.0/"'
+    b' exif:GPSLatitude="30,15.0N" exif:GPSLongitude="97,44.0W"'
+    b' xmp:CreatorTool="Example Phone XMP"/></rdf:RDF></x:xmpmeta>'
+)
+XMP_HEAD = b"http://ns.adobe.com/xap/1.0/\0"  # how an APP1 segment says it holds XMP
+
+
 def phone_jpeg():
+    """A phone's photo: turned by its EXIF orientation (6), with a GPS position and a maker in
+    its EXIF and again in its XMP, a colour profile and a comment."""
     exif = Image.Exif()
     exif[0x0112] = 6
     exif[0x010F] = "Example Phone"
     gps = exif.get_ifd(0x8825)
     gps[1] = "N"
     gps[2] = (30.0, 15.0, 0.0)
-    return encode(photo((300, 200)), "JPEG", exif=exif, icc_profile=b"x" * 200, comment=b"hello")
+    return encode(
+        photo((300, 200)), "JPEG", exif=exif, icc_profile=b"x" * 200, comment=b"hello", xmp=XMP
+    )
+
+
+def test_the_phone_photo_carries_what_must_go():
+    """What the next test proves gone is there to begin with."""
+    raw = phone_jpeg()
+    img = Image.open(io.BytesIO(raw))
+    assert img.getexif()[0x0112] == 6 and img.getexif().get_ifd(0x8825)[1] == "N"
+    assert b"\xff\xe1" + struct.pack(">H", 2 + len(XMP_HEAD) + len(XMP)) + XMP_HEAD + XMP in raw
+    assert img.info["xmp"] == XMP and b"GPSLatitude" in raw
+    assert {"icc_profile", "comment", "exif"} <= set(img.info)
 
 
 def test_a_phone_photo_comes_out_upright_with_nothing_but_pixels():
@@ -42,6 +68,7 @@ def test_a_phone_photo_comes_out_upright_with_nothing_but_pixels():
         assert "icc_profile" not in img.info and "comment" not in img.info
         assert "xmp" not in img.info and "exif" not in img.info
         assert b"Example Phone" not in blob and b"hello" not in blob
+        assert XMP_HEAD not in blob and b"GPSLatitude" not in blob and b"Exif\0\0" not in blob
     assert Image.open(io.BytesIO(done.large)).size == (200, 300)
     assert done.digest == hashlib.sha256(done.large).hexdigest()
 

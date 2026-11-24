@@ -552,6 +552,53 @@ def test_restore_adds_missing_mail_and_never_overwrites_an_email(install, capsys
     )
 
 
+def test_a_released_v1_backup_is_restored_and_upgraded_on_start_with_every_row(
+    install, capsys, tmp_path
+):
+    """A 1.0.x backup, its ledger written by the released v1 schema (the frozen copy), is
+    restored as it is and upgraded to this version when it is first opened: every row is
+    kept, and the covers table is there and empty."""
+    from test_ledger import _make_v1, _rows_of
+
+    v1 = tmp_path / "v1.db"
+    _make_v1(v1)
+    before = _rows_of(v1)
+    held = v1.read_bytes()
+
+    def as_v1(got):
+        out = [(info, held if info.name == "data/ledger.db" else data) for info, data in got]
+        return manifest_with(
+            out,
+            ledger_version=1,
+            ledger_shape=db.RELEASED_SHAPES[1],
+            ledger_sha256=hashlib.sha256(held).hexdigest(),
+            ledger_bytes=len(held),
+            ledger_trips=1,
+            ledger_bookings=1,
+        )
+
+    old = rewrite(taken(install, capsys=capsys), install.parent / "v1.tar.gz", as_v1)
+    code, out, err = run(capsys, "restore", str(old), "--apply")
+    assert (code, err) == (0, [])
+    assert "restore: ledger restored: version 1, 1 trip, 1 booking" in out
+    assert out[-1] == DONE
+    ledger = install / "data" / "ledger.db"
+    assert _rows_of(ledger) == before  # restored as it was
+    with util.clock_at(AT), Ledger.open(ledger) as led:
+        assert led.version() == db.SCHEMA_VERSION == 2
+        assert led.kv.get("schema_shape") == db.SCHEMA_SHAPE
+        assert led.covers.all_for_lookup() == []
+    after = _rows_of(ledger)
+    for table in ("messages", "trips", "trip_items", "share_links"):
+        assert after[table] == before[table], table
+    assert [r for r in after["kv"] if r[0] != "schema_shape"] == [
+        r for r in before["kv"] if r[0] != "schema_shape"
+    ]
+    assert [p.name for p in (install / "data").glob("ledger-before-v2-*.db")] == [
+        f"ledger-before-v2-{STAMP}.db"
+    ]
+
+
 def test_restore_never_writes_config_and_prints_the_line_that_does(install, capsys, tmp_path):
     archive = taken(install, capsys=capsys)
     travellers = install / "config" / "travellers.yaml"

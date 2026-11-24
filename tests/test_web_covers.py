@@ -17,7 +17,7 @@ from html import unescape
 import pytest
 from helpers.web import PEER, client_for
 from PIL import Image
-from test_coverimage import phone_jpeg
+from test_coverimage import XMP_HEAD, phone_jpeg
 from test_web_login import as_cookie, fresh, get, session_of, sign_in
 from test_web_login import page as password_page
 from test_web_style import STATIC, contrast, declarations
@@ -379,13 +379,13 @@ def test_an_upload_from_another_site_is_refused(tmp_path, monkeypatch, base):
 def test_a_phone_photo_from_the_page_is_served_upright_with_nothing_but_pixels(
     tmp_path, monkeypatch, base
 ):
-    """A phone's JPEG, turned by its EXIF and carrying a GPS position, a maker, a colour profile
-    and a comment, uploaded from the page and read by the worker on one beat: both sizes the
-    page serves stand upright and carry none of it."""
+    """A phone's JPEG, turned by its EXIF and carrying a GPS position and a maker (in its EXIF
+    and its XMP), a colour profile and a comment, uploaded from the page and read by the worker
+    on one beat: both sizes the page serves stand upright and carry none of it."""
     c, ctx = client_for(tmp_path, monkeypatch, base=base, airtrail=False)
     trip = seed_trip(ctx)
     sent = phone_jpeg()
-    assert b"Example Phone" in sent
+    assert b"Example Phone" in sent and XMP_HEAD in sent and b"GPSLatitude" in sent
     r = send(c, trip.id, sent, "IMG_0001.JPG")
     assert r.headers["location"] == c.url(f"/trips/{trip.id}?f=cover_received")
     monkeypatch.setattr(signal, "signal", lambda signum, handler: None)
@@ -403,6 +403,7 @@ def test_a_phone_photo_from_the_page_is_served_upright_with_nothing_but_pixels(
         assert len(img.getexif()) == 0, name
         assert not {"exif", "icc_profile", "comment", "xmp"} & set(img.info), name
         assert b"Example Phone" not in r.content and b"hello" not in r.content, name
+        assert XMP_HEAD not in r.content and b"GPSLatitude" not in r.content, name
     assert row(ctx, trip.id)["upload"] is None
 
 

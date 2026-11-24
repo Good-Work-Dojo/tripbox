@@ -1428,6 +1428,32 @@ def test_a_released_v1_ledger_upgrades_to_v2_and_keeps_every_row(tmp_ledger_path
         cc.close()
 
 
+def _created(path) -> dict[str, str]:
+    """Each table's and index's CREATE text as SQLite keeps it, white space aside (its CHECK
+    rules, defaults and references included)."""
+    con = sqlite3.connect(f"file:{quote(str(path))}?mode=ro", uri=True)
+    try:
+        rows = con.execute(
+            "SELECT name, sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%'"
+        ).fetchall()
+    finally:
+        con.close()
+    return {name: re.sub(r"\s*([(),])\s*", r"\1", " ".join(sql.split())) for name, sql in rows}
+
+
+def test_an_upgraded_ledger_is_made_by_the_same_text_as_a_new_one(tmp_ledger_path, tmp_path):
+    """A released v1 ledger upgraded to this version holds every table and index by the same
+    CREATE text as a new ledger, so a step's CHECK rules, defaults and references cannot drift
+    from SCHEMA's (the column check above sees names alone)."""
+    _make_v1(tmp_ledger_path)
+    Ledger.open(tmp_ledger_path).close()
+    fresh = tmp_path / "new.db"
+    Ledger.open(fresh).close()
+    upgraded, new = _created(tmp_ledger_path), _created(fresh)
+    assert upgraded == new
+    assert "CHECK(source IN('owner','wikimedia','removed'))" in new["covers"]
+
+
 def test_deleting_a_trip_takes_its_cover(tmp_ledger_path):
     with Ledger.open(tmp_ledger_path) as led:
         led.trips.insert(
