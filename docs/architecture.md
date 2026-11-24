@@ -88,7 +88,8 @@ before decoding it.
 - **Share links, sessions, display choices, the worker's record:** small tables and `kv` rows in
   the same ledger.
 - **Cover photos:** the ledger's `covers` table, one row per trip holding its two JPEGs, written
-  only through `trips/covers.py`, which holds the rules.
+  only by `ledger.repo.Covers`, through `trips/covers.py`, which holds the rules; the demo export
+  clears its throwaway copy.
 - **What AirTrail knows:** the ledger keeps, for each flight, what AirTrail was last told and its
   id there. The airports and airlines come from the table that ships with tripbox, and AirTrail is
   asked only for its own ids.

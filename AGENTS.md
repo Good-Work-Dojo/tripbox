@@ -122,10 +122,11 @@ are also kept in an AirTrail flight log. One image runs three roles: `web`, `wor
   by `ledger.repo.Covers`; the rules live in `trips/covers.py` (an owner's upload beats a found
   photo; a merge counts only an owner's or a ready photo as a cover; remove; Save place looks
   again; backoff). The worker decodes (`coverimage`, Pillow: JPEG, PNG, WebP) and fetches
-  (`wikimedia`, the image from `upload.wikimedia.org` alone) outside any transaction: an
-  upload's answer is written only while its trip still waits for those bytes (`covers.Pending`),
-  a lookup's only while the place is the same and no owner's photo came. The web serves bytes
-  and never imports `PIL` or `httpx2`. A worker that starts on a ledger with no `kv` row
+  (`wikimedia`, the image from `upload.wikimedia.org` or `thumb.wikimedia.org` alone, a redirect
+  only between them) outside any transaction: an upload's answer is written only while its trip
+  still waits for those bytes (`covers.Pending`), a lookup's only while the place is the same and
+  no owner's photo came. The web serves bytes and never imports `PIL` or `httpx2`. The demo
+  export clears its throwaway copy's covers. A worker that starts on a ledger with no `kv` row
   `covers.RECHECK_KV` deletes every `wikimedia` row in `none` once, then writes it (1.1.0 refused
   every thumbnail), so those places are looked up again at the usual pace.
 - Dedupe order in `pipeline/run.py`: sha256 of the raw bytes → Message-ID of an already-handled copy
