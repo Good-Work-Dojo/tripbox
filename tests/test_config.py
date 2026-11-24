@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Additional terms: see NOTICE
 import dataclasses
+import logging
 import os
 import re
 from pathlib import Path
@@ -677,9 +678,48 @@ def test_covers_default_off_and_take_off_or_wikimedia():
     for given, want in (("wikimedia", "wikimedia"), (" Wikimedia ", "wikimedia"), ("off", "off")):
         s = Settings.from_env({"TRIPBOX_AUTH": "none", "TRIPBOX_COVERS": given})
         assert (s.covers, list(s.problems)) == (want, [])
-    s = Settings.from_env({"TRIPBOX_AUTH": "none", "TRIPBOX_COVERS": "true"})
+    s = Settings.from_env({"TRIPBOX_AUTH": "none", "TRIPBOX_COVERS": "banana"})
     assert s.covers == "off"
-    assert [(p.key, p.feature) for p in s.problems] == [("TRIPBOX_COVERS", "core")]
+    assert [(str(p), p.feature, p.stops) for p in s.problems] == [
+        ("TRIPBOX_COVERS: 'banana' is not off or wikimedia — use wikimedia to find photos, or off",
+         "core", True)
+    ]
+    assert s.feature("core").state == "invalid" and s.stopping("core") == list(s.problems)
+
+
+@pytest.mark.parametrize(
+    "given", ["true", "false", "yes", "no", "on", "1", "0", " TRUE ", "Yes", "ON"]
+)
+def test_an_older_yes_or_no_for_covers_is_read_as_off_and_stops_nothing(
+    tmp_path, monkeypatch, caplog, given
+):
+    """A yes or a no some older install wrote for TRIPBOX_COVERS (1.0.1 knew no such setting, so
+    the line stopped nothing there) is read as off, with a problem that is listed and logged,
+    leaves every feature as it was and stops no command, the worker's and the page's included:
+    an upgrade never stops on it. Any other word is still a core problem."""
+    from tripbox import cli
+
+    base = {"TRIPBOX_AUTH": "none"}
+    s = Settings.from_env({**base, "TRIPBOX_COVERS": given})
+    assert s.covers == "off"
+    shown = repr(given.strip())
+    assert [(str(p), p.feature, p.stops) for p in s.problems] == [
+        (f"TRIPBOX_COVERS: {shown} is from an older version — set off or wikimedia", "core",
+         False)
+    ]
+    states = [(f.name, f.state, f.missing) for f in Settings.from_env(base).features]
+    assert [(f.name, f.state, f.missing) for f in s.features] == states
+    assert s.feature("core").problems == tuple(s.problems)  # listed with its feature
+    assert s.stopping("core", "web") == []
+    monkeypatch.setenv("TRIPBOX_AUTH", "none")
+    monkeypatch.setenv("TRIPBOX_COVERS", given)
+    monkeypatch.setenv("TRIPBOX_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("TRIPBOX_LOGS_DIR", str(tmp_path / "logs"))
+    monkeypatch.setenv("TRIPBOX_CONFIG_DIR", str(CONFIG_DIR))
+    caplog.set_level(logging.INFO)
+    assert cli.main(["trips", "list"]) == 0
+    said = [r.getMessage() for r in caplog.records if r.getMessage().startswith("config: ")]
+    assert said == [f"config: {s.problems[0]}"]
 
 
 def test_the_fixtures_folder_is_no_setting(tmp_path, monkeypatch):

@@ -70,7 +70,8 @@ def _settings(args: argparse.Namespace, *, folders_only: bool = False) -> Settin
     problem of a folder's setting does, and the other core problems are logged); then the
     configured zone becomes the process's, the secrets are masked in the logs, and each problem
     of a feature but core and the page is logged once: one that leaves its feature off, and one
-    of a DISPLAY_ONLY key, whose feature stays on."""
+    of a DISPLAY_ONLY key, whose feature stays on; so is one that stops nothing, of any
+    feature."""
     s = Settings.from_env()
     if folders_only:
         stopping = [p for p in s.stopping("core") if p.key in PATH_KEYS]
@@ -90,7 +91,9 @@ def _settings(args: argparse.Namespace, *, folders_only: bool = False) -> Settin
         name=LOG_NAMES.get(command, "tripbox"),
     )
     for p in s.problems:
-        if p.feature not in ("core", "web") or (folders_only and p.feature == "core"):
+        # a core problem that stops is the command's error, a web one the page's to tell
+        told_elsewhere = p.feature in ("core", "web") and not (folders_only and p.feature == "core")
+        if not told_elsewhere or not p.stops:
             log.warning("config: %s", p)
     return s
 
@@ -997,7 +1000,7 @@ def cmd_web(args: argparse.Namespace) -> int:
     _mask_secrets(s)
     setup_logging(s.logs_dir, name="tripbox-web")  # its own file: see log.setup_logging
     for p in s.problems:
-        if p.feature == "names" or p.key in DISPLAY_ONLY:
+        if p.feature == "names" or p.key in DISPLAY_ONLY or not p.stops:
             log.warning("config: %s", p)
     Ledger.open(s.ledger_path).close()
     app = create_app(s, lambda: Ledger.open(s.ledger_path), owns_ledger=True)

@@ -21,7 +21,9 @@ All notable changes to tripbox are written here. The format follows
 - The ledger is schema 2, with a table for covers. The first start upgrades it and keeps a copy
   beside it as `data/ledger-before-v2-<time>.db`, which is yours to delete once you are happy.
 - Pillow is added, to resize covers in the worker.
-- New setting `TRIPBOX_COVERS` (`off` or `wikimedia`).
+- New setting `TRIPBOX_COVERS` (`off` or `wikimedia`). On upgrade, a line an older install left
+  with a yes or a no (`true`, `false`, `yes`, `no`, `on`, `1`, `0`) is read as `off` and stops
+  nothing; `tripbox doctor` lists it: set `off` or `wikimedia`.
 
 ## [1.0.1] - 2026-11-23
 

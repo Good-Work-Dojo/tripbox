@@ -42,12 +42,15 @@ class ConfigError(ValueError):
 class ConfigProblem:
     """One thing wrong with the settings. `key` is a setting's name, or TRAVELLERS_FILE for the
     travellers file; `feature` is the feature it stops, or "names" for an environment name that
-    is no setting. The text never holds a secret's value."""
+    is no setting. One with `stops` false (a value only an older version took, FORMER_VALUES) is
+    listed and logged and stops nothing, as a DISPLAY_ONLY key's. The text never holds a
+    secret's value."""
 
     key: str
     what: str
     fix: str
     feature: str
+    stops: bool = True
 
     def __str__(self) -> str:
         return f"{self.key}: {self.what} — {self.fix}"
@@ -431,6 +434,15 @@ KEY_BY_NAME: dict[str, Key] = {k.name: k for k in KEYS}
 # Keys that only change what is shown: a bad value is a problem of its own (listed, logged, the
 # field takes its default), never counted when its feature's state is worked out
 DISPLAY_ONLY: tuple[str, ...] = ("TRIPBOX_AIRTRAIL_PUBLIC_URL", "TRIPBOX_SOURCE_URL")
+# Values only an older version wrote, by key (case and spacing aside): read as the key's default,
+# with a problem that stops nothing (`ConfigProblem.stops`), so an upgrade never stops on a line
+# left over, and its fix. 1.0.1 knew no TRIPBOX_COVERS, so a yes or no there stopped nothing.
+FORMER_VALUES: dict[str, tuple[frozenset[str], str]] = {
+    "TRIPBOX_COVERS": (
+        frozenset({"true", "false", "yes", "no", "on", "1", "0"}),
+        "set off or wikimedia",
+    ),
+}
 # The folders: the image sets them, so the example settings file leaves them out; they are
 # documented for running without Docker
 PATH_KEYS: tuple[str, ...] = (
@@ -1437,6 +1449,12 @@ class _Reader:
             return self.raw(field)
         c = _CHECKS[field]
         key = _KEY_BY_FIELD[field]
+        former = FORMER_VALUES.get(key.name)
+        given = self.raw(field).strip()
+        if former is not None and given.casefold() in former[0]:
+            what = f"{_shown(given)} is from an older version"
+            self.problems.append(ConfigProblem(key.name, what, former[1], key.feature, False))
+            return c.check(key.default)
         try:
             return c.check(self.raw(field))
         except _Bad as bad:
@@ -1581,8 +1599,9 @@ def _states(
     travellers file (its problems are core's; AirTrail needs an owner); the model's also from its
     provider (none: off, whatever else is set; openai: on with a model named and a key or an
     address; anthropic: no address). No login takes a local base URL and a loopback listen
-    address, each a problem of its own. A problem of a DISPLAY_ONLY key is the feature's, listed
-    with the rest, but leaves its state as the others make it."""
+    address, each a problem of its own. A problem of a DISPLAY_ONLY key, or one that stops
+    nothing, is the feature's, listed with the rest, but leaves its state as the others make
+    it."""
     states: dict[str, FeatureState] = {}
     for name in FEATURES:
         problems = [p for p in r.problems if p.feature == name]
@@ -1703,7 +1722,7 @@ def _states(
                     )
                 )
         problems.sort(key=_rank)
-        if any(p.key not in DISPLAY_ONLY for p in problems):
+        if any(p.stops and p.key not in DISPLAY_ONLY for p in problems):
             state = "invalid"
         elif name in ("core", "web") or switched:
             state = "on"
@@ -1811,8 +1830,12 @@ class Settings:
 
     def stopping(self, *features: str) -> list[ConfigProblem]:
         """The problems of `features` that stop what needs them: every one but a DISPLAY_ONLY
-        key's, which is only listed (its field takes its default)."""
-        return [p for p in self.problems if p.feature in features and p.key not in DISPLAY_ONLY]
+        key's and one that stops nothing, which are only listed (the field takes its default)."""
+        return [
+            p
+            for p in self.problems
+            if p.feature in features and p.stops and p.key not in DISPLAY_ONLY
+        ]
 
     @property
     def telegram_on(self) -> bool:
