@@ -4,6 +4,17 @@ All notable changes to tripbox are written here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2026-11-24
+
+### Fixed
+
+- The Track flight button opened FlightAware's "Unknown Flight" page for every flight, because it
+  named the flight by its airline's two-letter IATA code (`WN440`), which FlightAware does not
+  find. It now names it by the three-letter ICAO code (`SWA440`). Every airline in the shipped list
+  has its ICAO code, and `airlines.yaml` in the config directory takes an `icao` for any other; a
+  flight on an airline with no ICAO code in the list, or whose number is not one to four digits,
+  shows no Track flight button.
+
 ## [1.1.1] - 2026-11-23
 
 ### Fixed
