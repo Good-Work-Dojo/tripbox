@@ -29,6 +29,8 @@ services:
       TRIPBOX_AUTH: password
       TRIPBOX_PASSWORD: "${SCREENS_PASSWORD:-harness-only-password}"
       TRIPBOX_BASE_URL: "http://web:8110${SCREENS_BASE:-}"
+      # the page then offers a photo lookup in the sheet; no worker runs here, so none is made
+      TRIPBOX_COVERS: wikimedia
       TRIPBOX_DATA_DIR: /demo/data
       TRIPBOX_CONFIG_DIR: /demo/config
       TRIPBOX_LOGS_DIR: /tmp/logs

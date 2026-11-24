@@ -152,6 +152,35 @@ UNNAMED = """() => {
   return out;
 }"""
 
+# The photo controls of a trip page, in the page whether or not its sheet is open: how many file
+# inputs named photo it holds and the text of each button of its photo forms and of Remove photo.
+PHOTO_CONTROLS = """() => ({
+  file: document.querySelectorAll('input[type="file"][name="photo"]').length,
+  buttons: Array.from(document.querySelectorAll(
+    'form.photo-form button, form[action$="/cover/remove"] button'))
+    .map((b) => b.textContent.trim()),
+})"""
+UPLOAD_BUTTON = "Upload photo"
+
+# A page that holds a photo on its way reloads itself every few seconds (static/app.js counts the
+# reloads in sessionStorage under a key with this word and stops at six). A shot must not be of a
+# page in the middle of a reload, so a context of a shot answers that count as already spent:
+# the page then stays as it loaded. An init script, so it runs before the page's own.
+NO_COVER_RELOAD = """(() => {
+  const get = Storage.prototype.getItem;
+  Storage.prototype.getItem = function (k) {
+    return String(k).includes(":cover-reloads:") ? "99" : get.call(this, k);
+  };
+})()"""
+
+# The cover images of a page (the trip's hero): each one's address and its natural width once the
+# browser has decoded it (0: it did not load).
+COVER_IMGS = """async () => {
+  const imgs = Array.from(document.querySelectorAll(".hero .cover.photo img"));
+  await Promise.all(imgs.map((i) => i.decode().catch(() => {})));
+  return imgs.map((i) => ({ src: i.getAttribute("src"), width: i.naturalWidth }));
+}"""
+
 # How many script elements the page holds (asked of every load; a shared page must hold none)
 SCRIPTS = "() => document.scripts.length"
 
@@ -256,7 +285,12 @@ def labels(pages: list[dict]) -> dict:
             problems.append(f"{p['name']}: not looked at")
             continue
         problems += [f"{p['name']}: {element} has no name" for element in _distinct(p["unnamed"])]
-    return result("labels", problems, f"every control named on {len(pages)} page(s)")
+        photo = p.get("photo")  # a trip page: its file input and upload button were looked at too
+        if photo is not None and (photo["file"] < 1 or UPLOAD_BUTTON not in photo["buttons"]):
+            problems.append(f"{p['name']}: the photo file input and {UPLOAD_BUTTON} were not found")
+    return result(
+        "labels", problems, f"every control named on {len(pages)} page(s), the photo controls too"
+    )
 
 
 def escape_problems(page) -> list[str]:
@@ -487,7 +521,9 @@ def offline_problems(seen: dict) -> list[str]:
     leave: it clears the site's storage, worker and all) and `after_stored` (5); `manifest`,
     Page.getAppManifest's answer (6); `list_kept`, whether a store held the list sign-in landed
     on once the worker controlled it (KEPT_SOON), `list_title`, its heading online, and
-    `list_copy`, that list reloaded offline as SHOWN_NOW saw it, with its `status` (7).
+    `list_copy`, that list reloaded offline as SHOWN_NOW saw it, with its `status` (7);
+    `cover_online` and `cover_copy`, COVER_IMGS's answer for the trip online and reloaded
+    offline, and `want_cover`, whether the trip must hold a cover (8).
     `base_path` is the base. A step whose record is missing was not reached."""
     base_path = seen.get("base_path", "")
     problems: list[str] = [seen["error"]] if seen.get("error") else []
@@ -533,8 +569,10 @@ def offline_problems(seen: dict) -> list[str]:
             held = [p for p in _distinct(paths) if _under(p, base_path, prefix)]
             problems += [f"(4) a store holds {p}" for p in held]
         problems += [f"(4) no store holds {p}" for p in seen.get("kept") or [] if p not in paths]
-        page = re.compile(re.escape(base_path) + r"/(trips/[0-9]+)?")
-        for url in pages_kept(stored):  # the list and the trips alone
+        page = re.compile(
+            re.escape(base_path) + r"/((trips/[0-9]+)?|covers/[0-9a-f]{64}(-s)?\.jpg)"
+        )
+        for url in pages_kept(stored):  # the list, the trips and their cover photos alone
             path = urlparse(url).path
             if not page.fullmatch(path):
                 problems.append(f"(4) the pages store holds {path}")
@@ -577,6 +615,22 @@ def offline_problems(seen: dict) -> list[str]:
             problems.append(f"(7) the list's saved copy's title is {shown!r}, not {want!r}")
         if not BANNER.fullmatch(listed.get("banner") or ""):
             problems.append(f"(7) the list's saved copy's banner says {listed.get('banner')!r}")
+    # (8) a saved trip's cover is saved with it
+    online, copy_imgs = seen.get("cover_online"), seen.get("cover_copy")
+    if seen.get("want_cover") and not online:
+        problems.append("(8) the trip opened online holds no cover photo")
+    if online:
+        if copy_imgs is None:
+            problems.append("(8) the cover photo was not looked at in the saved copy")
+        else:
+            if len(copy_imgs) != len(online):
+                problems.append(
+                    f"(8) the saved copy shows {len(copy_imgs)} cover photo(s), not {len(online)}"
+                )
+            problems += [
+                f"(8) the saved copy's cover {i['src']} did not load" for i in copy_imgs
+                if not i.get("width")
+            ]
     return problems
 
 
@@ -590,7 +644,7 @@ def offline(seen: dict | None, problems: list[str]) -> dict:
     checked = (
         "the worker is scoped to the base, the list it was installed on and a trip opened online"
         " open offline as their saved copies with every control but a copy button disabled,"
-        " nothing else is kept,"
+        " nothing else is kept, a saved trip shows its cover photo,"
         " sign-out empties the store, and the manifest has no error"
     )
     return result("offline", problems, checked)

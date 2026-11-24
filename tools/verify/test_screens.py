@@ -89,6 +89,23 @@ def test_one_edit_page_is_planned_for_each_kind_found(monkeypatch):
     ]
 
 
+def test_one_trip_is_planned_again_with_its_sheet_open_after_the_trips_and_before_the_share(
+    monkeypatch,
+):
+    shoot = load_shoot()
+    index = '<a href="/tripbox/trips/3">a</a> <a href="/tripbox/trips/1">b</a>'
+    monkeypatch.setattr(shoot, "fetch", lambda url, cookie="": (200, index))
+    names = [p["name"] for p in shoot.plan_pages("http://web", "/tripbox", 8)]
+    assert names[:6] == ["index", "index-all-past", "trip-3", "trip-1", "sheet-open", "share"]
+    (sheet,) = [p for p in shoot.plan_pages("http://web", "/tripbox", 8) if p.get("sheet")]
+    assert (sheet["path"], sheet["expect"]) == ("/tripbox/trips/3", 200)
+    # it is not a trip page for the offline check, which takes the first two "trip-" pages
+    pages = shoot.plan_pages("http://web", "/tripbox", 8)
+    assert shoot.offline_trips(pages, "/tripbox") == ("/tripbox/trips/3", "/tripbox/trips/1")
+    assert shoot.TRIP_PAGE.search("/tripbox/trips/3")
+    assert not shoot.TRIP_PAGE.search("/tripbox/trips/3/share")
+
+
 def test_the_add_pages_and_an_upload_are_planned_before_the_deleted_list(monkeypatch):
     shoot = load_shoot()
     monkeypatch.setattr(shoot, "fetch", lambda url, cookie="": (200, ""))
@@ -517,6 +534,7 @@ def test_the_stack_publishes_nothing_and_mounts_only_its_own_directory():
     assert web["environment"]["TRIPBOX_PASSWORD"] == password
     assert browser["environment"]["SCREENS_PASSWORD"] == password
     assert web["environment"]["TRIPBOX_BASE_URL"] == "http://web:8110${SCREENS_BASE:-}"
+    assert web["environment"]["TRIPBOX_COVERS"] == "wikimedia"  # the sheet's photo help shows
     # every interface of its container, so the browser's container reaches it by name
     assert web["command"] == [
         "python", "-m", "tripbox", "web", "--host", "0.0.0.0", "--port", "8110"
@@ -626,6 +644,35 @@ def test_the_eight_checks_run_in_order_and_each_names_the_page_at_fault():
     (outside,) = [c for c in run if not c["ok"]]
     assert outside["detail"].endswith("p7: asked /x; and 3 more")
     assert outside["detail"].count("asked /x") == checks.SHOWN
+
+
+def test_the_labels_check_wants_the_photo_file_input_and_upload_button_on_a_trip_page():
+    shoot = load_shoot()
+    checks = shoot.checks
+    ok = {"file": 1, "buttons": ["Upload photo", "Remove photo"]}
+    assert checks.labels([a_page("trip-3", photo=ok), a_page("index")])["ok"]
+    for photo in ({"file": 0, "buttons": ["Upload photo"]}, {"file": 1, "buttons": ["Save place"]}):
+        got = checks.labels([a_page("trip-3", photo=photo)])
+        assert not got["ok"] and got["detail"] == (
+            "trip-3: the photo file input and Upload photo were not found"
+        )
+    assert 'input[type="file"][name="photo"]' in checks.PHOTO_CONTROLS
+    assert "form.photo-form button" in checks.PHOTO_CONTROLS
+    assert "/cover/remove" in checks.PHOTO_CONTROLS
+    # a name the labels script finds for a file input is its label's text
+    assert "el.labels" in checks.UNNAMED
+
+
+def test_a_page_with_a_photo_on_its_way_is_shot_as_it_loaded():
+    """The page reloads itself every 5 s up to six times while its photo is pending; a shot's
+    context answers that count as spent, so no reload falls in the middle of a shot."""
+    checks = load_shoot().checks
+    assert checks.NO_COVER_RELOAD.strip().startswith("(() => {")
+    assert ":cover-reloads:" in checks.NO_COVER_RELOAD and '"99"' in checks.NO_COVER_RELOAD
+    app = (Path(__file__).resolve().parents[2] / "src/tripbox/web/static/app.js").read_text()
+    assert '":cover-reloads:"' in app and "COVER_TRIES = 6" in app
+    shoot_text = (SCREENS / "shoot.py").read_text()
+    assert shoot_text.count("checks.NO_COVER_RELOAD") == 2  # the shots' contexts and the escape's
 
 
 class Sheets:
@@ -977,6 +1024,77 @@ def test_the_offline_check_passes_only_when_every_step_holds():
         seen["after"] = {"saved": None, "error": "Error"}
         assert checks.offline_problems(seen) == [
             "(5) after sign-out the trip did not load (Error)"
+        ], base
+
+
+def test_the_offline_check_wants_a_saved_trips_cover_to_load():
+    checks = load_shoot().checks
+    seen = clean_seen("/b")
+    online = [{"src": "/b/covers/abc.jpg", "width": 1600}]
+    seen.update(cover_online=online, cover_copy=[{"src": "/b/covers/abc.jpg", "width": 1600}])
+    assert checks.offline_problems(seen) == []
+    seen["cover_copy"] = [{"src": "/b/covers/abc.jpg", "width": 0}]
+    assert checks.offline_problems(seen) == [
+        "(8) the saved copy's cover /b/covers/abc.jpg did not load"
+    ]
+    seen["cover_copy"] = []
+    assert checks.offline_problems(seen) == ["(8) the saved copy shows 0 cover photo(s), not 1"]
+    seen["cover_copy"] = None
+    assert checks.offline_problems(seen) == [
+        "(8) the cover photo was not looked at in the saved copy"
+    ]
+    # a ledger with no cover passes unless one is wanted, as the stack's demo does
+    seen.update(cover_online=[], cover_copy=[])
+    assert checks.offline_problems(seen) == []
+    seen["want_cover"] = True
+    assert checks.offline_problems(seen) == ["(8) the trip opened online holds no cover photo"]
+    assert "cover photo" in checks.offline(clean_seen(), [])["detail"]
+    assert "naturalWidth" in checks.COVER_IMGS and ".hero .cover.photo img" in checks.COVER_IMGS
+
+
+def test_the_covers_seed_picks_four_trips_from_their_dates():
+    spec = importlib.util.spec_from_file_location("covers_seed", SCREENS / "covers_seed.py")
+    seed = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(seed)
+    import datetime as dt
+    from types import SimpleNamespace as T
+
+    def trip(i, start, end, cancelled=False):
+        return T(id=i, title=f"T{i}", place=None, start_date=start, end_date=end,
+                 cancelled=cancelled)
+
+    trips = [trip(1, "2027-01-01", "2027-01-04"), trip(2, "2027-02-01", "2027-02-04"),
+             trip(3, "2027-03-01", "2027-03-04"), trip(4, "2027-03-10", "2027-03-20"),
+             trip(5, "2027-03-18", "2027-03-30"), trip(6, "2027-04-01", "2027-04-02", True),
+             trip(7, "2027-05-01", "2027-05-04"), trip(8, "2027-06-01", "2027-06-04")]
+    got = seed.chosen(trips, dt.date(2027, 3, 12))
+    assert {role: t.id for role, t in got.items()} == {
+        "upcoming": 5, "under_way": 4, "pending": 3, "failed": 2}
+    assert seed.chosen([], dt.date(2027, 3, 12)) == {}
+    src = (SCREENS / "covers_seed.py").read_text()
+    assert src.startswith("#!/usr/bin/env python3\n# SPDX-License-Identifier: AGPL-3.0-only")
+    for word in ("coverimage.process", "covers.found", "covers.upload", "covers.fail_upload",
+                 "finish_upload", "Example Photographer", "CC BY-SA 4.0",
+                 "https://commons.wikimedia.org/wiki/File:Example.jpg", "journal_mode=DELETE"):
+        assert word in src, word
+    assert "urllib" not in src and "socket" not in src and "requests" not in src
+
+
+def test_the_pages_store_may_hold_a_trips_cover_photos_and_nothing_else_under_covers():
+    checks = load_shoot().checks
+    digest = "ab" * 32
+    for base in ("", "/b"):
+        seen = clean_seen(base)
+        pages = f"tripbox{base}:pages:abc"
+        seen["stored"][pages] += [
+            f"{ORIGIN}{base}/covers/{digest}.jpg", f"{ORIGIN}{base}/covers/{digest}-s.jpg",
+        ]
+        assert checks.offline_problems(seen) == [], base
+        seen["stored"][pages].append(f"{ORIGIN}{base}/covers/{digest}.png")
+        seen["stored"][pages].append(f"{ORIGIN}{base}/covers/short.jpg")
+        assert checks.offline_problems(seen) == [
+            f"(4) the pages store holds {base}/covers/{digest}.png",
+            f"(4) the pages store holds {base}/covers/short.jpg",
         ], base
 
 

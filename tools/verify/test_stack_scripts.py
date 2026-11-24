@@ -140,7 +140,10 @@ def test_each_script_refuses_without_its_switch_and_says_what_it_would_start(tmp
 @pytest.mark.parametrize("script, args", [
     (SMOKE, ()), (SMOKE, ("--image",)), (SMOKE, ("--image", "")), (SMOKE, ("--image", "-x")),
     (SMOKE, ("--image", IMAGE, "extra")), (SMOKE, ("--other", IMAGE)),
-    (BROWSER, ("--image",)), (BROWSER, ("extra",)), (FLIGHTLOG, ("--image", "a b")),
+    (BROWSER, ("--image",)), (BROWSER, ("extra",)),
+    (BROWSER, ("--keep-out",)), (BROWSER, ("--keep-out", "")),
+    (BROWSER, ("--image", IMAGE, "--keep-out")), (BROWSER, ("--keep-out", "out", "--keep-out")),
+    (BROWSER, ("--keep-out", "out", "extra")), (FLIGHTLOG, ("--image", "a b")),
 ])
 def test_a_bad_argument_is_the_usage_and_starts_nothing(tmp_path, script, args):
     r, lines, _ = run(tmp_path, script, *args)
@@ -264,6 +267,7 @@ if os.getuid() != 1000:  # the folders are handed over only when the runner is a
     SMOKE_STEPS.append(({"STUB_FAIL": " chown "}, "unpack", False))
 BROWSER_STEPS = [
     ({"STUB_FAIL": "demo seed"}, "seed", False),
+    ({"STUB_FAIL": "covers_seed.py"}, "covers", False),
     ({"STUB_FAIL": "build -t"}, "browser", False),
     ({"STUB_FAIL": " up -d --wait"}, "start", True),
     ({"STUB_FAIL": "shoot.py"}, "shoot", True),
@@ -316,18 +320,21 @@ def test_the_browser_checks_run_the_screenshot_stacks_four_commands_over_a_seede
     r, lines, calls = run(tmp_path, BROWSER, "--image", IMAGE)
     assert r.returncode == 0, r.stdout + r.stderr
     assert r.stdout.splitlines()[-3:] == ["checks: 8 of 8 ok", "screens: ok", "browser checks: ok"]
-    seed, build = (c for c in calls if c["args"][:1] in (["run"], ["build"]))
+    seed, covers, build = (c for c in calls if c["args"][:1] in (["run"], ["build"]))
     assert seed["args"][:6] == ["run", "--rm", "--network", "none", "--user",
                                 f"{os.getuid()}:{os.getgid()}"]
     assert seed["args"][-8:] == [IMAGE, "python", "-m", "tripbox", "demo", "seed", "--out",
                                  "/work/demo"]
+    assert covers["args"] == ["run", "--rm", "--network", "none", "--user",
+                              f"{os.getuid()}:{os.getgid()}", "-v", seed["args"][7], IMAGE,
+                              "python", "/work/covers_seed.py", "/work/demo"]
     assert build["args"][:3] == ["build", "-t", "tripbox-screens-browser:local"]
     assert build["args"][-1].endswith("tools/verify/screens")
     composed = compose_calls(calls)
     assert composed == [
         ["compose", "-p", "tripbox-screens", "up", "-d", "--wait", "web", "browser"],
         ["compose", "-p", "tripbox-screens", "exec", "-T", "browser", "python3",
-         "/harness/shoot.py", "--base-url", "http://web:8110", "--out", "/out"],
+         "/harness/shoot.py", "--base-url", "http://web:8110", "--out", "/out", "--expect-covers"],
         ["compose", "-p", "tripbox-screens", "down", "-v", "--remove-orphans"],
     ]
     for c in calls:
@@ -339,6 +346,22 @@ def test_the_browser_checks_run_the_screenshot_stacks_four_commands_over_a_seede
     # the folder the stack ran in is the one the harness was copied to, as the README says
     assert folder.name.startswith("tripbox-screens.")
     assert seed["args"][7] == f"{folder}:/work"
+
+
+def test_the_browser_checks_keep_their_pictures_and_summary_before_the_stack_comes_down(tmp_path):
+    keep = tmp_path / "keep" / "screens"
+    r, lines, _ = run(tmp_path, BROWSER, "--keep-out", str(keep), "--image", IMAGE)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert keep.stat().st_mode & 0o777 == 0o700
+    assert (keep / "shoot.txt").read_text().splitlines()[0] == "checks: 8 of 8 ok"
+    assert not list((tmp_path / "scratch").iterdir()), "the scratch folder is still removed"
+    r, lines, _ = run(tmp_path, BROWSER, "--keep-out", str(tmp_path / "again"),
+                      STUB_CHECKS="7 of 8 ok")
+    assert r.stdout.splitlines()[-1] == "browser checks: FAIL shoot"
+    assert (tmp_path / "again" / "shoot.txt").read_text().splitlines()[0] == "checks: 7 of 8 ok", \
+        "a run that failed its checks keeps its pictures too"
+    r, _, _ = run(tmp_path, BROWSER, "--keep-out", str(tmp_path / "never"), STUB_FAIL="demo seed")
+    assert not (tmp_path / "never").exists(), "a run that never shot keeps nothing"
 
 
 # ---------------------------------------------------------------- the flight log runner

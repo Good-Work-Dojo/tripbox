@@ -59,8 +59,11 @@
     bundle unpacked, `.env` the one password line, the stack started under the project
     `tripbox-smoke` on `127.0.0.1:8110` (refused when that port is in use), the page and `doctor`
     checked, the published port and the restart policies read back: `stack smoke: ok`.
-  - `browser_checks.sh [--image REF]` runs the screenshot stack's four commands (below) over a
-    demo seeded for the day, under the project `tripbox-screens`: `browser checks: ok`.
+  - `browser_checks.sh [--image REF] [--keep-out DIR]` runs the screenshot stack's four commands
+    (below) over a demo seeded for the day and given covers (`screens/covers_seed.py`), under the
+    project `tripbox-screens`: `browser checks: ok`. `--keep-out DIR` copies the pictures and the
+    checks' summary (`shoot.txt`) to `DIR` (made with mode 700) before the stack comes down, so
+    they can be looked at.
   - `flightlog_e2e.sh [--image REF]` takes the maintainers' own end-to-end runner's steps with plain
     `docker compose` under the project `tripbox-e2e`: `flight log e2e: ok`.
 
@@ -93,7 +96,8 @@ executed in it), run `shoot.py` in the browser, and remove the stack:
 `SCREENS_PASSWORD`; with none, the page is taken to have no login and the `protected` check
 fails), finds the pages from the page itself (the index, `?past=all`, up to `--max-trips` trips,
 a share page and the shared page of a link made through its form, opened with no cookie, the
-edit page of one booking of each kind they hold, the three pages that add a
+edit page of one booking of each kind they hold, the first trip again with its ⋯ sheet open
+(`sheet-open`, so the place and photo controls are in a shot), the three pages that add a
 booking, an upload's status page, the deleted list and a missing trip, then the login page as it
 shows and after a wrong password, and last `fresh`'s list as `first-run`, from `--fresh-url`,
 else `SCREENS_FRESH_URL`, which the compose file gives the browser),
@@ -110,7 +114,8 @@ by an init script; a load without that listener leaves its page not looked at, a
 inline style planted on the first page must be reported, else `the page's policy did not report a
 planted inline style`), `other-origins` (no request to another origin), `outside-the-base` (no
 request to its own origin outside the base path), `labels` (with every `<details>` open, no visible
-input, select, textarea, button, summary or link without an accessible name), `escape` (each ⋯ sheet
+input, select, textarea, button, summary or link without an accessible name, and every trip page
+holds the photo file input and its Upload photo button), `escape` (each ⋯ sheet
 of the first trip page opens with Enter, closes on Escape and leaves the focus on its ⋯),
 `protected` (with no cookie, and again after a sign-out with the ended session's cookie sent back,
 every page lands on the login page), `shared` (the shared page holds no script and asks for nothing
@@ -119,13 +124,22 @@ signed in; a wrong link is a 404 with an empty body) and `offline` (in a context
 network a route cuts, `internetdisconnected`, after proving the cut reaches a request the service
 worker itself makes, else `could not test: …`: the worker's scope is the base; the first trip,
 opened online, reloads offline as its saved copy, with its title, the banner and every control
-disabled, photographed as `offline-copy` after the ledger's pages; a trip never opened gives the
+disabled and its cover photo loaded (`naturalWidth` above 0; `--expect-covers` makes a trip with no
+cover a failure), photographed as `offline-copy` after the ledger's pages; a trip never opened gives the
 no-copy page and a form posted from the copy the refusal; no store holds a page under `/login`,
 `/s/`, `/settings` or `/add`; after a sign-out from Settings the trip has no copy and the pages
 store is empty; Chromium's `Page.getAppManifest` reports no error). The summary ends `checks: N of M
 ok`, then one `<name>: <detail>` line for each check that is not ok, which fails the run (`screens:
 FAIL check <name>`), and `--fail-on-overflow` turns any overflow into a failure. The last line is
 `screens: ok`.
+
+`covers_seed.py LEDGER_DIR` gives a seeded demo ledger four covers, run in the app's image with no
+network: pictures drawn with Pillow (a wide landscape and a tall portrait, no file from outside)
+made into covers by the app's own image code, a ready Wikimedia cover with an invented credit on
+the first trip to come, a ready owner cover on the trip under way, an owner upload still pending
+on the latest past trip (no worker runs in the stack, so its note stays) and a failed one on the
+trip before it. A shot's browser context counts a pending page's self-reloads as spent, so the page
+stays as it loaded; the page's own reload is not what the shots show.
 
 ## proxy/
 

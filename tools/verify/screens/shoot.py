@@ -6,6 +6,7 @@ horizontal-overflow measure at a narrow width, for every page the ledger gives r
 
     python shoot.py --base-url http://web:8110[/base/path] --out /out
                     [--password P] [--fresh-url URL] [--max-trips N] [--fail-on-overflow]
+                    [--expect-covers]
 
 With a password (`--password`, else the SCREENS_PASSWORD variable) the page is behind its own
 sign-in: the pages are found signed in, every browser context signs in through the login form
@@ -13,9 +14,11 @@ before it loads its page, and the login page is photographed as it first shows a
 password. The pages are found from the page itself (the index, the trips it links, a trip's share
 page, the shared page of a link made through that page's form and opened with no cookie, the edit
 page of one booking of each kind, the deleted list, and a trip that does not exist), so any
-ledger works; the pages that add a booking and Settings have fixed paths, and an
-upload's status page is the one the paste form lands on once a fixed line is sent from it in the
-browser (the same line each time, so every shot is of one upload). Once every other page of the
+ledger works (the first trip is taken a second time with its ⋯ sheet open, as `sheet-open`, so
+the photo controls are in a shot); the pages that add a booking and Settings have fixed paths,
+and an upload's status page is the one the paste form lands on once a fixed line is sent from it
+in the browser (the same line each time, so every shot is of one upload). Once every other page
+of the
 ledger is taken, the first trip is taken again with the display choices of DAY_FIRST_24H saved
 from its context (24-hour, day first), so the pages before it show the default. With
 `--fresh-url` (else the SCREENS_FRESH_URL variable), the address of a brand-new install's page
@@ -27,11 +30,12 @@ Every request a page makes is judged by its origin: one to another origin is blo
 and one to the page's own origin outside its base path is counted. Once the pictures are taken the
 checks of checks.py (beside this file) run, and each one that is not ok fails the run: no violation
 of the page's content policy, no request to another origin or outside the base, no control without
-a name, every ⋯ sheet of a trip closing on Escape, every page behind the sign-in, a shared
-page that runs no script, asks for nothing but itself, the stylesheet, the font and the icon, and
-is in no store of the service worker's once opened signed in, and a wrong link that is a bare
-404, and saved copies for offline use (`offline`, in a context of its own, whose saved trip is
-photographed as `offline-copy` after every page of the ledger).
+a name (the photo file input and its upload button included), every ⋯ sheet of a trip closing on
+Escape, every page behind the sign-in, a shared page that runs no script, asks for nothing but
+itself, the stylesheet, the font and the icon, and is in no store of the service worker's once
+opened signed in, and a wrong link that is a bare 404, and saved copies for offline use, a trip's
+cover photo among them (`offline`, in a context of its own, whose saved trip is photographed as
+`offline-copy` after every page of the ledger).
 """
 from __future__ import annotations
 
@@ -60,6 +64,7 @@ ADD_PAGES = (
     ("add-flight", "/add/flight"),  # the by-hand form, as every kind's is the edit form
 )
 PASTE_LINE = "Booking confirmation for the Sample family, pasted by the screenshot harness."
+TRIP_PAGE = re.compile(r"/trips/\d+$")  # a trip's own page
 STATUS_PAGE = re.compile(r"/uploads/[^/?#]+$")  # where a sent paste lands
 LANDING_MS = 30000  # how long a sent paste may take to land on its status page
 WRONG_PASSWORD = "not-the-harness-password"  # what the login-wrong page is sent
@@ -450,6 +455,7 @@ def plan_pages(
     for link in trips:
         pages.append({"name": "trip-" + link.rsplit("/", 1)[1], "path": link, "expect": 200})
     if trips:
+        pages.append({"name": "sheet-open", "path": trips[0], "expect": 200, "sheet": True})
         pages.append({"name": "share", "path": trips[0] + "/share", "expect": 200})
         link = make_link(origin, base_path, trips[0], cookie)
         if link:
@@ -522,6 +528,11 @@ def main() -> int:
         default=os.environ.get("SCREENS_FRESH_URL", ""),
         help="a brand-new install's page under the same base (default: SCREENS_FRESH_URL)",
     )
+    ap.add_argument(
+        "--expect-covers",
+        action="store_true",
+        help="the offline trip must hold a cover photo (a ledger given covers)",
+    )
     ap.add_argument("--max-trips", type=int, default=8)
     ap.add_argument("--fail-on-overflow", action="store_true")
     args = ap.parse_args()
@@ -584,6 +595,7 @@ def main() -> int:
                 viewport={"width": viewport[0], "height": viewport[1]}, color_scheme=scheme
             )
             ctx.add_init_script(checks.CSP_LISTENER)
+            ctx.add_init_script(checks.NO_COVER_RELOAD)
             hosts: list[str] = []
             outside: list[str] = []
             asked: list[str] = []
@@ -621,6 +633,8 @@ def main() -> int:
                 if p.get("wrong") is not None:
                     resp = send_password(page, p["wrong"])
                 status = resp.status if resp else None
+                if p.get("sheet"):  # the trip's own ⋯ open, so its photo controls are in the shot
+                    page.click("details.menu > summary")
                 page.wait_for_timeout(SETTLE_MS)
                 if shot is not None:
                     page.screenshot(path=str(shot), full_page=True)
@@ -629,6 +643,11 @@ def main() -> int:
                 scripts = page.evaluate(checks.SCRIPTS)
                 probed = checks.probe(page) if probing else None
                 unnamed = page.evaluate(checks.UNNAMED) if shot is None else None
+                photo = (
+                    page.evaluate(checks.PHOTO_CONTROLS)
+                    if shot is None and p["expect"] == 200 and TRIP_PAGE.search(p["path"])
+                    else None
+                )
             finally:
                 ctx.close()
             return {
@@ -641,11 +660,13 @@ def main() -> int:
                 "violations": violations,
                 "probe": probed,
                 "unnamed": unnamed,
+                "photo": photo,
             }
 
         def escape_on(p: dict) -> list[str]:
             """The escape check's problems on the trip page `p`, signed in."""
             ctx = browser.new_context(viewport={"width": 390, "height": 844})
+            ctx.add_init_script(checks.NO_COVER_RELOAD)
             ctx.route("**/*", blocked)
             page = ctx.new_page()
             try:
@@ -721,6 +742,7 @@ def main() -> int:
                 "base_path": base_path,
                 "want_scope": f"{origin}{base_path}/",
                 "untested": None,
+                "want_cover": args.expect_covers,
             }
             if chosen is None:
                 seen["untested"] = "no trip page was planned"
@@ -779,6 +801,7 @@ def main() -> int:
                 go(base_path + "/")  # the worker answers from now on: the list and the trip
                 go(trip)
                 seen["title"] = page.evaluate(checks.SHOWN_NOW)["title"]
+                seen["cover_online"] = page.evaluate(checks.COVER_IMGS)
                 seen["kept"] = [base_path + "/", trip]
                 for path in ("/login", "/settings", "/add", "/add/paste"):  # (4), online
                     go(base_path + path)
@@ -789,6 +812,7 @@ def main() -> int:
                 go(trip)
                 cut["on"] = True  # the trip reloaded
                 seen["copy"] = answered(page.reload(wait_until="load"))  # (2)
+                seen["cover_copy"] = page.evaluate(checks.COVER_IMGS)  # (8)
                 for width, height in SHOT_VIEWPORTS:
                     for scheme in SCHEMES:
                         page.set_viewport_size({"width": width, "height": height})
@@ -832,6 +856,7 @@ def main() -> int:
                 "outside_base": [],
                 "csp": [],
                 "unnamed": None,
+                "photo": None,
                 "asked": [],
                 "scripts": [],
             }
@@ -858,6 +883,7 @@ def main() -> int:
                 entry["asked"] += seen["asked"]
                 entry["scripts"].append(seen["scripts"])
                 entry["unnamed"] = seen["unnamed"]
+                entry["photo"] = seen["photo"]
                 entry["overflow_px"] = max(seen["measure"]["px"], 0)
                 if entry["overflow_px"] > 0:
                     entry["overflow_elements"] = seen["measure"]["elements"]
