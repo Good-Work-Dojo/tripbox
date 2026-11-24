@@ -176,10 +176,13 @@ def flashed(c, r) -> str:
     return re.search(r'data-flash="([^"]*)"', page)[1]
 
 
-def post_as_it_arrives(c, query: str, chunks, *, length: str | None = None):
+def post_as_it_arrives(
+    c, query: str, chunks, *, length: str | None = None, ends: list | None = None
+):
     """POST the chunks to the upload form's address (with `query`) one receive at a time, with
     no declared length unless `length`; (status, the response's headers, how many body bytes
-    the app took)."""
+    the app took). `ends` collects one entry each time the app is handed the body's end (a
+    server would wait for a disconnect on a read after it)."""
     taken = 0
     source = iter(chunks)
     sent: list[dict] = []
@@ -188,6 +191,8 @@ def post_as_it_arrives(c, query: str, chunks, *, length: str | None = None):
         nonlocal taken
         chunk = next(source, None)
         if chunk is None:
+            if ends is not None:
+                ends.append(1)
             return {"type": "http.request", "body": b"", "more_body": False}
         taken += len(chunk)
         return {"type": "http.request", "body": chunk, "more_body": True}
@@ -297,9 +302,11 @@ def test_heic_and_what_is_no_photo_are_refused_with_their_toasts(tmp_path, monke
 def test_a_photo_over_ten_megabytes_is_refused_and_stores_nothing(tmp_path, monkeypatch, base):
     """Ten megabytes are taken; one byte more is refused with its toast. A phone's 12 MB photo,
     sent as a browser sends it, comes back to its trip with the same toast, whether its length
-    is declared (answered before a byte is read) or it is counted as it arrives (answered once
-    the cap is reached); only a body declaring more than COVER_LIMIT, far past any photo, gets
-    the body limit's own answer."""
+    is declared (refused before a byte is read) or it is counted as it arrives (refused once
+    the cap is reached), and nothing of it is stored: the rest of its body is read and dropped
+    before the answer, so a browser still sending gets the page, not a reset connection. Only a
+    body of more than COVER_LIMIT, declared or counted, far past any photo, gets the body
+    limit's own answer."""
     c, ctx = client_for(tmp_path, monkeypatch, base=base)
     trip = seed_trip(ctx)
     padded = JPEG + b"x" * (uploads.MAX_BYTES - len(JPEG))
@@ -312,16 +319,23 @@ def test_a_photo_over_ten_megabytes_is_refused_and_stores_nothing(tmp_path, monk
     assert views.BODY_CAP + LIMIT < 12 * 2**20 < app.COVER_LIMIT
     query = f"trip={trip.id}"
     piece = b"x" * 65536
+    whole = sum(map(len, endless(a_part(JPEG), piece, 12 * 2**20)))
     for length in (None, str(views.BODY_CAP + 1), str(12 * 2**20), str(app.COVER_LIMIT)):
+        ends: list = []
         status, said, taken = post_as_it_arrives(
-            c, query, endless(a_part(JPEG), piece, 12 * 2**20), length=length
+            c, query, endless(a_part(JPEG), piece, 12 * 2**20), length=length, ends=ends
         )
         assert (status, said["location"]) == (303, big), length
-        assert taken <= views.BODY_CAP + len(piece) and (length is None or taken == 0), taken
+        assert (taken, len(ends)) == (whole, 1), length  # all of it read, never past its end
     status, _, taken = post_as_it_arrives(
         c, query, endless(a_part(JPEG), piece, 2**20), length=str(app.COVER_LIMIT + 1)
     )
     assert (status, taken) == (413, 0)
+    mib = b"x" * 2**20
+    status, _, taken = post_as_it_arrives(
+        c, query, endless(a_part(JPEG), mib, app.COVER_LIMIT + 4 * 2**20)
+    )
+    assert status == 413 and taken <= app.COVER_LIMIT + len(mib)
     assert row(ctx, trip.id) is None
     r = send(c, trip.id, padded)
     assert r.headers["location"] == c.url(f"/trips/{trip.id}?f=cover_received")

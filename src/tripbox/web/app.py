@@ -94,8 +94,8 @@ PRIVATE: list[BaseRoute] = [
 ]
 # The paste and upload forms read up to views.BODY_CAP and answer past it with their own
 # sentence; past this, the body limit answers first. The cover photo's form refuses a body
-# declared or counted past BODY_CAP itself, back on its trip's page, and nothing outside it reads
-# the body: its limit stands far off (COVER_LIMIT), so a phone's photo of 12 MB is told why.
+# declared or counted past BODY_CAP itself, back on its trip's page once it has read the rest and
+# dropped it: its limit stands far off (COVER_LIMIT), so a phone's photo of 12 MB is told why.
 COVER_LIMIT = 64 * 1024 * 1024
 FORM_LIMITS = {
     "/add/paste": views.BODY_CAP + LIMIT,

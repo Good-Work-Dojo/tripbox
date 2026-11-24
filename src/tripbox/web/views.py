@@ -21,7 +21,7 @@ from starlette.datastructures import UploadFile
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse, RedirectResponse, Response
-from starlette.types import Message
+from starlette.types import Message, Receive
 
 from tripbox import status as worker_status
 from tripbox import uploads, util
@@ -1245,23 +1245,40 @@ class _TooLarge(Exception):
     """More of a request's body came than BODY_CAP."""
 
 
-def _counted(request: Request) -> Request:
-    """The request with its body counted as it arrives: the read that brings more than BODY_CAP
-    bytes, whatever length the request declared, raises _TooLarge, so the form parser never
-    takes in more than that and the rest is never read."""
-    receive = request.receive
-    came = 0
+class _Body:
+    """A request's body counted as it arrives (`receive`): the read that brings more than
+    BODY_CAP bytes, whatever length the request declared, raises _TooLarge, so the form parser
+    never takes in more than that. `ended` once its last part, or a disconnect, has come."""
 
-    async def counting() -> Message:
-        nonlocal came
-        message = await receive()
+    def __init__(self, receive: Receive) -> None:
+        self._receive = receive
+        self.came = 0
+        self.ended = False
+
+    async def receive(self) -> Message:
+        message = await self._receive()
         if message["type"] == "http.request":
-            came += len(message.get("body", b""))
-            if came > BODY_CAP:
+            self.came += len(message.get("body", b""))
+            self.ended = not message.get("more_body", False)
+            if self.came > BODY_CAP:
                 raise _TooLarge
+        else:
+            self.ended = True
         return message
 
-    return Request(request.scope, counting)
+    async def drain(self) -> None:
+        """The rest of the body read and dropped, so a browser still sending it reads the answer
+        instead of a reset connection. The body limit outside (COVER_LIMIT for the cover's form)
+        still answers a body past it with its 413."""
+        while not self.ended:
+            message = await self._receive()
+            self.ended = message["type"] != "http.request" or not message.get("more_body", False)
+
+
+def _counted(request: Request, body: _Body | None = None) -> Request:
+    """The request with its body counted as it arrives (`_Body`, this one's when given): past
+    BODY_CAP the form parser stops with _TooLarge and the rest is not read."""
+    return Request(request.scope, (body or _Body(request.receive)).receive)
 
 
 def _declares_too_much(request: Request) -> bool:
@@ -1460,16 +1477,19 @@ async def upload_cover(request: Request) -> Response:
     reader of a picture, and replacing whatever the trip had. Counted as it arrives and
     refused past BODY_CAP, as an upload is; past 10 MB, as HEIC or as anything but a JPEG, a
     PNG or a WebP by its first bytes (never its name or declared type), the trip's page says
-    why and nothing is stored."""
+    why and nothing is stored. A body refused as too large is read to its end and dropped
+    first (`_Body.drain`, up to COVER_LIMIT), so a phone still sending it gets that page."""
     with _ctx(request) as c:
         t = _trip_or_404(c, _id(request.query_params.get("trip")) or -1)
+    body = _Body(request.receive)
     try:
         if _declares_too_much(request):
             raise _TooLarge
-        async with _counted(request).form(max_files=1, max_part_size=BODY_CAP) as form:
+        async with _counted(request, body).form(max_files=1, max_part_size=BODY_CAP) as form:
             part = form.get("photo")
             data = await part.read() if isinstance(part, UploadFile) else b""
     except _TooLarge:
+        await body.drain()
         return _back(request, t.id, "cover_big")
     kind = coversniff.sniff(data)
     if len(data) > uploads.MAX_BYTES:
