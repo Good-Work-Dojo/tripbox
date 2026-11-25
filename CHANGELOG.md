@@ -4,6 +4,16 @@ All notable changes to tripbox are written here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-11-24
+
+### Added
+
+- A flight's card shows a **Track flight** button from a day before the flight leaves until six
+  hours after it lands, so following it on the day takes one tap instead of opening the ⋯ menu.
+  The menu keeps its own Track flight link at any time. A cancelled flight shows no button.
+- A share link that shows times shows the same button on a flight in that window, so whoever
+  meets the flight can follow it. The link opens FlightAware with no referrer.
+
 ## [1.1.2] - 2026-11-24
 
 ### Fixed

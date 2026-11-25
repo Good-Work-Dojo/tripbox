@@ -1,6 +1,6 @@
 [project]
 name = "tripbox"
-version = "1.1.2"
+version = "1.2.0"
 description = "Forwarded travel confirmation emails become a trips page, with an optional AirTrail flight log"
 readme = "README.md"
 requires-python = ">=3.14"
