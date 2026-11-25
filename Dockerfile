@@ -4,7 +4,7 @@
 # Base images pinned by digest: python:3.14-slim and uv 0.13.5 as of 2026-10-26; each digest is a
 # multi-platform index, so the same lines build for amd64 and arm64.
 # Bump: `docker buildx imagetools inspect <image:tag> --format '{{.Manifest.Digest}}'`.
-FROM python:3.14-slim@sha256:35caba83af2fe6da9a5d922f9b0156f21d1246a48278c58a08bd253303ba42e8 AS runtime
+FROM python:3.14-slim@sha256:9aaa474097d094040649f2162a627c0049b408f52138d980916788d80f04802f AS runtime
 COPY --from=ghcr.io/astral-sh/uv:0.13.5@sha256:32a7bb39b496babbd997b0a39a4d66c126bdaf5661b302bf6f06abda8deca6ff /uv /usr/local/bin/uv
 
 # kitinerary-extractor, from one of two sources:
