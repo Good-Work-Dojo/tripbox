@@ -23,6 +23,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 from starlette.routing import BaseRoute, Route
 
+from tripbox import util
 from tripbox.trips import format as fmt
 from tripbox.trips import grouping, shares
 from tripbox.trips.format import ICON
@@ -35,7 +36,7 @@ log = logging.getLogger("tripbox.web")
 # What every booking of the page holds, and what each field of a link adds to it
 ALWAYS = ("icon", "kind", "role", "primary", "secondary")
 ADDS = {
-    "times": ("time", "tz", "arrives"),
+    "times": ("time", "tz", "arrives", "track"),
     "addresses": ("lines",),
     "names": ("names",),
     "seats": ("seats",),
@@ -82,7 +83,7 @@ def _booking(dl: fmt.DayLine, items: list[TripItem], chosen: set[str], book, hom
         "primary": "",
         "secondary": "",
     }
-    time = tz = arrives = ""
+    time = tz = arrives = track = ""
     lines: list[str] = []
     if ti.kind in ("flight", "train"):
         tz0 = ti.start_tz if ti.kind == "flight" else zone(ti.start_at)
@@ -93,6 +94,9 @@ def _booking(dl: fmt.DayLine, items: list[TripItem], chosen: set[str], book, hom
             number = f"{p.get('carrier') or ''} {p.get('flight_number') or ''}".strip()
             airline = fmt._airline(p)
             out["secondary"] = f"{number} ({airline})" if number else airline
+            # a link to follow the flight, while it is near or under way, with its times
+            if fmt.tracking_now(p, util.now()):
+                track = fmt.track_url(p) or ""
         else:
             train = f"{p.get('provider') or 'Train'} {p.get('train_number') or ''}"
             out["secondary"] = train.strip()
@@ -127,7 +131,7 @@ def _booking(dl: fmt.DayLine, items: list[TripItem], chosen: set[str], book, hom
     first = role != "end"  # who and which code: said once, on the booking's first line
     people = fmt.identities([n for n in ti.passengers if n], book) if first else []
     if "times" in chosen:
-        out.update(time=time, tz=tz, arrives=arrives)
+        out.update(time=time, tz=tz, arrives=arrives, track=track)
     if "addresses" in chosen:
         out["lines"] = lines
     if "names" in chosen:

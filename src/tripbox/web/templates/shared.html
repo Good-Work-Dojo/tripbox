@@ -36,6 +36,7 @@
         <div class="secondary">{{ it.secondary }}</div>
         {% if it.arrives %}<div class="line">arrives {{ it.arrives }}</div>{% endif %}
         {% for ln in it.lines %}<div class="line">{{ ln }}</div>{% endfor %}
+        {% if it.track %}<div class="line"><a class="track" href="{{ it.track }}" target="_blank" rel="noopener noreferrer">Track flight<span aria-hidden="true"> ↗</span></a></div>{% endif %}
         {% if it.code or it.names or it.seats %}
         <div class="line meta">
           {% if it.code %}<span>conf {{ it.code }}</span>{% endif %}

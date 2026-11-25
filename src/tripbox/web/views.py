@@ -398,6 +398,7 @@ def present(dl: fmt.DayLine, items: list[TripItem], c: Ctx) -> dict:
         "seats": "",
         "maps_url": None,
         "track_url": None,
+        "track_now": False,
         "text": "\n".join(fmt.item_lines(ti, role, items=items, book=c.book, home_airports=c.home)),
     }
     if ti.kind in ("flight", "train"):
@@ -409,6 +410,10 @@ def present(dl: fmt.DayLine, items: list[TripItem], c: Ctx) -> dict:
             code = f"{p.get('carrier') or ''} {p.get('flight_number') or ''}".strip()
             out["secondary"] = f"{code} ({fmt._airline(p)})" if code else fmt._airline(p)
             out["track_url"] = fmt.track_url(p)
+            # on the card too while the flight is near or under way, not only in its menu
+            out["track_now"] = bool(
+                out["track_url"] and not out["cancelled"] and fmt.tracking_now(p, util.now())
+            )
         else:
             out["secondary"] = (
                 f"{p.get('provider') or 'Train'} {p.get('train_number') or ''}".strip()
@@ -483,6 +488,7 @@ def _bare(ti: TripItem, role: str = "single") -> dict:
         "seats": "",
         "maps_url": None,
         "track_url": None,
+        "track_now": False,
         "text": kind + (f" · conf {code}" if code else ""),
         "checks": [],
         "can": frozenset(),

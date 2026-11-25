@@ -349,3 +349,35 @@ def test_the_airline_list_in_the_config_directory_gives_a_tracker_code(tmp_path,
     (tmp_path / "airlines.yaml").write_text("- iata: ZZ\n  name: Example Air\n  icao: exa\n")
     url = fmt.track_url({"carrier": "ZZ", "flight_number": "12"})
     assert url == "https://flightaware.com/live/flight/EXA12"
+
+
+HOUR = dt.timedelta(hours=1)
+DEP = dt.datetime(2027, 9, 16, 15, 25, tzinfo=dt.UTC)
+ARR = dt.datetime(2027, 9, 16, 17, 58, tzinfo=dt.UTC)
+
+
+@pytest.mark.parametrize(
+    ("at", "shown"),
+    [
+        (DEP - fmt.TRACK_FROM - HOUR, False),  # over a day before it leaves
+        (DEP - fmt.TRACK_FROM, True),
+        (DEP - 2 * HOUR, True),
+        (DEP + HOUR, True),  # in the air
+        (ARR + fmt.TRACK_UNTIL, True),
+        (ARR + fmt.TRACK_UNTIL + HOUR, False),  # hours after it landed
+    ],
+)
+def test_a_flight_is_tracked_on_its_card_from_a_day_before_until_after_it_lands(at, shown):
+    p = {"dep_utc": DEP.isoformat(), "arr_utc": ARR.isoformat().replace("+00:00", "Z")}
+    assert fmt.tracking_now(p, at) is shown
+
+
+def test_a_flight_with_no_departure_instant_or_arrival_has_its_own_tracking_time():
+    # no departure instant (no time, or a day alone): never
+    assert not fmt.tracking_now({}, DEP)
+    assert not fmt.tracking_now({"dep_utc": "soon", "arr_utc": ARR.isoformat()}, DEP)
+    # no arrival, or one before the departure: from the departure on
+    for arr in (None, "later", (DEP - 3 * HOUR).isoformat()):
+        p = {"dep_utc": DEP.isoformat(), "arr_utc": arr}
+        assert fmt.tracking_now(p, DEP + fmt.TRACK_UNTIL), arr
+        assert not fmt.tracking_now(p, DEP + fmt.TRACK_UNTIL + HOUR), arr

@@ -130,6 +130,9 @@ details.inline > summary::-webkit-details-marker { display: none; }
 .check-actions form { min-width: 0; max-width: 100%; }
 .check-actions .btn { max-width: 100%; text-align: center; }
 .conf { border: 0; background: var(--band); border-radius: 999px; min-height: 44px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
+/* a flight's Track flight link on its card while the flight is near or under way */
+.track { display: inline-flex; align-items: center; min-height: 44px; margin-top: 4px; padding: 6px 14px; border-radius: 999px;
+         background: var(--primary); color: var(--primary-fg); font-size: 13px; font-weight: 600; }
 .people p { font-size: 15px; }
 
 /* ---- the list's unsorted group: bookings with no date yet */

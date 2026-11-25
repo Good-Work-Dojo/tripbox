@@ -287,6 +287,41 @@ def test_trip_page_timeline(tmp_path, monkeypatch, base):
     assert f'href="{c.url("/trips/10/share")}"' in html
 
 
+TRACK = '<a class="track" href="https://flightaware.com/live/flight/SCX9304"'
+
+
+def test_a_flight_near_or_under_way_has_its_tracker_on_its_card(tmp_path, monkeypatch, base):
+    """From a day before a flight leaves until hours after it lands, its card links its
+    tracker as well as its menu; before and after, only the menu does, and a cancelled
+    flight's card never does."""
+    c, ctx = client_for(tmp_path, monkeypatch, base=base)
+    seed_trip(ctx)
+    st = ctx.trips
+    out = st.item_by_key("SY|9304|2027-09-16|MSP")
+    dep, arr = (util.parse_iso(out.payload[k]) for k in ("dep_utc", "arr_utc"))
+    hour = dt.timedelta(hours=1)
+    for at, shown in (
+        (dep - fmt.TRACK_FROM - hour, 0),
+        (dep - 2 * hour, 1),
+        (arr + fmt.TRACK_UNTIL, 1),
+        (arr + fmt.TRACK_UNTIL + hour, 0),
+    ):
+        with util.clock_at(at):
+            html = c.get("/trips/10").text
+        assert html.count(TRACK) == shown, at
+        # the menu's link is there either way, and the return flight days later has none
+        assert html.count('href="https://flightaware.com/live/flight/') == 2 + shown, at
+    with util.clock_at(dep - 2 * hour):
+        html = c.get("/trips/10").text
+    card = html[html.index(TRACK) :]
+    assert card.index("Track flight") < card.index('class="item-menu"')
+    assert '<a class="track" href="https://flightaware.com/live/flight/SCX9304" target="_blank"' \
+        ' rel="noopener">Track flight<span aria-hidden="true"> ↗</span></a>' in html
+    st.cancel(out.item_key)
+    with util.clock_at(dep - 2 * hour):
+        assert TRACK not in c.get("/trips/10").text
+
+
 def test_share_page_and_text_endpoint(tmp_path, monkeypatch, base):
     c, ctx = client_for(tmp_path, monkeypatch, base=base)
     seed_trip(ctx)

@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from tripbox import lists
+from tripbox import lists, util
 from tripbox.trips import grouping
 from tripbox.trips.store import Trip, TripItem, TripStore
 from tripbox.validate.passengers import TITLES, name_tokens
@@ -262,6 +262,31 @@ def track_url(p: dict) -> str | None:
     if airline is None or not airline.icao or not FLIGHT_NUMBER.fullmatch(number):
         return None
     return f"{TRACKER}{airline.icao}{int(number)}"
+
+
+# When a flight's Track flight link is also shown on its card, not only in its menu: from a day
+# before its departure until some hours after its arrival, when someone is likely to look it up
+TRACK_FROM = dt.timedelta(hours=24)
+TRACK_UNTIL = dt.timedelta(hours=6)
+
+
+def _utc(value: object) -> dt.datetime | None:
+    try:
+        return util.parse_iso(str(value)) if value else None
+    except ValueError:
+        return None
+
+
+def tracking_now(p: dict, now: dt.datetime) -> bool:
+    """Whether `now` is within a flight's tracking time: from TRACK_FROM before its departure
+    until TRACK_UNTIL after its arrival (its departure when it has no arrival, or one before it).
+    A flight with no departure instant (no time, or a day alone) has none."""
+    dep = _utc(p.get("dep_utc"))
+    if dep is None:
+        return False
+    arr = _utc(p.get("arr_utc"))
+    end = arr if arr is not None and arr > dep else dep
+    return dep - TRACK_FROM <= now <= end + TRACK_UNTIL
 
 
 # ----------------------------------------------------------------------------- per item lines

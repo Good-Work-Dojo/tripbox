@@ -132,7 +132,9 @@ The defences are structural; they do not depend on a model behaving.
 
 A share link shows what you ticked (names, addresses, seats and times by default; codes and notes
 when ticked), and always the trip's title and dates, and each booking's route and flight number or
-the hotel's or car company's name, to anyone who has the link. It works until 7 days after the
+the hotel's or car company's name, to anyone who has the link. With times ticked, a flight also
+links its FlightAware page from a day before it leaves until six hours after it lands, opened with
+no referrer. It works until 7 days after the
 trip ends, and at least 30 days after it was made, and it does not work while its trip is deleted.
 You can end one at once: **Revoke** on the trip's share page or in Settings. Because a trip's end
 can move (a changed booking, a merge), a lapsed link can work again, unless you revoked it. A

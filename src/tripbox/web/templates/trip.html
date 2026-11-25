@@ -93,6 +93,7 @@
         {% for ln in it.lines %}
           {% if ln.url %}<a class="line addr" href="{{ ln.url }}" target="_blank" rel="noopener">{{ ln.text }}</a>{% else %}<div class="line">{{ ln.text }}</div>{% endif %}
         {% endfor %}
+        {% if it.track_now %}<div class="line"><a class="track" href="{{ it.track_url }}" target="_blank" rel="noopener">Track flight<span aria-hidden="true"> ↗</span></a></div>{% endif %}
         {% if it.sync_line %}<div class="line sync">{{ it.sync_line }}</div>{% endif %}
         {% if it.checks or it.can %}{% include "_check.html" %}{% endif %}
         {% if it.conf or it.names or it.seats %}

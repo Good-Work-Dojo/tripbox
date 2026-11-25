@@ -170,6 +170,29 @@ def test_the_shared_page_has_no_script_form_or_way_into_the_app(tmp_path, monkey
     assert html.rindex('class="about') > html.rindex("</article>")
 
 
+def test_a_flight_near_or_under_way_links_its_tracker_when_the_times_are_shown(
+    tmp_path, monkeypatch, base
+):
+    """With its times shown, a flight links its tracker from a day before it leaves until hours
+    after it lands, not referred from; without them, or at any other time, it links none."""
+    c, ctx = password_page(tmp_path, monkeypatch, base)
+    trip = marked_trip(ctx)
+    (f,) = [ti for ti in ctx.trips.items(trip.id) if ti.kind == "flight"]
+    dep = util.parse_iso(f.payload["dep_utc"])
+    tracker = fmt.track_url(f.payload)
+    assert tracker
+    timed, untimed = link(ctx, trip, ("times",)), link(ctx, trip, ("names", "seats"))
+    with util.clock_at(dep - dt.timedelta(hours=2)):
+        html = fresh(c).get(timed).text
+        assert (
+            f'<a class="track" href="{tracker}" target="_blank" rel="noopener noreferrer">'
+            'Track flight<span aria-hidden="true"> ↗</span></a>'
+        ) in html
+        assert "flightaware" not in fresh(c).get(untimed).text
+    with util.clock_at(dep - fmt.TRACK_FROM - dt.timedelta(hours=1)):
+        assert "flightaware" not in fresh(c).get(timed).text
+
+
 def test_the_about_line_shows_the_notices_attribution_line(tmp_path, monkeypatch, base):
     c, ctx = password_page(tmp_path, monkeypatch, base)
     trip = marked_trip(ctx)
